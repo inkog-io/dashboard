@@ -75,6 +75,18 @@ export interface HistoryResponse {
   count: number;
 }
 
+export interface DashboardStats {
+  api_key_count: number;
+  scans_today: number;
+  total_findings: number;
+  last_scan_at: string | null;
+}
+
+export interface StatsResponse {
+  success: boolean;
+  stats: DashboardStats;
+}
+
 export interface APIError {
   error: string;
   code: string;
@@ -180,6 +192,16 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
         const query = params.toString();
         return request<HistoryResponse>(`/v1/history${query ? `?${query}` : ''}`);
       },
+    },
+
+    /**
+     * Dashboard Statistics
+     */
+    stats: {
+      /**
+       * Get dashboard stats for the current user
+       */
+      get: () => request<StatsResponse>('/v1/stats'),
     },
   };
 }

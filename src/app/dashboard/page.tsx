@@ -1,14 +1,61 @@
-import { currentUser } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { Key, ArrowRight } from "lucide-react";
+import { Key, ArrowRight, AlertCircle } from "lucide-react";
 
-export default async function DashboardPage() {
-  const user = await currentUser();
+import { createAPIClient, type DashboardStats, type InkogAPI } from "@/lib/api";
 
-  if (!user) {
-    redirect("/sign-in");
-  }
+export default function DashboardPage() {
+  const { getToken } = useAuth();
+  const { user, isLoaded } = useUser();
+  const [api, setApi] = useState<InkogAPI | null>(null);
+
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Initialize API client
+  useEffect(() => {
+    const client = createAPIClient(getToken);
+    setApi(client);
+  }, [getToken]);
+
+  // Fetch stats on mount
+  const fetchStats = useCallback(async () => {
+    if (!api) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.stats.get();
+      setStats(response.stats);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load stats");
+    } finally {
+      setLoading(false);
+    }
+  }, [api]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  // Format last scan date for display
+  const formatLastScan = (dateStr: string | null) => {
+    if (!dateStr) return "Never";
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "Invalid Date";
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const firstName = isLoaded && user?.firstName ? user.firstName : "there";
 
   return (
     <div className="space-y-8">
@@ -16,9 +63,17 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-1">
-          Welcome back, {user.firstName || "there"}!
+          Welcome back, {firstName}!
         </p>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-2">
+          <AlertCircle className="h-5 w-5 text-red-500" />
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -26,7 +81,13 @@ export default async function DashboardPage() {
           <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
             API Keys
           </h3>
-          <p className="mt-2 text-3xl font-semibold text-gray-900">0</p>
+          {loading ? (
+            <div className="mt-2 h-9 w-16 bg-gray-100 animate-pulse rounded"></div>
+          ) : (
+            <p className="mt-2 text-3xl font-semibold text-gray-900">
+              {stats?.api_key_count ?? 0}
+            </p>
+          )}
           <p className="mt-1 text-sm text-gray-600">Active keys</p>
         </div>
 
@@ -34,15 +95,29 @@ export default async function DashboardPage() {
           <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
             Scans Today
           </h3>
-          <p className="mt-2 text-3xl font-semibold text-gray-900">0</p>
-          <p className="mt-1 text-sm text-gray-600">Files scanned</p>
+          {loading ? (
+            <div className="mt-2 h-9 w-16 bg-gray-100 animate-pulse rounded"></div>
+          ) : (
+            <p className="mt-2 text-3xl font-semibold text-gray-900">
+              {stats?.scans_today ?? 0}
+            </p>
+          )}
+          <p className="mt-1 text-sm text-gray-600">
+            {stats?.last_scan_at ? `Last: ${formatLastScan(stats.last_scan_at)}` : "No scans yet"}
+          </p>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-            Findings
+            Total Findings
           </h3>
-          <p className="mt-2 text-3xl font-semibold text-gray-900">0</p>
+          {loading ? (
+            <div className="mt-2 h-9 w-16 bg-gray-100 animate-pulse rounded"></div>
+          ) : (
+            <p className="mt-2 text-3xl font-semibold text-gray-900">
+              {stats?.total_findings ?? 0}
+            </p>
+          )}
           <p className="mt-1 text-sm text-gray-600">Security issues found</p>
         </div>
       </div>
