@@ -127,10 +127,12 @@ export default function APIKeysPage() {
     }
   };
 
-  // Format date for display
-  const formatDate = (dateStr: string | null) => {
+  // Format date for display with defensive parsing
+  const formatDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return "Never";
-    return new Date(dateStr).toLocaleDateString("en-US", {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "Invalid Date";
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
