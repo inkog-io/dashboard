@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { Upload, FileCode, AlertCircle, CheckCircle2, Loader2, Shield, Info } from "lucide-react";
+import Link from "next/link";
+import { Upload, FileCode, AlertCircle, CheckCircle2, Loader2, Shield, Info, Terminal, ArrowRight } from "lucide-react";
 
 import { createAPIClient, type Finding, type ScanResult, type InkogAPI } from "@/lib/api";
 
@@ -254,6 +255,24 @@ export default function ScanPage() {
             <div className="mt-4 text-sm text-gray-500 text-center">
               Scanned {result.summary.lines_of_code.toLocaleString()} lines of code in {result.summary.duration_ms}ms
             </div>
+          </div>
+
+          {/* CLI Upsell Banner */}
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <Terminal className="h-5 w-5 text-indigo-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-gray-900">Want to run this in CI/CD?</p>
+                <p className="text-sm text-gray-600">Get your API key and integrate with GitHub Actions, GitLab CI, and more.</p>
+              </div>
+            </div>
+            <Link
+              href="/dashboard/api-keys"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors whitespace-nowrap"
+            >
+              Get API Key
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
 
           {/* Findings Table */}
