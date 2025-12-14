@@ -82,6 +82,39 @@ export interface DashboardStats {
   last_scan_at: string | null;
 }
 
+export interface Finding {
+  id: string;
+  pattern_id: string;
+  file: string;
+  line: number;
+  column: number;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  confidence: number;
+  cwe: string;
+  message: string;
+  category: string;
+  risk_tier: string;
+  input_tainted: boolean;
+  taint_source: string;
+  code_snippet?: string;
+}
+
+export interface ScanResult {
+  success: boolean;
+  findings: Finding[];
+  summary: {
+    files_scanned: number;
+    lines_of_code: number;
+    findings_count: number;
+    critical_count: number;
+    high_count: number;
+    medium_count: number;
+    low_count: number;
+    risk_score: number;
+    duration_ms: number;
+  };
+}
+
 export interface StatsResponse {
   success: boolean;
   stats: DashboardStats;
@@ -202,6 +235,50 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
        * Get dashboard stats for the current user
        */
       get: () => request<StatsResponse>('/v1/stats'),
+    },
+
+    /**
+     * Web Scanner
+     */
+    scan: {
+      /**
+       * Scan uploaded code files
+       * Uses multipart form data to upload files
+       */
+      upload: async (files: File[]): Promise<ScanResult> => {
+        const token = await getToken();
+
+        if (!token) {
+          throw new InkogAPIError('Not authenticated', 'not_authenticated', 401);
+        }
+
+        const formData = new FormData();
+        files.forEach((file) => {
+          formData.append('files', file);
+        });
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/scan`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            // Note: Don't set Content-Type for FormData, browser sets it with boundary
+          },
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          const error = data as APIError;
+          throw new InkogAPIError(
+            error.error || 'Scan failed',
+            error.code || 'scan_error',
+            response.status
+          );
+        }
+
+        return data as ScanResult;
+      },
     },
   };
 }

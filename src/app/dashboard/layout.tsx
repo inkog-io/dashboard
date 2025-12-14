@@ -2,7 +2,7 @@ import { UserButton } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Key, History, Settings } from "lucide-react";
+import { LayoutDashboard, Key, History, Settings, Scan } from "lucide-react";
 
 export default async function DashboardLayout({
   children,
@@ -37,6 +37,13 @@ export default async function DashboardLayout({
                 >
                   <LayoutDashboard className="h-4 w-4" />
                   Overview
+                </Link>
+                <Link
+                  href="/dashboard/scan"
+                  className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md flex items-center gap-2"
+                >
+                  <Scan className="h-4 w-4" />
+                  Scan
                 </Link>
                 <Link
                   href="/dashboard/api-keys"
