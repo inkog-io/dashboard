@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { createAPIClient, type APIKey, type InkogAPI } from "@/lib/api";
+import { posthog } from "@/components/PostHogProvider";
 
 export default function APIKeysPage() {
   const { getToken } = useAuth();
@@ -94,6 +95,11 @@ export default function APIKeysPage() {
       setShowKeyDialog(true);
       setNewKeyName("");
       fetchKeys();
+
+      // Track key generation event
+      posthog.capture("api_key_created", {
+        key_name: newKeyName || "Default Key",
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create API key");
     } finally {
