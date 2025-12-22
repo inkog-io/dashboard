@@ -76,10 +76,22 @@ export interface HistoryResponse {
 }
 
 export interface DashboardStats {
+  // Basic stats (backwards compatible)
   api_key_count: number;
   scans_today: number;
   total_findings: number;
   last_scan_at: string | null;
+
+  // Security-focused metrics
+  risk_score_avg: number;       // 7-day rolling average
+  critical_unresolved: number;  // From latest scan
+  high_unresolved: number;      // From latest scan
+  governance_score_avg: number; // Derived from findings
+  eu_ai_act_readiness: 'READY' | 'PARTIAL' | 'NOT_READY';
+
+  // Trends
+  scans_this_week: number;
+  findings_trend: number[];     // Last 7 days counts
 }
 
 /**
