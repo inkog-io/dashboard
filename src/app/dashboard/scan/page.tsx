@@ -13,6 +13,7 @@ import {
   Info,
   Terminal,
   ArrowRight,
+  Plus,
 } from "lucide-react";
 
 import {
@@ -174,20 +175,23 @@ export default function ScanPage() {
         </p>
       </div>
 
-      {/* Privacy Notice */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-        <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-        <div className="text-sm text-blue-800">
-          <p className="font-medium">Privacy Notice</p>
-          <p>
-            Files are processed ephemerally and not stored. For maximum privacy,
-            use the CLI for local-only scanning.
-          </p>
-        </div>
-      </div>
+      {/* Upload Section - Hidden when results exist */}
+      {!result && (
+        <>
+          {/* Privacy Notice */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+            <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-blue-800">
+              <p className="font-medium">Privacy Notice</p>
+              <p>
+                Files are processed ephemerally and not stored. For maximum privacy,
+                use the CLI for local-only scanning.
+              </p>
+            </div>
+          </div>
 
-      {/* Drop Zone */}
-      <div
+          {/* Drop Zone */}
+          <div
         className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
           isDragging
             ? "border-blue-500 bg-blue-50"
@@ -283,6 +287,8 @@ export default function ScanPage() {
           </button>
         </div>
       )}
+        </>
+      )}
 
       {/* Error */}
       {error && (
@@ -295,12 +301,30 @@ export default function ScanPage() {
       {/* Results */}
       {result && (
         <div className="space-y-6">
-          {/* Summary Stats */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          {/* Results Header with New Scan Button */}
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
               Scan Complete
             </h2>
+            <button
+              onClick={() => {
+                setResult(null);
+                setFiles([]);
+                setError(null);
+                setSelectedFinding(null);
+                setSeverityFilter("ALL");
+                setSearchQuery("");
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              New Scan
+            </button>
+          </div>
+
+          {/* Summary Stats */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-3 bg-gray-50 rounded-lg">
                 <p className="text-2xl font-bold text-gray-900">
