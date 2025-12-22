@@ -5,7 +5,7 @@ import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { Upload, FileCode, AlertCircle, CheckCircle2, Loader2, Shield, Info, Terminal, ArrowRight } from "lucide-react";
 
-import { createAPIClient, type Finding, type ScanResult, type InkogAPI } from "@/lib/api";
+import { createAPIClient, InkogAPIError, type Finding, type ScanResult, type InkogAPI } from "@/lib/api";
 import { GovernanceScore } from "@/components/GovernanceScore";
 import { ComplianceMapping } from "@/components/ComplianceMapping";
 import { TopologyMapVisualization } from "@/components/TopologyMap";
@@ -116,7 +116,12 @@ export default function ScanPage() {
       const scanResult = await api.scan.upload(files);
       setResult(scanResult);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Scan failed");
+      if (err instanceof InkogAPIError) {
+        // Show detailed error with code for debugging
+        setError(`${err.message} (${err.code})`);
+      } else {
+        setError(err instanceof Error ? err.message : "Scan failed");
+      }
     } finally {
       setScanning(false);
     }

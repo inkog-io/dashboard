@@ -212,9 +212,18 @@ export interface StatsResponse {
   stats: DashboardStats;
 }
 
+/**
+ * API Error response from backend (RFC 7807 Problem Details)
+ */
 export interface APIError {
-  error: string;
+  status: number;
   code: string;
+  message: string;           // Backend sends 'message', not 'error'
+  request_id?: string;
+  details?: Record<string, unknown>;
+  retry_after_seconds?: number;
+  // Legacy field for backwards compatibility
+  error?: string;
 }
 
 /**
@@ -266,7 +275,7 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
     if (!response.ok) {
       const error = data as APIError;
       throw new InkogAPIError(
-        error.error || 'Request failed',
+        error.message || error.error || 'Request failed',
         error.code || 'unknown_error',
         response.status
       );
@@ -363,7 +372,7 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
         if (!response.ok) {
           const error = data as APIError;
           throw new InkogAPIError(
-            error.error || 'Scan failed',
+            error.message || error.error || 'Scan failed',
             error.code || 'scan_error',
             response.status
           );
