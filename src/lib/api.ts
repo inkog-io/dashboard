@@ -354,6 +354,18 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
         }
 
         const formData = new FormData();
+
+        // Add required request metadata (matches backend contract)
+        const requestMetadata = {
+          contract_version: 'v1',
+          cli_version: 'dashboard-1.0.0',
+          secrets_version: '',
+          local_secrets_found: 0,
+          redacted_file_count: 0,
+        };
+        formData.append('request', JSON.stringify(requestMetadata));
+
+        // Add files
         files.forEach((file) => {
           formData.append('files', file);
         });
