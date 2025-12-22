@@ -82,21 +82,57 @@ export interface DashboardStats {
   last_scan_at: string | null;
 }
 
+/**
+ * Compliance mapping for findings (EU AI Act, NIST, OWASP, etc.)
+ */
+export interface ComplianceMapping {
+  eu_ai_act_articles?: string[];
+  nist_categories?: string[];
+  iso_42001_clauses?: string[];
+  owasp_items?: string[];
+  gdpr_articles?: string[];
+  cwe_ids?: string[];
+}
+
+/**
+ * Article status for EU AI Act compliance reporting
+ */
+export interface ArticleStatus {
+  article: string;
+  status: 'PASS' | 'PARTIAL' | 'FAIL';
+  finding_count: number;
+  description: string;
+}
+
+/**
+ * Framework status for compliance framework reporting
+ */
+export interface FrameworkStatus {
+  framework: string;
+  status: 'PASS' | 'PARTIAL' | 'FAIL';
+  finding_count: number;
+}
+
 export interface Finding {
   id: string;
   pattern_id: string;
+  pattern: string;
   file: string;
   line: number;
   column: number;
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   confidence: number;
   cwe: string;
+  owasp_category?: string;
   message: string;
   category: string;
-  risk_tier: string;
+  risk_tier: 'vulnerability' | 'risk_pattern' | 'hardening';
   input_tainted: boolean;
   taint_source: string;
   code_snippet?: string;
+  // Governance fields (EU AI Act compliance)
+  governance_category?: 'oversight' | 'authorization' | 'audit' | 'privacy';
+  compliance_mapping?: ComplianceMapping;
 }
 
 export interface ScanResult {
@@ -112,6 +148,11 @@ export interface ScanResult {
     low_count: number;
     risk_score: number;
     duration_ms: number;
+    // Governance fields
+    governance_score?: number;          // 0-100 score
+    eu_ai_act_readiness?: 'READY' | 'PARTIAL' | 'NOT_READY';
+    article_mapping?: Record<string, ArticleStatus>;
+    framework_mapping?: Record<string, FrameworkStatus>;
   };
 }
 

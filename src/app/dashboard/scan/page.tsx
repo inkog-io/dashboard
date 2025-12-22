@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Upload, FileCode, AlertCircle, CheckCircle2, Loader2, Shield, Info, Terminal, ArrowRight } from "lucide-react";
 
 import { createAPIClient, type Finding, type ScanResult, type InkogAPI } from "@/lib/api";
+import { GovernanceScore } from "@/components/GovernanceScore";
+import { ComplianceMapping } from "@/components/ComplianceMapping";
 
 // Severity badge component
 function SeverityBadge({ severity }: { severity: string }) {
@@ -19,6 +21,27 @@ function SeverityBadge({ severity }: { severity: string }) {
   return (
     <span className={`px-2 py-0.5 text-xs font-medium rounded border ${colors[severity] || colors.LOW}`}>
       {severity}
+    </span>
+  );
+}
+
+// Risk tier badge component
+function RiskTierBadge({ tier }: { tier: string }) {
+  const colors: Record<string, string> = {
+    vulnerability: "bg-red-50 text-red-700 border-red-200",
+    risk_pattern: "bg-yellow-50 text-yellow-700 border-yellow-200",
+    hardening: "bg-cyan-50 text-cyan-700 border-cyan-200",
+  };
+
+  const labels: Record<string, string> = {
+    vulnerability: "Vuln",
+    risk_pattern: "Risk",
+    hardening: "Best Practice",
+  };
+
+  return (
+    <span className={`px-2 py-0.5 text-xs font-medium rounded border ${colors[tier] || colors.risk_pattern}`}>
+      {labels[tier] || tier}
     </span>
   );
 }
@@ -102,9 +125,12 @@ export default function ScanPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Web Scanner</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Agent Governance Scanner</h1>
         <p className="text-gray-600 mt-1">
-          Upload code files to scan for AI agent vulnerabilities
+          Verify human oversight, authorization controls, and audit trails in your AI agents
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          EU AI Act Article 14 deadline: August 2, 2026
         </p>
       </div>
 
@@ -257,6 +283,20 @@ export default function ScanPage() {
             </div>
           </div>
 
+          {/* Governance Section */}
+          {(result.summary.governance_score !== undefined || result.summary.eu_ai_act_readiness) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <GovernanceScore
+                score={result.summary.governance_score}
+                readiness={result.summary.eu_ai_act_readiness}
+              />
+              <ComplianceMapping
+                articleMapping={result.summary.article_mapping}
+                frameworkMapping={result.summary.framework_mapping}
+              />
+            </div>
+          )}
+
           {/* CLI Upsell Banner */}
           <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
@@ -289,13 +329,16 @@ export default function ScanPage() {
                         Severity
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tier
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         File
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Issue
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        CWE
+                        Compliance
                       </th>
                     </tr>
                   </thead>
@@ -304,6 +347,9 @@ export default function ScanPage() {
                       <tr key={index} className="hover:bg-gray-50">
                         <td className="px-4 py-3 whitespace-nowrap">
                           <SeverityBadge severity={finding.severity} />
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <RiskTierBadge tier={finding.risk_tier} />
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">
                           <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
@@ -314,7 +360,7 @@ export default function ScanPage() {
                           {finding.message}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-500">
-                          {finding.cwe || "-"}
+                          {finding.cwe || finding.owasp_category || (finding.compliance_mapping?.eu_ai_act_articles?.[0]) || "-"}
                         </td>
                       </tr>
                     ))}
