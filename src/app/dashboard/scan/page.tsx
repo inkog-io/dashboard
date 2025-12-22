@@ -1,51 +1,33 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
-import { Upload, FileCode, AlertCircle, CheckCircle2, Loader2, Shield, Info, Terminal, ArrowRight } from "lucide-react";
+import {
+  Upload,
+  FileCode,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  Shield,
+  Info,
+  Terminal,
+  ArrowRight,
+} from "lucide-react";
 
-import { createAPIClient, InkogAPIError, type Finding, type ScanResult, type InkogAPI } from "@/lib/api";
+import {
+  createAPIClient,
+  InkogAPIError,
+  type Finding,
+  type ScanResult,
+  type InkogAPI,
+} from "@/lib/api";
 import { GovernanceScore } from "@/components/GovernanceScore";
 import { ComplianceMapping } from "@/components/ComplianceMapping";
 import { TopologyMapVisualization } from "@/components/TopologyMap";
-
-// Severity badge component
-function SeverityBadge({ severity }: { severity: string }) {
-  const colors: Record<string, string> = {
-    CRITICAL: "bg-red-100 text-red-800 border-red-200",
-    HIGH: "bg-orange-100 text-orange-800 border-orange-200",
-    MEDIUM: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    LOW: "bg-blue-100 text-blue-800 border-blue-200",
-  };
-
-  return (
-    <span className={`px-2 py-0.5 text-xs font-medium rounded border ${colors[severity] || colors.LOW}`}>
-      {severity}
-    </span>
-  );
-}
-
-// Risk tier badge component
-function RiskTierBadge({ tier }: { tier: string }) {
-  const colors: Record<string, string> = {
-    vulnerability: "bg-red-50 text-red-700 border-red-200",
-    risk_pattern: "bg-yellow-50 text-yellow-700 border-yellow-200",
-    hardening: "bg-cyan-50 text-cyan-700 border-cyan-200",
-  };
-
-  const labels: Record<string, string> = {
-    vulnerability: "Vuln",
-    risk_pattern: "Risk",
-    hardening: "Best Practice",
-  };
-
-  return (
-    <span className={`px-2 py-0.5 text-xs font-medium rounded border ${colors[tier] || colors.risk_pattern}`}>
-      {labels[tier] || tier}
-    </span>
-  );
-}
+import { FindingCard } from "@/components/FindingCard";
+import { FindingDetailsPanel } from "@/components/FindingDetailsPanel";
+import { FindingsToolbar, type SeverityFilter } from "@/components/FindingsToolbar";
 
 export default function ScanPage() {
   const { getToken } = useAuth();
@@ -57,11 +39,41 @@ export default function ScanPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Findings panel state
+  const [selectedFinding, setSelectedFinding] = useState<Finding | null>(null);
+  const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Initialize API client
   useEffect(() => {
     const client = createAPIClient(getToken);
     setApi(client);
   }, [getToken]);
+
+  // Filter findings based on severity and search
+  const filteredFindings = useMemo(() => {
+    if (!result?.findings) return [];
+
+    return result.findings.filter((finding) => {
+      // Severity filter
+      if (severityFilter !== "ALL" && finding.severity !== severityFilter) {
+        return false;
+      }
+
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch =
+          finding.message?.toLowerCase().includes(query) ||
+          finding.pattern_id?.toLowerCase().includes(query) ||
+          finding.file?.toLowerCase().includes(query) ||
+          finding.cwe?.toLowerCase().includes(query);
+        if (!matchesSearch) return false;
+      }
+
+      return true;
+    });
+  }, [result?.findings, severityFilter, searchQuery]);
 
   // Handle file drop
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -69,10 +81,22 @@ export default function ScanPage() {
     setIsDragging(false);
 
     const droppedFiles = Array.from(e.dataTransfer.files).filter((file) => {
-      // Accept common code file extensions
-      const ext = file.name.split('.').pop()?.toLowerCase() || '';
-      const allowedExtensions = ['py', 'js', 'ts', 'jsx', 'tsx', 'go', 'java', 'rb', 'json', 'yaml', 'yml', 'md'];
-      return allowedExtensions.includes(ext) || file.type.startsWith('text/');
+      const ext = file.name.split(".").pop()?.toLowerCase() || "";
+      const allowedExtensions = [
+        "py",
+        "js",
+        "ts",
+        "jsx",
+        "tsx",
+        "go",
+        "java",
+        "rb",
+        "json",
+        "yaml",
+        "yml",
+        "md",
+      ];
+      return allowedExtensions.includes(ext) || file.type.startsWith("text/");
     });
 
     if (droppedFiles.length > 0) {
@@ -83,14 +107,17 @@ export default function ScanPage() {
   }, []);
 
   // Handle file input change
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    if (selectedFiles.length > 0) {
-      setFiles((prev) => [...prev, ...selectedFiles]);
-      setError(null);
-      setResult(null);
-    }
-  }, []);
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = Array.from(e.target.files || []);
+      if (selectedFiles.length > 0) {
+        setFiles((prev) => [...prev, ...selectedFiles]);
+        setError(null);
+        setResult(null);
+      }
+    },
+    []
+  );
 
   // Remove a file from the list
   const removeFile = useCallback((index: number) => {
@@ -102,6 +129,8 @@ export default function ScanPage() {
     setFiles([]);
     setResult(null);
     setError(null);
+    setSeverityFilter("ALL");
+    setSearchQuery("");
   }, []);
 
   // Run the scan
@@ -111,13 +140,15 @@ export default function ScanPage() {
     setScanning(true);
     setError(null);
     setResult(null);
+    setSelectedFinding(null);
+    setSeverityFilter("ALL");
+    setSearchQuery("");
 
     try {
       const scanResult = await api.scan.upload(files);
       setResult(scanResult);
     } catch (err) {
       if (err instanceof InkogAPIError) {
-        // Show detailed error with code for debugging
         setError(`${err.message} (${err.code})`);
       } else {
         setError(err instanceof Error ? err.message : "Scan failed");
@@ -131,9 +162,12 @@ export default function ScanPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Agent Governance Scanner</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Agent Governance Scanner
+        </h1>
         <p className="text-gray-600 mt-1">
-          Verify human oversight, authorization controls, and audit trails in your AI agents
+          Verify human oversight, authorization controls, and audit trails in
+          your AI agents
         </p>
         <p className="text-xs text-gray-500 mt-1">
           EU AI Act Article 14 deadline: August 2, 2026
@@ -145,7 +179,10 @@ export default function ScanPage() {
         <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
         <div className="text-sm text-blue-800">
           <p className="font-medium">Privacy Notice</p>
-          <p>Files are processed ephemerally and not stored. For maximum privacy, use the CLI for local-only scanning.</p>
+          <p>
+            Files are processed ephemerally and not stored. For maximum privacy,
+            use the CLI for local-only scanning.
+          </p>
         </div>
       </div>
 
@@ -170,9 +207,7 @@ export default function ScanPage() {
         <p className="text-lg font-medium text-gray-700 mb-2">
           Drag & drop code files here
         </p>
-        <p className="text-sm text-gray-500 mb-4">
-          or click to browse
-        </p>
+        <p className="text-sm text-gray-500 mb-4">or click to browse</p>
         <input
           type="file"
           multiple
@@ -260,7 +295,7 @@ export default function ScanPage() {
       {/* Results */}
       {result && (
         <div className="space-y-6">
-          {/* Summary */}
+          {/* Summary Stats */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -268,29 +303,39 @@ export default function ScanPage() {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">{result.files_scanned}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {result.files_scanned}
+                </p>
                 <p className="text-xs text-gray-500 uppercase">Files Scanned</p>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">{result.findings_count}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {result.findings_count}
+                </p>
                 <p className="text-xs text-gray-500 uppercase">Total Findings</p>
               </div>
               <div className="text-center p-3 bg-red-50 rounded-lg">
-                <p className="text-2xl font-bold text-red-600">{result.critical_count}</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {result.critical_count}
+                </p>
                 <p className="text-xs text-gray-500 uppercase">Critical</p>
               </div>
               <div className="text-center p-3 bg-orange-50 rounded-lg">
-                <p className="text-2xl font-bold text-orange-600">{result.high_count}</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {result.high_count}
+                </p>
                 <p className="text-xs text-gray-500 uppercase">High</p>
               </div>
             </div>
             <div className="mt-4 text-sm text-gray-500 text-center">
-              Scanned {result.lines_of_code.toLocaleString()} lines of code in {result.scan_duration || '0ms'}
+              Scanned {result.lines_of_code.toLocaleString()} lines of code in{" "}
+              {result.scan_duration || "0ms"}
             </div>
           </div>
 
           {/* Governance Section */}
-          {(result.governance_score !== undefined || result.eu_ai_act_readiness) && (
+          {(result.governance_score !== undefined ||
+            result.eu_ai_act_readiness) && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <GovernanceScore
                 score={result.governance_score}
@@ -313,8 +358,13 @@ export default function ScanPage() {
             <div className="flex items-start gap-3">
               <Terminal className="h-5 w-5 text-indigo-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-gray-900">Want to run this in CI/CD?</p>
-                <p className="text-sm text-gray-600">Get your API key and integrate with GitHub Actions, GitLab CI, and more.</p>
+                <p className="font-medium text-gray-900">
+                  Want to run this in CI/CD?
+                </p>
+                <p className="text-sm text-gray-600">
+                  Get your API key and integrate with GitHub Actions, GitLab CI,
+                  and more.
+                </p>
               </div>
             </div>
             <Link
@@ -326,68 +376,68 @@ export default function ScanPage() {
             </Link>
           </div>
 
-          {/* Findings Table */}
+          {/* Findings Section */}
           {result.findings.length > 0 ? (
             <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-              <div className="p-4 border-b">
-                <h3 className="font-medium text-gray-900">Findings</h3>
+              <div className="px-5 border-b border-gray-100">
+                <FindingsToolbar
+                  totalCount={result.findings_count}
+                  criticalCount={result.critical_count}
+                  highCount={result.high_count}
+                  mediumCount={result.medium_count}
+                  lowCount={result.low_count}
+                  selectedSeverity={severityFilter}
+                  onSeverityChange={setSeverityFilter}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                />
               </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Severity
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Tier
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        File
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Issue
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Compliance
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {result.findings.map((finding, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <SeverityBadge severity={finding.severity} />
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <RiskTierBadge tier={finding.risk_tier} />
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
-                            {finding.file}:{finding.line}
-                          </code>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700 max-w-md truncate">
-                          {finding.message}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          {finding.cwe || finding.owasp_category || (finding.compliance_mapping?.eu_ai_act_articles?.[0]) || "-"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+              {/* Findings List */}
+              <div className="divide-y divide-gray-100">
+                {filteredFindings.length > 0 ? (
+                  filteredFindings.map((finding, index) => (
+                    <FindingCard
+                      key={finding.id || index}
+                      finding={finding}
+                      onClick={() => setSelectedFinding(finding)}
+                    />
+                  ))
+                ) : (
+                  <div className="px-5 py-8 text-center text-gray-500">
+                    No findings match your filters
+                  </div>
+                )}
               </div>
+
+              {/* Results count */}
+              {filteredFindings.length > 0 && (
+                <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-500">
+                  Showing {filteredFindings.length} of {result.findings_count}{" "}
+                  findings
+                </div>
+              )}
             </div>
           ) : (
             <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
               <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
-              <p className="text-lg font-medium text-green-800">No vulnerabilities found!</p>
-              <p className="text-sm text-green-600 mt-1">Your code passed all security checks.</p>
+              <p className="text-lg font-medium text-green-800">
+                No vulnerabilities found!
+              </p>
+              <p className="text-sm text-green-600 mt-1">
+                Your code passed all security checks.
+              </p>
             </div>
           )}
         </div>
       )}
+
+      {/* Finding Details Panel (Slide-out) */}
+      <FindingDetailsPanel
+        finding={selectedFinding}
+        open={!!selectedFinding}
+        onClose={() => setSelectedFinding(null)}
+      />
     </div>
   );
 }
