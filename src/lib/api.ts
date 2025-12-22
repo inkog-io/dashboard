@@ -113,6 +113,55 @@ export interface FrameworkStatus {
   finding_count: number;
 }
 
+/**
+ * Topology Map types for agent visualization
+ */
+export interface TopologyMetadata {
+  framework: string;
+  file_path: string;
+  input_type: string;
+  node_count: number;
+  edge_count: number;
+}
+
+export interface TopologyNodeLocation {
+  file?: string;
+  line?: number;
+  column?: number;
+}
+
+export interface TopologyNode {
+  id: string;
+  type: string;
+  label: string;
+  data: Record<string, unknown>;
+  location?: TopologyNodeLocation;
+  risk_level: 'SAFE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  risk_reasons?: string[];
+}
+
+export interface TopologyEdge {
+  from: string;
+  to: string;
+  type: string;
+  label?: string;
+}
+
+export interface GovernanceStatus {
+  has_human_oversight: boolean;
+  has_auth_checks: boolean;
+  has_audit_logging: boolean;
+  has_rate_limiting: boolean;
+  missing_controls: string[];
+}
+
+export interface TopologyMap {
+  metadata: TopologyMetadata;
+  nodes: TopologyNode[];
+  edges: TopologyEdge[];
+  governance: GovernanceStatus;
+}
+
 export interface Finding {
   id: string;
   pattern_id: string;
@@ -154,6 +203,8 @@ export interface ScanResult {
     article_mapping?: Record<string, ArticleStatus>;
     framework_mapping?: Record<string, FrameworkStatus>;
   };
+  // Agent topology visualization
+  topology_map?: TopologyMap;
 }
 
 export interface StatsResponse {

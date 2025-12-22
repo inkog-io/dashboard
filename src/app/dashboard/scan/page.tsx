@@ -8,6 +8,7 @@ import { Upload, FileCode, AlertCircle, CheckCircle2, Loader2, Shield, Info, Ter
 import { createAPIClient, type Finding, type ScanResult, type InkogAPI } from "@/lib/api";
 import { GovernanceScore } from "@/components/GovernanceScore";
 import { ComplianceMapping } from "@/components/ComplianceMapping";
+import { TopologyMapVisualization } from "@/components/TopologyMap";
 
 // Severity badge component
 function SeverityBadge({ severity }: { severity: string }) {
@@ -295,6 +296,11 @@ export default function ScanPage() {
                 frameworkMapping={result.summary.framework_mapping}
               />
             </div>
+          )}
+
+          {/* Agent Topology Visualization */}
+          {result.topology_map && (
+            <TopologyMapVisualization topology={result.topology_map} />
           )}
 
           {/* CLI Upsell Banner */}
