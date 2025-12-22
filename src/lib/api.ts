@@ -184,13 +184,72 @@ export interface Finding {
   compliance_mapping?: ComplianceMapping;
 }
 
-export interface ScanResult {
+/**
+ * Backend ScanResult - matches pkg/contract/contract.go ScanResult struct exactly
+ * This is the raw response from the backend API
+ */
+export interface BackendScanResult {
   // Metadata
-  success: boolean;
-  contract_version?: string;
-  server_version?: string;
+  contract_version: string;
+  server_version: string;
 
-  // Statistics (flat structure from backend)
+  // Statistics
+  risk_score: number;
+  findings_count: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+
+  // Results
+  findings: Finding[];
+
+  // Scan Details
+  scan_duration: string;
+  files_scanned: number;
+  lines_of_code: number;
+  patterns_checked: number;
+  skipped_files: number;
+  failed_files_count: number;
+  failed_files: string[];
+  panicked_detectors: string[];
+
+  // Governance fields (EU AI Act compliance)
+  governance_score: number;
+  eu_ai_act_readiness: string;
+  article_mapping?: Record<string, ArticleStatus>;
+  framework_mapping?: Record<string, FrameworkStatus>;
+
+  // Agent topology visualization
+  topology_map?: TopologyMap;
+}
+
+/**
+ * Backend ScanResponse - matches pkg/contract/contract.go ScanResponse struct exactly
+ * This wraps ScanResult with metadata
+ */
+export interface BackendScanResponse {
+  contract_version: string;
+  server_version: string;
+  scan_result: BackendScanResult;
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * EU AI Act readiness status
+ */
+export type EUAIActReadiness = 'READY' | 'PARTIAL' | 'NOT_READY';
+
+/**
+ * Frontend ScanResult - normalized format for UI components
+ * This is what components receive after transformation
+ */
+export interface ScanResult {
+  success: boolean;
+  error?: string;
+
+  // Statistics
   files_scanned: number;
   lines_of_code: number;
   findings_count: number;
@@ -199,20 +258,65 @@ export interface ScanResult {
   medium_count: number;
   low_count: number;
   risk_score: number;
-  scan_duration?: string;
-  patterns_checked?: number;
+  scan_duration: string;
 
   // Results
   findings: Finding[];
 
   // Governance fields
-  governance_score?: number;
-  eu_ai_act_readiness?: 'READY' | 'PARTIAL' | 'NOT_READY';
+  governance_score: number;
+  eu_ai_act_readiness: EUAIActReadiness;
   article_mapping?: Record<string, ArticleStatus>;
   framework_mapping?: Record<string, FrameworkStatus>;
 
   // Agent topology visualization
   topology_map?: TopologyMap;
+}
+
+/**
+ * Safely converts backend readiness string to typed enum
+ */
+function toEUAIActReadiness(value: string | undefined): EUAIActReadiness {
+  const validValues: EUAIActReadiness[] = ['READY', 'PARTIAL', 'NOT_READY'];
+  if (value && validValues.includes(value as EUAIActReadiness)) {
+    return value as EUAIActReadiness;
+  }
+  return 'NOT_READY';
+}
+
+/**
+ * Transforms backend response to frontend format with defensive defaults
+ */
+function transformScanResponse(response: BackendScanResponse): ScanResult {
+  const result = response.scan_result || {} as Partial<BackendScanResult>;
+
+  return {
+    success: response.success ?? false,
+    error: response.error,
+
+    // Statistics with defensive defaults
+    files_scanned: result.files_scanned ?? 0,
+    lines_of_code: result.lines_of_code ?? 0,
+    findings_count: result.findings_count ?? 0,
+    critical_count: result.critical_count ?? 0,
+    high_count: result.high_count ?? 0,
+    medium_count: result.medium_count ?? 0,
+    low_count: result.low_count ?? 0,
+    risk_score: result.risk_score ?? 0,
+    scan_duration: result.scan_duration ?? '0ms',
+
+    // Results
+    findings: result.findings ?? [],
+
+    // Governance
+    governance_score: result.governance_score ?? 0,
+    eu_ai_act_readiness: toEUAIActReadiness(result.eu_ai_act_readiness),
+    article_mapping: result.article_mapping,
+    framework_mapping: result.framework_mapping,
+
+    // Topology
+    topology_map: result.topology_map,
+  };
 }
 
 export interface StatsResponse {
@@ -398,7 +502,8 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
           );
         }
 
-        return data as ScanResult;
+        // Transform backend response to frontend format with defensive defaults
+        return transformScanResponse(data as BackendScanResponse);
       },
     },
   };
