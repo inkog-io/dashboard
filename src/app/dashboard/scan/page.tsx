@@ -268,37 +268,37 @@ export default function ScanPage() {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">{result.summary.files_scanned}</p>
+                <p className="text-2xl font-bold text-gray-900">{result.files_scanned}</p>
                 <p className="text-xs text-gray-500 uppercase">Files Scanned</p>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">{result.summary.findings_count}</p>
+                <p className="text-2xl font-bold text-gray-900">{result.findings_count}</p>
                 <p className="text-xs text-gray-500 uppercase">Total Findings</p>
               </div>
               <div className="text-center p-3 bg-red-50 rounded-lg">
-                <p className="text-2xl font-bold text-red-600">{result.summary.critical_count}</p>
+                <p className="text-2xl font-bold text-red-600">{result.critical_count}</p>
                 <p className="text-xs text-gray-500 uppercase">Critical</p>
               </div>
               <div className="text-center p-3 bg-orange-50 rounded-lg">
-                <p className="text-2xl font-bold text-orange-600">{result.summary.high_count}</p>
+                <p className="text-2xl font-bold text-orange-600">{result.high_count}</p>
                 <p className="text-xs text-gray-500 uppercase">High</p>
               </div>
             </div>
             <div className="mt-4 text-sm text-gray-500 text-center">
-              Scanned {result.summary.lines_of_code.toLocaleString()} lines of code in {result.summary.duration_ms}ms
+              Scanned {result.lines_of_code.toLocaleString()} lines of code in {result.scan_duration || '0ms'}
             </div>
           </div>
 
           {/* Governance Section */}
-          {(result.summary.governance_score !== undefined || result.summary.eu_ai_act_readiness) && (
+          {(result.governance_score !== undefined || result.eu_ai_act_readiness) && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <GovernanceScore
-                score={result.summary.governance_score}
-                readiness={result.summary.eu_ai_act_readiness}
+                score={result.governance_score}
+                readiness={result.eu_ai_act_readiness}
               />
               <ComplianceMapping
-                articleMapping={result.summary.article_mapping}
-                frameworkMapping={result.summary.framework_mapping}
+                articleMapping={result.article_mapping}
+                frameworkMapping={result.framework_mapping}
               />
             </div>
           )}

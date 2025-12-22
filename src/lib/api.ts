@@ -185,24 +185,32 @@ export interface Finding {
 }
 
 export interface ScanResult {
+  // Metadata
   success: boolean;
+  contract_version?: string;
+  server_version?: string;
+
+  // Statistics (flat structure from backend)
+  files_scanned: number;
+  lines_of_code: number;
+  findings_count: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  risk_score: number;
+  scan_duration?: string;
+  patterns_checked?: number;
+
+  // Results
   findings: Finding[];
-  summary: {
-    files_scanned: number;
-    lines_of_code: number;
-    findings_count: number;
-    critical_count: number;
-    high_count: number;
-    medium_count: number;
-    low_count: number;
-    risk_score: number;
-    duration_ms: number;
-    // Governance fields
-    governance_score?: number;          // 0-100 score
-    eu_ai_act_readiness?: 'READY' | 'PARTIAL' | 'NOT_READY';
-    article_mapping?: Record<string, ArticleStatus>;
-    framework_mapping?: Record<string, FrameworkStatus>;
-  };
+
+  // Governance fields
+  governance_score?: number;
+  eu_ai_act_readiness?: 'READY' | 'PARTIAL' | 'NOT_READY';
+  article_mapping?: Record<string, ArticleStatus>;
+  framework_mapping?: Record<string, FrameworkStatus>;
+
   // Agent topology visualization
   topology_map?: TopologyMap;
 }
