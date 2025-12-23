@@ -347,17 +347,43 @@ function mergeLeafNodes(
 }
 
 /**
+ * Find high-risk nodes that should be protected by governance controls.
+ * These are nodes that would benefit from human oversight, auth, rate limiting, or audit.
+ */
+function findHighRiskNodes(nodes: APITopologyNode[]): string[] {
+  return nodes
+    .filter((node) => {
+      // High-risk node types that need governance
+      const highRiskTypes = ['ToolCall', 'LLMCall', 'Delegation'];
+      const isHighRiskType = highRiskTypes.includes(node.type);
+
+      // Check if node has risk indicators
+      const isDangerous = node.data?.is_dangerous === true;
+      const isHighRisk = node.risk_level === 'HIGH' || node.risk_level === 'CRITICAL';
+
+      return isHighRiskType || isDangerous || isHighRisk;
+    })
+    .map((node) => node.id);
+}
+
+/**
  * Inject ghost nodes for missing governance controls.
- * Ghost nodes are positioned at the top of the graph.
+ * Ghost nodes are connected to high-risk nodes to show what SHOULD be protected.
  */
 function injectGhostNodes(
-  governance: GovernanceStatus
-): Node<GhostNodeData>[] {
+  governance: GovernanceStatus,
+  highRiskNodeIds: string[]
+): { nodes: Node<GhostNodeData>[]; edges: Edge[] } {
   const ghostNodes: Node<GhostNodeData>[] = [];
+  const ghostEdges: Edge[] = [];
+
+  // Pick the first high-risk node to connect to (for visual clarity)
+  const targetNodeId = highRiskNodeIds[0];
 
   if (!governance.has_human_oversight) {
+    const ghostId = 'ghost-oversight';
     ghostNodes.push({
-      id: 'ghost-oversight',
+      id: ghostId,
       type: 'ghostNode',
       position: { x: 0, y: 0 },
       data: {
@@ -366,11 +392,36 @@ function injectGhostNodes(
         isGhost: true,
       },
     });
+
+    // Connect ghost to high-risk node
+    if (targetNodeId) {
+      ghostEdges.push({
+        id: `edge-${ghostId}-${targetNodeId}`,
+        source: ghostId,
+        target: targetNodeId,
+        animated: false,
+        style: {
+          stroke: '#ef4444',
+          strokeWidth: 2,
+          strokeDasharray: '8,4',
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#ef4444',
+          width: 14,
+          height: 14,
+        },
+        label: 'should guard',
+        labelStyle: { fill: '#ef4444', fontSize: 10 },
+        labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
+      });
+    }
   }
 
   if (!governance.has_auth_checks) {
+    const ghostId = 'ghost-auth';
     ghostNodes.push({
-      id: 'ghost-auth',
+      id: ghostId,
       type: 'ghostNode',
       position: { x: 0, y: 0 },
       data: {
@@ -379,11 +430,35 @@ function injectGhostNodes(
         isGhost: true,
       },
     });
+
+    if (targetNodeId) {
+      ghostEdges.push({
+        id: `edge-${ghostId}-${targetNodeId}`,
+        source: ghostId,
+        target: targetNodeId,
+        animated: false,
+        style: {
+          stroke: '#ef4444',
+          strokeWidth: 2,
+          strokeDasharray: '8,4',
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#ef4444',
+          width: 14,
+          height: 14,
+        },
+        label: 'should guard',
+        labelStyle: { fill: '#ef4444', fontSize: 10 },
+        labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
+      });
+    }
   }
 
   if (!governance.has_rate_limiting) {
+    const ghostId = 'ghost-ratelimit';
     ghostNodes.push({
-      id: 'ghost-ratelimit',
+      id: ghostId,
       type: 'ghostNode',
       position: { x: 0, y: 0 },
       data: {
@@ -392,11 +467,35 @@ function injectGhostNodes(
         isGhost: true,
       },
     });
+
+    if (targetNodeId) {
+      ghostEdges.push({
+        id: `edge-${ghostId}-${targetNodeId}`,
+        source: ghostId,
+        target: targetNodeId,
+        animated: false,
+        style: {
+          stroke: '#ef4444',
+          strokeWidth: 2,
+          strokeDasharray: '8,4',
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#ef4444',
+          width: 14,
+          height: 14,
+        },
+        label: 'should guard',
+        labelStyle: { fill: '#ef4444', fontSize: 10 },
+        labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
+      });
+    }
   }
 
   if (!governance.has_audit_logging) {
+    const ghostId = 'ghost-audit';
     ghostNodes.push({
-      id: 'ghost-audit',
+      id: ghostId,
       type: 'ghostNode',
       position: { x: 0, y: 0 },
       data: {
@@ -405,9 +504,32 @@ function injectGhostNodes(
         isGhost: true,
       },
     });
+
+    if (targetNodeId) {
+      ghostEdges.push({
+        id: `edge-${ghostId}-${targetNodeId}`,
+        source: ghostId,
+        target: targetNodeId,
+        animated: false,
+        style: {
+          stroke: '#ef4444',
+          strokeWidth: 2,
+          strokeDasharray: '8,4',
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#ef4444',
+          width: 14,
+          height: 14,
+        },
+        label: 'should guard',
+        labelStyle: { fill: '#ef4444', fontSize: 10 },
+        labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
+      });
+    }
   }
 
-  return ghostNodes;
+  return { nodes: ghostNodes, edges: ghostEdges };
 }
 
 // Convert API topology to ReactFlow format with deduplication and ghost nodes
@@ -479,23 +601,7 @@ function convertToReactFlow(
     };
   });
 
-  // Step 3: Inject ghost nodes for missing controls
-  const ghostNodes = injectGhostNodes(topology.governance);
-
-  // Add click handlers to ghost nodes
-  ghostNodes.forEach((ghost) => {
-    (ghost.data as GhostNodeData & { onClick?: () => void }).onClick = () =>
-      onNodeClick({
-        id: ghost.id,
-        label: ghost.data.label,
-        type: 'GhostNode',
-        riskLevel: 'CRITICAL',
-        isGhost: true,
-        missingControl: ghost.data.missingControl,
-      });
-  });
-
-  // Step 4: Create edges with improved styling
+  // Step 3: Create edges with improved styling
   const flowEdges: Edge[] = mergedEdges
     .filter((e) => validNodeIds.has(e.from) && validNodeIds.has(e.to))
     .map((edge, index) => {
@@ -524,19 +630,47 @@ function convertToReactFlow(
           width: 16,
           height: 16,
         },
+        label: isGuard ? 'guards' : undefined,
+        labelStyle: isGuard ? { fill: '#22c55e', fontSize: 10, fontWeight: 500 } : undefined,
+        labelBgStyle: isGuard ? { fill: 'white', fillOpacity: 0.9 } : undefined,
       };
     });
 
-  // Step 5: Position ghost nodes in fixed row at top (NOT through dagre)
+  // Step 4: Find high-risk nodes for ghost connections
+  const highRiskNodeIds = findHighRiskNodes(mergedNodes);
+
+  // Step 5: Inject ghost nodes for missing controls (with edges to high-risk nodes)
+  const { nodes: ghostNodes, edges: ghostEdges } = injectGhostNodes(
+    topology.governance,
+    highRiskNodeIds
+  );
+
+  // Add click handlers to ghost nodes
+  ghostNodes.forEach((ghost) => {
+    (ghost.data as GhostNodeData & { onClick?: () => void }).onClick = () =>
+      onNodeClick({
+        id: ghost.id,
+        label: ghost.data.label,
+        type: 'GhostNode',
+        riskLevel: 'CRITICAL',
+        isGhost: true,
+        missingControl: ghost.data.missingControl,
+      });
+  });
+
+  // Step 6: Combine all edges (regular + ghost)
+  const allEdges = [...flowEdges, ...ghostEdges];
+
+  // Step 7: Position ghost nodes in fixed row at top (NOT through dagre)
   const positionedGhosts = positionGhostNodes(ghostNodes);
 
-  // Step 6: Layout regular nodes with dagre, offset down if ghosts exist
-  const layoutedRegular = layoutRegularNodes(flowNodes, flowEdges, ghostNodes.length > 0);
+  // Step 8: Layout regular nodes with dagre, offset down if ghosts exist
+  const layoutedRegular = layoutRegularNodes(flowNodes, allEdges, ghostNodes.length > 0);
 
-  // Step 7: Combine positioned nodes
+  // Step 9: Combine positioned nodes
   const allNodes = [...positionedGhosts, ...layoutedRegular];
 
-  return { nodes: allNodes, edges: flowEdges };
+  return { nodes: allNodes, edges: allEdges };
 }
 
 // Generate Mermaid diagram string
@@ -767,7 +901,16 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
           </div>
           <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-gray-200">
             <div className="w-3 h-3 rounded border-2 border-dashed border-red-400" />
-            <span>Missing Control</span>
+            <span>Missing</span>
+          </div>
+          {/* Edge types */}
+          <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-gray-200">
+            <div className="w-4 h-0 border-t-2 border-dashed border-green-500" />
+            <span>Guards</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-0 border-t-2 border-dashed border-red-400" />
+            <span>Should Guard</span>
           </div>
         </div>
         <span className="text-gray-400">
