@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -14,6 +14,7 @@ import ReactFlow, {
   Handle,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import dagre from 'dagre';
 
 import {
   RefreshCw,
@@ -36,6 +37,7 @@ import {
 } from 'lucide-react';
 import type { TopologyMap, TopologyNode as APITopologyNode } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import GroupNode from './topology/GroupNode';
 
 // Risk level colors
 const riskColors: Record<string, { bg: string; border: string; text: string }> = {
@@ -144,27 +146,99 @@ function TopologyCustomNode({ data }: { data: CustomNodeData }) {
 
 const nodeTypes = {
   custom: TopologyCustomNode,
+  groupNode: GroupNode,
 };
+
+// Layout nodes using dagre for hierarchical graph positioning
+function layoutWithDagre(
+  nodes: Node<CustomNodeData>[],
+  edges: Edge[],
+  parentMap: Map<string, string>
+): Node<CustomNodeData>[] {
+  const g = new dagre.graphlib.Graph({ compound: true });
+  g.setGraph({
+    rankdir: 'TB',
+    ranksep: 60,
+    nodesep: 40,
+    marginx: 20,
+    marginy: 20,
+  });
+  g.setDefaultEdgeLabel(() => ({}));
+
+  // Add nodes to dagre graph
+  nodes.forEach((node) => {
+    const isGroup = node.type === 'groupNode';
+    const width = isGroup ? 340 : 160;
+    const height = isGroup ? 220 : 70;
+    g.setNode(node.id, { width, height });
+
+    // Set parent relationship for compound graph
+    const parentId = parentMap.get(node.id);
+    if (parentId) {
+      g.setParent(node.id, parentId);
+    }
+  });
+
+  // Add edges to dagre graph
+  edges.forEach((edge) => {
+    g.setEdge(edge.source, edge.target);
+  });
+
+  // Run layout
+  dagre.layout(g);
+
+  // Apply computed positions
+  return nodes.map((node) => {
+    const nodeWithPosition = g.node(node.id);
+    if (!nodeWithPosition) {
+      return node;
+    }
+
+    const isGroup = node.type === 'groupNode';
+    const width = isGroup ? 340 : 160;
+    const height = isGroup ? 220 : 70;
+
+    return {
+      ...node,
+      position: {
+        x: nodeWithPosition.x - width / 2,
+        y: nodeWithPosition.y - height / 2,
+      },
+      style: isGroup
+        ? { width: 340, height: 220 }
+        : undefined,
+    };
+  });
+}
 
 // Convert API topology to ReactFlow format
 function convertToReactFlow(
   topology: TopologyMap
 ): { nodes: Node<CustomNodeData>[]; edges: Edge[] } {
-  const nodeCount = topology.nodes.length;
+  // Build parent-child map from containment edges
+  // Key: childId, Value: parentId
+  const parentMap = new Map<string, string>();
+  const containmentEdges = topology.edges.filter((e) => e.type === 'contains');
 
-  // Layout calculation - arrange in a grid-like pattern
-  const nodes: Node<CustomNodeData>[] = topology.nodes.map((node, index) => {
-    const cols = Math.ceil(Math.sqrt(nodeCount));
-    const row = Math.floor(index / cols);
-    const col = index % cols;
+  containmentEdges.forEach((edge) => {
+    parentMap.set(edge.to, edge.from); // child → parent
+  });
+
+  // Find which nodes are group containers (have children)
+  const groupNodeIds = new Set<string>();
+  containmentEdges.forEach((edge) => {
+    groupNodeIds.add(edge.from);
+  });
+
+  // Convert nodes with parentNode for contained nodes
+  const nodes: Node<CustomNodeData>[] = topology.nodes.map((node) => {
+    const parentId = parentMap.get(node.id);
+    const isGroup = groupNodeIds.has(node.id);
 
     return {
       id: node.id,
-      type: 'custom',
-      position: {
-        x: 100 + col * 200,
-        y: 80 + row * 120,
-      },
+      type: isGroup ? 'groupNode' : 'custom',
+      position: { x: 0, y: 0 }, // Will be set by dagre
       data: {
         label: node.label,
         type: node.type,
@@ -172,25 +246,47 @@ function convertToReactFlow(
         riskReasons: node.risk_reasons,
         location: node.location,
       },
+      // ReactFlow sub-flow properties
+      parentNode: parentId || undefined,
+      extent: parentId ? 'parent' as const : undefined,
+      // Group nodes need expandParent so children can expand them
+      expandParent: !!parentId,
     };
   });
 
-  const edges: Edge[] = topology.edges.map((edge, index) => ({
-    id: `e${index}-${edge.from}-${edge.to}`,
-    source: edge.from,
-    target: edge.to,
-    label: edge.label,
-    animated: edge.type === 'data_flow',
-    style: { stroke: '#94a3b8', strokeWidth: 2 },
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-      color: '#94a3b8',
-    },
-    labelStyle: { fontSize: 10, fill: '#64748b' },
-    labelBgStyle: { fill: '#f8fafc', fillOpacity: 0.9 },
-  }));
+  // Create edges for non-containment relationships only
+  // "contains" relationships are expressed via parentNode hierarchy
+  const edges: Edge[] = topology.edges
+    .filter((e) => e.type !== 'contains')
+    .map((edge, index) => {
+      // Different styling based on edge type
+      const isDataFlow = edge.type === 'feeds_data_to' || edge.type === 'data_flow';
+      const isGuard = edge.type === 'guards';
 
-  return { nodes, edges };
+      return {
+        id: `e${index}-${edge.from}-${edge.to}`,
+        source: edge.from,
+        target: edge.to,
+        label: edge.label,
+        animated: isDataFlow,
+        style: {
+          stroke: isGuard ? '#22c55e' : '#94a3b8',
+          strokeWidth: 2,
+          strokeDasharray: isGuard ? '5,5' : undefined,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: isGuard ? '#22c55e' : '#94a3b8',
+        },
+        labelStyle: { fontSize: 10, fill: '#64748b' },
+        labelBgStyle: { fill: '#f8fafc', fillOpacity: 0.9 },
+      };
+    });
+
+  // Apply dagre layout
+  const layoutedNodes = layoutWithDagre(nodes, edges, parentMap);
+
+  return { nodes: layoutedNodes, edges };
 }
 
 // Generate Mermaid diagram string
