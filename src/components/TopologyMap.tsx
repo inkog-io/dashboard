@@ -149,111 +149,93 @@ const nodeTypes = {
   groupNode: GroupNode,
 };
 
+// Simple grid fallback layout when dagre fails
+function simpleGridLayout(nodes: Node<CustomNodeData>[]): Node<CustomNodeData>[] {
+  const cols = Math.ceil(Math.sqrt(nodes.length));
+  return nodes.map((node, index) => {
+    const row = Math.floor(index / cols);
+    const col = index % cols;
+    return {
+      ...node,
+      position: {
+        x: 100 + col * 200,
+        y: 80 + row * 120,
+      },
+    };
+  });
+}
+
 // Layout nodes using dagre for hierarchical graph positioning
 function layoutWithDagre(
   nodes: Node<CustomNodeData>[],
   edges: Edge[],
-  parentMap: Map<string, string>
 ): Node<CustomNodeData>[] {
-  const g = new dagre.graphlib.Graph({ compound: true });
-  g.setGraph({
-    rankdir: 'TB',
-    ranksep: 60,
-    nodesep: 40,
-    marginx: 20,
-    marginy: 20,
-  });
-  g.setDefaultEdgeLabel(() => ({}));
+  try {
+    // Use simple graph (no compound) to avoid parent-child hierarchy issues
+    const g = new dagre.graphlib.Graph();
+    g.setGraph({
+      rankdir: 'TB',
+      ranksep: 60,
+      nodesep: 40,
+      marginx: 20,
+      marginy: 20,
+    });
+    g.setDefaultEdgeLabel(() => ({}));
 
-  // Create a set of existing node IDs for validation
-  // This prevents crashes when edges/parents reference non-existent nodes
-  const nodeIds = new Set(nodes.map((n) => n.id));
+    // Create a set of existing node IDs for validation
+    const nodeIds = new Set(nodes.map((n) => n.id));
 
-  // Add nodes to dagre graph
-  nodes.forEach((node) => {
-    const isGroup = node.type === 'groupNode';
-    const width = isGroup ? 340 : 160;
-    const height = isGroup ? 220 : 70;
-    g.setNode(node.id, { width, height });
+    // Add nodes to dagre graph
+    nodes.forEach((node) => {
+      const width = 160;
+      const height = 70;
+      g.setNode(node.id, { width, height });
+    });
 
-    // Set parent relationship for compound graph
-    // Only set parent if parent exists in the graph
-    const parentId = parentMap.get(node.id);
-    if (parentId && nodeIds.has(parentId)) {
-      g.setParent(node.id, parentId);
-    }
-  });
+    // Add edges to dagre graph
+    // Only add edges where both source and target exist
+    edges.forEach((edge) => {
+      if (nodeIds.has(edge.source) && nodeIds.has(edge.target)) {
+        g.setEdge(edge.source, edge.target);
+      }
+    });
 
-  // Add edges to dagre graph
-  // Only add edges where both source and target exist
-  edges.forEach((edge) => {
-    if (nodeIds.has(edge.source) && nodeIds.has(edge.target)) {
-      g.setEdge(edge.source, edge.target);
-    }
-  });
+    // Run layout
+    dagre.layout(g);
 
-  // Run layout
-  dagre.layout(g);
+    // Apply computed positions
+    return nodes.map((node) => {
+      const nodeWithPosition = g.node(node.id);
+      if (!nodeWithPosition) {
+        return node;
+      }
 
-  // Apply computed positions
-  return nodes.map((node) => {
-    const nodeWithPosition = g.node(node.id);
-    if (!nodeWithPosition) {
-      return node;
-    }
-
-    const isGroup = node.type === 'groupNode';
-    const width = isGroup ? 340 : 160;
-    const height = isGroup ? 220 : 70;
-
-    return {
-      ...node,
-      position: {
-        x: nodeWithPosition.x - width / 2,
-        y: nodeWithPosition.y - height / 2,
-      },
-      style: isGroup
-        ? { width: 340, height: 220 }
-        : undefined,
-    };
-  });
+      return {
+        ...node,
+        position: {
+          x: nodeWithPosition.x - 80,
+          y: nodeWithPosition.y - 35,
+        },
+      };
+    });
+  } catch (error) {
+    console.error('Dagre layout failed, using grid fallback:', error);
+    return simpleGridLayout(nodes);
+  }
 }
 
 // Convert API topology to ReactFlow format
 function convertToReactFlow(
   topology: TopologyMap
 ): { nodes: Node<CustomNodeData>[]; edges: Edge[] } {
-  // Build parent-child map from containment edges
-  // Key: childId, Value: parentId
-  const parentMap = new Map<string, string>();
-  const containmentEdges = topology.edges.filter((e) => e.type === 'contains');
-
-  containmentEdges.forEach((edge) => {
-    parentMap.set(edge.to, edge.from); // child → parent
-  });
-
   // Build a set of valid node IDs for validation
   const validNodeIds = new Set(topology.nodes.map((n) => n.id));
 
-  // Find which nodes are group containers (have children)
-  // Only count as group if the parent actually exists
-  const groupNodeIds = new Set<string>();
-  containmentEdges.forEach((edge) => {
-    if (validNodeIds.has(edge.from)) {
-      groupNodeIds.add(edge.from);
-    }
-  });
-
-  // Convert nodes with parentNode for contained nodes
+  // Convert nodes - using simple flat structure (no compound/parentNode)
   const nodes: Node<CustomNodeData>[] = topology.nodes.map((node) => {
-    const parentId = parentMap.get(node.id);
-    // Only set parentNode if the parent actually exists in the nodes
-    const validParentId = parentId && validNodeIds.has(parentId) ? parentId : undefined;
-    const isGroup = groupNodeIds.has(node.id);
-
     return {
       id: node.id,
-      type: isGroup ? 'groupNode' : 'custom',
+      type: 'custom',
       position: { x: 0, y: 0 }, // Will be set by dagre
       data: {
         label: node.label,
@@ -262,17 +244,10 @@ function convertToReactFlow(
         riskReasons: node.risk_reasons,
         location: node.location,
       },
-      // ReactFlow sub-flow properties - only set if parent is valid
-      parentNode: validParentId,
-      extent: validParentId ? 'parent' as const : undefined,
-      // Group nodes need expandParent so children can expand them
-      expandParent: !!validParentId,
     };
   });
 
-  // Create edges for non-containment relationships only
-  // "contains" relationships are expressed via parentNode hierarchy
-  // Also filter out edges that reference non-existent nodes (e.g., "dynamic" delegation targets)
+  // Create edges - filter out containment and invalid references
   const edges: Edge[] = topology.edges
     .filter((e) => e.type !== 'contains')
     .filter((e) => validNodeIds.has(e.from) && validNodeIds.has(e.to))
@@ -302,7 +277,7 @@ function convertToReactFlow(
     });
 
   // Apply dagre layout
-  const layoutedNodes = layoutWithDagre(nodes, edges, parentMap);
+  const layoutedNodes = layoutWithDagre(nodes, edges);
 
   return { nodes: layoutedNodes, edges };
 }
