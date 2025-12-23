@@ -232,15 +232,23 @@ function convertToReactFlow(
     parentMap.set(edge.to, edge.from); // child → parent
   });
 
+  // Build a set of valid node IDs for validation
+  const validNodeIds = new Set(topology.nodes.map((n) => n.id));
+
   // Find which nodes are group containers (have children)
+  // Only count as group if the parent actually exists
   const groupNodeIds = new Set<string>();
   containmentEdges.forEach((edge) => {
-    groupNodeIds.add(edge.from);
+    if (validNodeIds.has(edge.from)) {
+      groupNodeIds.add(edge.from);
+    }
   });
 
   // Convert nodes with parentNode for contained nodes
   const nodes: Node<CustomNodeData>[] = topology.nodes.map((node) => {
     const parentId = parentMap.get(node.id);
+    // Only set parentNode if the parent actually exists in the nodes
+    const validParentId = parentId && validNodeIds.has(parentId) ? parentId : undefined;
     const isGroup = groupNodeIds.has(node.id);
 
     return {
@@ -254,18 +262,20 @@ function convertToReactFlow(
         riskReasons: node.risk_reasons,
         location: node.location,
       },
-      // ReactFlow sub-flow properties
-      parentNode: parentId || undefined,
-      extent: parentId ? 'parent' as const : undefined,
+      // ReactFlow sub-flow properties - only set if parent is valid
+      parentNode: validParentId,
+      extent: validParentId ? 'parent' as const : undefined,
       // Group nodes need expandParent so children can expand them
-      expandParent: !!parentId,
+      expandParent: !!validParentId,
     };
   });
 
   // Create edges for non-containment relationships only
   // "contains" relationships are expressed via parentNode hierarchy
+  // Also filter out edges that reference non-existent nodes (e.g., "dynamic" delegation targets)
   const edges: Edge[] = topology.edges
     .filter((e) => e.type !== 'contains')
+    .filter((e) => validNodeIds.has(e.from) && validNodeIds.has(e.to))
     .map((edge, index) => {
       // Different styling based on edge type
       const isDataFlow = edge.type === 'feeds_data_to' || edge.type === 'data_flow';
