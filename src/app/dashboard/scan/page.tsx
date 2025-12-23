@@ -374,7 +374,16 @@ export default function ScanPage() {
 
           {/* Agent Topology Visualization */}
           {result.topology_map && (
-            <TopologyMapVisualization topology={result.topology_map} />
+            <TopologyMapVisualization
+              topology={result.topology_map}
+              findings={result.findings}
+              onFindingClick={(findingId) => {
+                const finding = result.findings.find((f) => f.id === findingId);
+                if (finding) {
+                  setSelectedFinding(finding);
+                }
+              }}
+            />
           )}
 
           {/* CLI Upsell Banner */}

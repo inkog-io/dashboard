@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState, useEffect } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -34,10 +34,15 @@ import {
   FileCode,
   Image,
   AlertTriangle,
+  Files,
+  UserX,
+  ShieldOff,
 } from 'lucide-react';
-import type { TopologyMap, TopologyNode as APITopologyNode } from '@/lib/api';
+import type { TopologyMap, TopologyNode as APITopologyNode, TopologyEdge as APITopologyEdge, GovernanceStatus, Finding } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import GroupNode from './topology/GroupNode';
+import GhostNode, { GhostNodeData, MissingControlType } from './topology/GhostNode';
+import SuperNode, { SuperNodeData, MergedNodeInfo } from './topology/SuperNode';
+import { TopologyNodeSheet, SelectedNodeData } from './topology/TopologyNodeSheet';
 
 // Risk level colors
 const riskColors: Record<string, { bg: string; border: string; text: string }> = {
@@ -63,94 +68,81 @@ const nodeIconMap: Record<string, React.ElementType> = {
   Default: Package,
 };
 
+// Human-friendly type labels
+const typeLabels: Record<string, string> = {
+  SystemPrompt: 'System Context',
+  LLMCall: 'LLM Call',
+  ToolCall: 'Tool',
+  Loop: 'Loop',
+  HumanApproval: 'Human Approval',
+  AuthorizationCheck: 'Auth Check',
+  RateLimitConfig: 'Rate Limit',
+  AuditLog: 'Audit',
+  Delegation: 'Delegation',
+  MemoryAccess: 'Memory',
+};
+
 interface CustomNodeData {
   label: string;
   type: string;
   riskLevel: string;
   riskReasons?: string[];
   location?: { file?: string; line?: number };
+  onClick?: () => void;
 }
 
-// Custom node component with Lucide icons
+/**
+ * Simplified custom node - clean display with icon + name only.
+ * All details are shown in the sheet on click.
+ */
 function TopologyCustomNode({ data }: { data: CustomNodeData }) {
-  const [showTooltip, setShowTooltip] = useState(false);
   const Icon = nodeIconMap[data.type] || nodeIconMap.Default;
   const colors = riskColors[data.riskLevel] || riskColors.LOW;
+  const hasRisks = data.riskReasons && data.riskReasons.length > 0;
 
   return (
     <div
-      className="relative"
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+      className="relative cursor-pointer hover:shadow-lg transition-shadow"
+      onClick={data.onClick}
     >
-      <Handle type="target" position={Position.Top} className="!bg-gray-400" />
+      <Handle type="target" position={Position.Top} className="!bg-gray-400 !w-2 !h-2" />
 
       <div
-        className="px-4 py-3 rounded-lg shadow-md border-2 min-w-[120px]"
+        className="px-4 py-2.5 rounded-lg shadow-md border-2 min-w-[100px]"
         style={{
           backgroundColor: colors.bg,
           borderColor: colors.border,
         }}
       >
         <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4" style={{ color: colors.text }} />
+          <Icon className="h-4 w-4 flex-shrink-0" style={{ color: colors.text }} />
           <span
-            className="text-sm font-medium truncate max-w-[100px]"
+            className="text-sm font-medium truncate max-w-[120px]"
             style={{ color: colors.text }}
           >
             {data.label}
           </span>
         </div>
-
-        {/* Risk badge */}
-        {data.riskReasons && data.riskReasons.length > 0 && (
-          <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow">
-            {data.riskReasons.length}
-          </div>
-        )}
       </div>
 
-      <Handle type="source" position={Position.Bottom} className="!bg-gray-400" />
-
-      {/* Tooltip */}
-      {showTooltip && (data.riskReasons?.length || data.location?.file) && (
-        <div className="absolute z-50 left-full ml-2 top-0 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg min-w-[200px]">
-          <p className="font-medium mb-1">{data.label}</p>
-          <p className="text-gray-400 text-[10px] uppercase mb-2">{data.type}</p>
-
-          {data.location?.file && (
-            <p className="text-gray-300 text-[10px] mb-2">
-              {data.location.file}
-              {data.location.line && `:${data.location.line}`}
-            </p>
-          )}
-
-          {data.riskReasons && data.riskReasons.length > 0 && (
-            <div className="border-t border-gray-700 pt-2 mt-2">
-              <p className="text-amber-400 text-[10px] uppercase mb-1">Risks</p>
-              <ul className="space-y-1">
-                {data.riskReasons.map((reason, idx) => (
-                  <li key={idx} className="flex items-start gap-1">
-                    <AlertTriangle className="h-3 w-3 text-amber-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-[10px]">{reason}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+      {/* Small risk indicator dot (not full badge) */}
+      {hasRisks && (
+        <div className="absolute -top-1 -right-1 bg-red-500 rounded-full w-2.5 h-2.5 shadow" />
       )}
+
+      <Handle type="source" position={Position.Bottom} className="!bg-gray-400 !w-2 !h-2" />
     </div>
   );
 }
 
 const nodeTypes = {
   custom: TopologyCustomNode,
-  groupNode: GroupNode,
+  ghostNode: GhostNode,
+  superNode: SuperNode,
 };
 
 // Simple grid fallback layout when dagre fails
-function simpleGridLayout(nodes: Node<CustomNodeData>[]): Node<CustomNodeData>[] {
+function simpleGridLayout<T extends { position: { x: number; y: number } }>(nodes: T[]): T[] {
   const cols = Math.ceil(Math.sqrt(nodes.length));
   return nodes.map((node, index) => {
     const row = Math.floor(index / cols);
@@ -158,8 +150,8 @@ function simpleGridLayout(nodes: Node<CustomNodeData>[]): Node<CustomNodeData>[]
     return {
       ...node,
       position: {
-        x: 100 + col * 200,
-        y: 80 + row * 120,
+        x: 100 + col * 220,
+        y: 80 + row * 100,
       },
     };
   });
@@ -167,54 +159,56 @@ function simpleGridLayout(nodes: Node<CustomNodeData>[]): Node<CustomNodeData>[]
 
 // Layout nodes using dagre for hierarchical graph positioning
 function layoutWithDagre(
-  nodes: Node<CustomNodeData>[],
+  nodes: Node[],
   edges: Edge[],
-): Node<CustomNodeData>[] {
+): Node[] {
   try {
-    // Use simple graph (no compound) to avoid parent-child hierarchy issues
     const g = new dagre.graphlib.Graph();
     g.setGraph({
       rankdir: 'TB',
-      ranksep: 60,
-      nodesep: 40,
-      marginx: 20,
-      marginy: 20,
+      ranksep: 80,   // More vertical space
+      nodesep: 50,   // More horizontal space
+      marginx: 40,
+      marginy: 40,
     });
     g.setDefaultEdgeLabel(() => ({}));
 
-    // Create a set of existing node IDs for validation
     const nodeIds = new Set(nodes.map((n) => n.id));
 
-    // Add nodes to dagre graph
+    // Add nodes with sizing based on type
     nodes.forEach((node) => {
-      const width = 160;
-      const height = 70;
+      let width = 160;
+      let height = 60;
+
+      if (node.type === 'ghostNode') {
+        width = 180;
+        height = 55;
+      } else if (node.type === 'superNode') {
+        width = 180;
+        height = 65;
+      }
+
       g.setNode(node.id, { width, height });
     });
 
-    // Add edges to dagre graph
-    // Only add edges where both source and target exist
+    // Add edges
     edges.forEach((edge) => {
       if (nodeIds.has(edge.source) && nodeIds.has(edge.target)) {
         g.setEdge(edge.source, edge.target);
       }
     });
 
-    // Run layout
     dagre.layout(g);
 
-    // Apply computed positions
     return nodes.map((node) => {
       const nodeWithPosition = g.node(node.id);
-      if (!nodeWithPosition) {
-        return node;
-      }
+      if (!nodeWithPosition) return node;
 
       return {
         ...node,
         position: {
           x: nodeWithPosition.x - 80,
-          y: nodeWithPosition.y - 35,
+          y: nodeWithPosition.y - 30,
         },
       };
     });
@@ -224,35 +218,269 @@ function layoutWithDagre(
   }
 }
 
-// Convert API topology to ReactFlow format
-function convertToReactFlow(
-  topology: TopologyMap
-): { nodes: Node<CustomNodeData>[]; edges: Edge[] } {
-  // Build a set of valid node IDs for validation
-  const validNodeIds = new Set(topology.nodes.map((n) => n.id));
+/**
+ * Merge leaf nodes of the same type that connect to the same target.
+ * Returns merged nodes and updated edges.
+ */
+function mergeLeafNodes(
+  nodes: APITopologyNode[],
+  edges: APITopologyEdge[]
+): {
+  mergedNodes: APITopologyNode[];
+  mergedEdges: APITopologyEdge[];
+  mergeMap: Map<string, APITopologyNode[]>;
+} {
+  // Find which nodes have incoming edges (not leaves)
+  const hasIncoming = new Set(edges.map((e) => e.to));
 
-  // Convert nodes - using simple flat structure (no compound/parentNode)
-  const nodes: Node<CustomNodeData>[] = topology.nodes.map((node) => {
+  // Group leaf nodes by: type + outgoing targets
+  const groups = new Map<string, APITopologyNode[]>();
+
+  nodes.forEach((node) => {
+    // Only consider nodes without incoming edges (true leaves)
+    // But include nodes that are sources (have outgoing edges)
+    const outgoing = edges
+      .filter((e) => e.from === node.id && e.type !== 'contains')
+      .map((e) => e.to)
+      .sort()
+      .join(',');
+
+    // Only group if this is a "feedable" type and has same outgoing targets
+    const mergableTypes = ['SystemPrompt', 'MemoryAccess', 'Delegation'];
+    if (mergableTypes.includes(node.type) && outgoing) {
+      const key = `${node.type}:${outgoing}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(node);
+    }
+  });
+
+  const mergedNodes: APITopologyNode[] = [];
+  const mergeMap = new Map<string, APITopologyNode[]>();
+  const mergedNodeIds = new Set<string>();
+
+  // Process groups - merge those with 2+ nodes
+  groups.forEach((group) => {
+    if (group.length >= 2) {
+      // Create supernode
+      const superNodeId = `super-${group[0].id}`;
+      const typeLabel = typeLabels[group[0].type] || group[0].type;
+
+      const superNode: APITopologyNode = {
+        ...group[0],
+        id: superNodeId,
+        label: `${typeLabel} (${group.length})`,
+        data: {
+          ...group[0].data,
+          isSuperNode: true,
+          mergedCount: group.length,
+          mergedNodes: group.map((n) => ({
+            id: n.id,
+            label: n.label,
+            location: n.location,
+          })),
+        },
+      };
+
+      mergedNodes.push(superNode);
+      mergeMap.set(superNodeId, group);
+      group.forEach((n) => mergedNodeIds.add(n.id));
+    }
+  });
+
+  // Add non-merged nodes
+  nodes.forEach((node) => {
+    if (!mergedNodeIds.has(node.id)) {
+      mergedNodes.push(node);
+    }
+  });
+
+  // Update edges to point to supernodes
+  const mergedEdges: APITopologyEdge[] = [];
+  const addedEdges = new Set<string>();
+
+  edges.forEach((edge) => {
+    if (edge.type === 'contains') return; // Skip containment edges
+
+    let newFrom = edge.from;
+    let newTo = edge.to;
+
+    // Check if source was merged
+    mergeMap.forEach((group, superNodeId) => {
+      if (group.some((n) => n.id === edge.from)) {
+        newFrom = superNodeId;
+      }
+      if (group.some((n) => n.id === edge.to)) {
+        newTo = superNodeId;
+      }
+    });
+
+    const edgeKey = `${newFrom}-${newTo}`;
+    if (!addedEdges.has(edgeKey)) {
+      addedEdges.add(edgeKey);
+      mergedEdges.push({
+        ...edge,
+        from: newFrom,
+        to: newTo,
+      });
+    }
+  });
+
+  return { mergedNodes, mergedEdges, mergeMap };
+}
+
+/**
+ * Inject ghost nodes for missing governance controls.
+ * Ghost nodes are positioned at the top of the graph.
+ */
+function injectGhostNodes(
+  governance: GovernanceStatus
+): Node<GhostNodeData>[] {
+  const ghostNodes: Node<GhostNodeData>[] = [];
+
+  if (!governance.has_human_oversight) {
+    ghostNodes.push({
+      id: 'ghost-oversight',
+      type: 'ghostNode',
+      position: { x: 0, y: 0 },
+      data: {
+        label: 'Human Oversight',
+        missingControl: 'human_oversight',
+        isGhost: true,
+      },
+    });
+  }
+
+  if (!governance.has_auth_checks) {
+    ghostNodes.push({
+      id: 'ghost-auth',
+      type: 'ghostNode',
+      position: { x: 0, y: 0 },
+      data: {
+        label: 'Authorization',
+        missingControl: 'authorization',
+        isGhost: true,
+      },
+    });
+  }
+
+  if (!governance.has_rate_limiting) {
+    ghostNodes.push({
+      id: 'ghost-ratelimit',
+      type: 'ghostNode',
+      position: { x: 0, y: 0 },
+      data: {
+        label: 'Rate Limiting',
+        missingControl: 'rate_limit',
+        isGhost: true,
+      },
+    });
+  }
+
+  if (!governance.has_audit_logging) {
+    ghostNodes.push({
+      id: 'ghost-audit',
+      type: 'ghostNode',
+      position: { x: 0, y: 0 },
+      data: {
+        label: 'Audit Logging',
+        missingControl: 'audit_log',
+        isGhost: true,
+      },
+    });
+  }
+
+  return ghostNodes;
+}
+
+// Convert API topology to ReactFlow format with deduplication and ghost nodes
+function convertToReactFlow(
+  topology: TopologyMap,
+  onNodeClick: (nodeData: SelectedNodeData) => void
+): { nodes: Node[]; edges: Edge[] } {
+  // Step 1: Merge leaf nodes (deduplication)
+  const { mergedNodes, mergedEdges, mergeMap } = mergeLeafNodes(
+    topology.nodes,
+    topology.edges
+  );
+
+  const validNodeIds = new Set(mergedNodes.map((n) => n.id));
+
+  // Step 2: Convert merged nodes to ReactFlow format
+  const flowNodes: Node[] = mergedNodes.map((node) => {
+    const isSuperNode = node.data?.isSuperNode === true;
+
+    if (isSuperNode) {
+      // SuperNode
+      return {
+        id: node.id,
+        type: 'superNode',
+        position: { x: 0, y: 0 },
+        data: {
+          label: node.label,
+          type: node.type,
+          mergedCount: node.data.mergedCount as number,
+          mergedNodes: node.data.mergedNodes as MergedNodeInfo[],
+          riskLevel: node.risk_level,
+          onClick: () =>
+            onNodeClick({
+              id: node.id,
+              label: node.label,
+              type: node.type,
+              riskLevel: node.risk_level,
+              riskReasons: node.risk_reasons,
+              location: node.location,
+              isSuperNode: true,
+              mergedCount: node.data.mergedCount as number,
+              mergedNodes: node.data.mergedNodes as MergedNodeInfo[],
+            }),
+        } as SuperNodeData & { onClick: () => void },
+      };
+    }
+
+    // Regular node
     return {
       id: node.id,
       type: 'custom',
-      position: { x: 0, y: 0 }, // Will be set by dagre
+      position: { x: 0, y: 0 },
       data: {
         label: node.label,
         type: node.type,
         riskLevel: node.risk_level,
         riskReasons: node.risk_reasons,
         location: node.location,
-      },
+        onClick: () =>
+          onNodeClick({
+            id: node.id,
+            label: node.label,
+            type: node.type,
+            riskLevel: node.risk_level,
+            riskReasons: node.risk_reasons,
+            location: node.location,
+          }),
+      } as CustomNodeData,
     };
   });
 
-  // Create edges - filter out containment and invalid references
-  const edges: Edge[] = topology.edges
-    .filter((e) => e.type !== 'contains')
+  // Step 3: Inject ghost nodes for missing controls
+  const ghostNodes = injectGhostNodes(topology.governance);
+
+  // Add click handlers to ghost nodes
+  ghostNodes.forEach((ghost) => {
+    (ghost.data as GhostNodeData & { onClick?: () => void }).onClick = () =>
+      onNodeClick({
+        id: ghost.id,
+        label: ghost.data.label,
+        type: 'GhostNode',
+        riskLevel: 'CRITICAL',
+        isGhost: true,
+        missingControl: ghost.data.missingControl,
+      });
+  });
+
+  // Step 4: Create edges
+  const flowEdges: Edge[] = mergedEdges
     .filter((e) => validNodeIds.has(e.from) && validNodeIds.has(e.to))
     .map((edge, index) => {
-      // Different styling based on edge type
       const isDataFlow = edge.type === 'feeds_data_to' || edge.type === 'data_flow';
       const isGuard = edge.type === 'guards';
 
@@ -260,7 +488,6 @@ function convertToReactFlow(
         id: `e${index}-${edge.from}-${edge.to}`,
         source: edge.from,
         target: edge.to,
-        label: edge.label,
         animated: isDataFlow,
         style: {
           stroke: isGuard ? '#22c55e' : '#94a3b8',
@@ -271,22 +498,22 @@ function convertToReactFlow(
           type: MarkerType.ArrowClosed,
           color: isGuard ? '#22c55e' : '#94a3b8',
         },
-        labelStyle: { fontSize: 10, fill: '#64748b' },
-        labelBgStyle: { fill: '#f8fafc', fillOpacity: 0.9 },
       };
     });
 
-  // Apply dagre layout
-  const layoutedNodes = layoutWithDagre(nodes, edges);
+  // Step 5: Combine all nodes (ghosts first for top positioning)
+  const allNodes = [...ghostNodes, ...flowNodes];
 
-  return { nodes: layoutedNodes, edges };
+  // Step 6: Apply layout
+  const layoutedNodes = layoutWithDagre(allNodes, flowEdges);
+
+  return { nodes: layoutedNodes, edges: flowEdges };
 }
 
 // Generate Mermaid diagram string
 function toMermaidString(topology: TopologyMap): string {
   const lines: string[] = ['flowchart TD'];
 
-  // Nodes
   topology.nodes.forEach((node) => {
     const label = node.label.replace(/"/g, "'");
     const shape =
@@ -298,13 +525,12 @@ function toMermaidString(topology: TopologyMap): string {
     lines.push(`  ${node.id}${shape}`);
   });
 
-  // Edges
   topology.edges.forEach((edge) => {
+    if (edge.type === 'contains') return;
     const arrow = edge.label ? `-->|${edge.label}|` : '-->';
     lines.push(`  ${edge.from} ${arrow} ${edge.to}`);
   });
 
-  // Risk-based styling
   const styleMap: Record<string, string> = {
     CRITICAL: 'fill:#fecaca,stroke:#ef4444,stroke-width:2px',
     HIGH: 'fill:#fed7aa,stroke:#f97316,stroke-width:2px',
@@ -323,15 +549,25 @@ function toMermaidString(topology: TopologyMap): string {
 
 interface TopologyMapProps {
   topology?: TopologyMap;
+  findings?: Finding[];
+  onFindingClick?: (findingId: string) => void;
 }
 
-export function TopologyMapVisualization({ topology }: TopologyMapProps) {
+export function TopologyMapVisualization({ topology, findings = [], onFindingClick }: TopologyMapProps) {
+  const [selectedNode, setSelectedNode] = useState<SelectedNodeData | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const handleNodeClick = useCallback((nodeData: SelectedNodeData) => {
+    setSelectedNode(nodeData);
+    setSheetOpen(true);
+  }, []);
+
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
     if (!topology || topology.nodes.length === 0) {
       return { nodes: [], edges: [] };
     }
-    return convertToReactFlow(topology);
-  }, [topology]);
+    return convertToReactFlow(topology, handleNodeClick);
+  }, [topology, handleNodeClick]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -368,7 +604,6 @@ export function TopologyMapVisualization({ topology }: TopologyMapProps) {
     if (!viewport) return;
 
     try {
-      // Use html-to-image or canvas approach
       const svgData = new XMLSerializer().serializeToString(viewport);
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -389,7 +624,6 @@ export function TopologyMapVisualization({ topology }: TopologyMapProps) {
       img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
     } catch (err) {
       console.error('PNG export failed:', err);
-      // Fallback to SVG
       handleSVGExport();
     }
   }, [handleSVGExport]);
@@ -403,11 +637,27 @@ export function TopologyMapVisualization({ topology }: TopologyMapProps) {
     );
   }
 
+  // Count missing controls for the header
+  const missingControlCount = [
+    !topology.governance.has_human_oversight,
+    !topology.governance.has_auth_checks,
+    !topology.governance.has_audit_logging,
+    !topology.governance.has_rate_limiting,
+  ].filter(Boolean).length;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold text-gray-900">Agent Topology</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold text-gray-900">Agent Topology</h3>
+          {missingControlCount > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+              <AlertTriangle className="h-3 w-3" />
+              {missingControlCount} missing
+            </span>
+          )}
+        </div>
 
         {/* Export Buttons */}
         <div className="flex items-center gap-2">
@@ -435,69 +685,11 @@ export function TopologyMapVisualization({ topology }: TopologyMapProps) {
         </div>
       </div>
 
-      {/* Governance Status */}
-      <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex flex-wrap gap-4 text-sm">
-        <span
-          className={cn(
-            'flex items-center gap-1.5',
-            topology.governance.has_human_oversight ? 'text-green-600' : 'text-red-500'
-          )}
-        >
-          {topology.governance.has_human_oversight ? (
-            <CheckCircle className="h-4 w-4" />
-          ) : (
-            <XCircle className="h-4 w-4" />
-          )}
-          Human Oversight
-        </span>
-        <span
-          className={cn(
-            'flex items-center gap-1.5',
-            topology.governance.has_auth_checks ? 'text-green-600' : 'text-red-500'
-          )}
-        >
-          {topology.governance.has_auth_checks ? (
-            <CheckCircle className="h-4 w-4" />
-          ) : (
-            <XCircle className="h-4 w-4" />
-          )}
-          Authorization
-        </span>
-        <span
-          className={cn(
-            'flex items-center gap-1.5',
-            topology.governance.has_audit_logging ? 'text-green-600' : 'text-red-500'
-          )}
-        >
-          {topology.governance.has_audit_logging ? (
-            <CheckCircle className="h-4 w-4" />
-          ) : (
-            <XCircle className="h-4 w-4" />
-          )}
-          Audit Logging
-        </span>
-        <span
-          className={cn(
-            'flex items-center gap-1.5',
-            topology.governance.has_rate_limiting ? 'text-green-600' : 'text-red-500'
-          )}
-        >
-          {topology.governance.has_rate_limiting ? (
-            <CheckCircle className="h-4 w-4" />
-          ) : (
-            <XCircle className="h-4 w-4" />
-          )}
-          Rate Limiting
-        </span>
-      </div>
-
-      {/* Missing Controls Warning */}
-      {topology.governance.missing_controls.length > 0 && (
-        <div className="mx-5 my-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-          <div>
-            <strong>Missing Controls:</strong> {topology.governance.missing_controls.join(', ')}
-          </div>
+      {/* Compact Governance Status - only shown if all controls present */}
+      {missingControlCount === 0 && (
+        <div className="px-5 py-2 bg-green-50 border-b border-green-100 text-sm text-green-700 flex items-center gap-2">
+          <CheckCircle className="h-4 w-4" />
+          All governance controls in place
         </div>
       )}
 
@@ -510,16 +702,17 @@ export function TopologyMapVisualization({ topology }: TopologyMapProps) {
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
           fitView
-          fitViewOptions={{ padding: 0.2 }}
-          minZoom={0.5}
+          fitViewOptions={{ padding: 0.3 }}
+          minZoom={0.3}
           maxZoom={2}
           proOptions={{ hideAttribution: true }}
         >
           <Controls className="!shadow-lg !border !border-gray-200 !rounded-lg" />
-          <Background color="#e5e7eb" gap={16} />
+          <Background color="#e5e7eb" gap={20} />
           <MiniMap
             className="!bg-white !border !border-gray-200 !rounded-lg !shadow-sm"
             nodeColor={(node) => {
+              if (node.type === 'ghostNode') return '#ef4444';
               const colors = riskColors[node.data?.riskLevel] || riskColors.SAFE;
               return colors.border;
             }}
@@ -527,24 +720,40 @@ export function TopologyMapVisualization({ topology }: TopologyMapProps) {
         </ReactFlow>
       </div>
 
-      {/* Legend */}
-      <div className="px-5 py-3 border-t border-gray-100 flex flex-wrap gap-4 text-xs text-gray-600 justify-center">
-        {Object.entries(riskColors).map(([level, colors]) => (
-          <div key={level} className="flex items-center gap-1.5">
-            <div
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: colors.bg, border: `2px solid ${colors.border}` }}
-            />
-            <span>{level}</span>
+      {/* Simplified Legend */}
+      <div className="px-5 py-3 border-t border-gray-100 flex flex-wrap items-center gap-4 text-xs text-gray-600 justify-between">
+        <div className="flex items-center gap-4">
+          {/* Risk colors */}
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-green-100 border-2 border-green-500" />
+            <span>Safe</span>
           </div>
-        ))}
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-amber-100 border-2 border-amber-500" />
+            <span>Medium</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-red-100 border-2 border-red-500" />
+            <span>Critical</span>
+          </div>
+          <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-gray-200">
+            <div className="w-3 h-3 rounded border-2 border-dashed border-red-400" />
+            <span>Missing Control</span>
+          </div>
+        </div>
+        <span className="text-gray-400">
+          Click nodes for details
+        </span>
       </div>
 
-      {/* Metadata */}
-      <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-500 text-center">
-        Framework: {topology.metadata.framework || 'Unknown'} | Nodes:{' '}
-        {topology.metadata.node_count} | Edges: {topology.metadata.edge_count}
-      </div>
+      {/* Node Detail Sheet */}
+      <TopologyNodeSheet
+        node={selectedNode}
+        findings={findings}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        onFindingClick={onFindingClick}
+      />
     </div>
   );
 }
