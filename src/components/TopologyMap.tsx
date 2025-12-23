@@ -142,7 +142,7 @@ const nodeTypes = {
 };
 
 // Simple grid fallback layout when dagre fails
-function simpleGridLayout<T extends { position: { x: number; y: number } }>(nodes: T[]): T[] {
+function simpleGridLayout<T extends { position: { x: number; y: number } }>(nodes: T[], startY: number = 80): T[] {
   const cols = Math.ceil(Math.sqrt(nodes.length));
   return nodes.map((node, index) => {
     const row = Math.floor(index / cols);
@@ -150,48 +150,66 @@ function simpleGridLayout<T extends { position: { x: number; y: number } }>(node
     return {
       ...node,
       position: {
-        x: 100 + col * 220,
-        y: 80 + row * 100,
+        x: 100 + col * 200,
+        y: startY + row * 100,
       },
     };
   });
 }
 
-// Layout nodes using dagre for hierarchical graph positioning
-function layoutWithDagre(
+/**
+ * Position ghost nodes in a fixed row at the top.
+ * Ghost nodes don't go through dagre - they have explicit positions.
+ */
+function positionGhostNodes(ghostNodes: Node[]): Node[] {
+  if (ghostNodes.length === 0) return [];
+
+  const GHOST_Y = 30;
+  const GHOST_SPACING = 190;
+  // Center the ghost row
+  const totalWidth = (ghostNodes.length - 1) * GHOST_SPACING;
+  const startX = Math.max(50, 400 - totalWidth / 2);
+
+  return ghostNodes.map((node, index) => ({
+    ...node,
+    position: {
+      x: startX + index * GHOST_SPACING,
+      y: GHOST_Y,
+    },
+  }));
+}
+
+/**
+ * Layout regular nodes using dagre, offsetting down to leave room for ghost row.
+ */
+function layoutRegularNodes(
   nodes: Node[],
   edges: Edge[],
+  hasGhostNodes: boolean
 ): Node[] {
+  if (nodes.length === 0) return [];
+
+  const GHOST_ROW_HEIGHT = hasGhostNodes ? 100 : 0;
+
   try {
     const g = new dagre.graphlib.Graph();
     g.setGraph({
       rankdir: 'TB',
-      ranksep: 80,   // More vertical space
-      nodesep: 50,   // More horizontal space
-      marginx: 40,
-      marginy: 40,
+      ranksep: 70,
+      nodesep: 40,
+      marginx: 30,
+      marginy: 30,
     });
     g.setDefaultEdgeLabel(() => ({}));
 
     const nodeIds = new Set(nodes.map((n) => n.id));
 
-    // Add nodes with sizing based on type
     nodes.forEach((node) => {
-      let width = 160;
-      let height = 60;
-
-      if (node.type === 'ghostNode') {
-        width = 180;
-        height = 55;
-      } else if (node.type === 'superNode') {
-        width = 180;
-        height = 65;
-      }
-
+      const width = 150;
+      const height = 50;
       g.setNode(node.id, { width, height });
     });
 
-    // Add edges
     edges.forEach((edge) => {
       if (nodeIds.has(edge.source) && nodeIds.has(edge.target)) {
         g.setEdge(edge.source, edge.target);
@@ -207,14 +225,14 @@ function layoutWithDagre(
       return {
         ...node,
         position: {
-          x: nodeWithPosition.x - 80,
-          y: nodeWithPosition.y - 30,
+          x: nodeWithPosition.x - 75,
+          y: nodeWithPosition.y - 25 + GHOST_ROW_HEIGHT,
         },
       };
     });
   } catch (error) {
     console.error('Dagre layout failed, using grid fallback:', error);
-    return simpleGridLayout(nodes);
+    return simpleGridLayout(nodes, GHOST_ROW_HEIGHT + 30);
   }
 }
 
@@ -477,37 +495,48 @@ function convertToReactFlow(
       });
   });
 
-  // Step 4: Create edges
+  // Step 4: Create edges with improved styling
   const flowEdges: Edge[] = mergedEdges
     .filter((e) => validNodeIds.has(e.from) && validNodeIds.has(e.to))
     .map((edge, index) => {
       const isDataFlow = edge.type === 'feeds_data_to' || edge.type === 'data_flow';
       const isGuard = edge.type === 'guards';
+      const isFollows = edge.type === 'follows';
+
+      // Better edge colors
+      let strokeColor = '#6366f1'; // Indigo for flow
+      if (isGuard) strokeColor = '#22c55e'; // Green for guards
+      if (isDataFlow) strokeColor = '#8b5cf6'; // Purple for data
 
       return {
         id: `e${index}-${edge.from}-${edge.to}`,
         source: edge.from,
         target: edge.to,
-        animated: isDataFlow,
+        animated: isDataFlow || isFollows,
         style: {
-          stroke: isGuard ? '#22c55e' : '#94a3b8',
+          stroke: strokeColor,
           strokeWidth: 2,
           strokeDasharray: isGuard ? '5,5' : undefined,
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: isGuard ? '#22c55e' : '#94a3b8',
+          color: strokeColor,
+          width: 16,
+          height: 16,
         },
       };
     });
 
-  // Step 5: Combine all nodes (ghosts first for top positioning)
-  const allNodes = [...ghostNodes, ...flowNodes];
+  // Step 5: Position ghost nodes in fixed row at top (NOT through dagre)
+  const positionedGhosts = positionGhostNodes(ghostNodes);
 
-  // Step 6: Apply layout
-  const layoutedNodes = layoutWithDagre(allNodes, flowEdges);
+  // Step 6: Layout regular nodes with dagre, offset down if ghosts exist
+  const layoutedRegular = layoutRegularNodes(flowNodes, flowEdges, ghostNodes.length > 0);
 
-  return { nodes: layoutedNodes, edges: flowEdges };
+  // Step 7: Combine positioned nodes
+  const allNodes = [...positionedGhosts, ...layoutedRegular];
+
+  return { nodes: allNodes, edges: flowEdges };
 }
 
 // Generate Mermaid diagram string
