@@ -165,6 +165,10 @@ function layoutWithDagre(
   });
   g.setDefaultEdgeLabel(() => ({}));
 
+  // Create a set of existing node IDs for validation
+  // This prevents crashes when edges/parents reference non-existent nodes
+  const nodeIds = new Set(nodes.map((n) => n.id));
+
   // Add nodes to dagre graph
   nodes.forEach((node) => {
     const isGroup = node.type === 'groupNode';
@@ -173,15 +177,19 @@ function layoutWithDagre(
     g.setNode(node.id, { width, height });
 
     // Set parent relationship for compound graph
+    // Only set parent if parent exists in the graph
     const parentId = parentMap.get(node.id);
-    if (parentId) {
+    if (parentId && nodeIds.has(parentId)) {
       g.setParent(node.id, parentId);
     }
   });
 
   // Add edges to dagre graph
+  // Only add edges where both source and target exist
   edges.forEach((edge) => {
-    g.setEdge(edge.source, edge.target);
+    if (nodeIds.has(edge.source) && nodeIds.has(edge.target)) {
+      g.setEdge(edge.source, edge.target);
+    }
   });
 
   // Run layout
