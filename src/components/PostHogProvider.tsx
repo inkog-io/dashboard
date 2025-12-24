@@ -10,8 +10,6 @@ if (typeof window !== "undefined") {
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com";
 
-  console.log("[PostHog] Init:", posthogKey ? "Key present" : "KEY MISSING!");
-
   if (posthogKey) {
     posthog.init(posthogKey, {
       api_host: posthogHost,

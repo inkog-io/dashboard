@@ -4,6 +4,7 @@ import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { ChevronsLeft, ChevronsRight, Command } from "lucide-react";
 import { SidebarNav } from "./SidebarNav";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Tooltip,
   TooltipContent,
@@ -29,21 +30,21 @@ export function Sidebar({
     <TooltipProvider>
       <aside
         className={cn(
-          "fixed left-0 top-0 h-full bg-white border-r border-gray-200 flex flex-col z-30 transition-all duration-300",
+          "fixed left-0 top-0 h-full bg-background border-r border-border flex flex-col z-30 transition-all duration-300",
           isCollapsed ? "w-16" : "w-60"
         )}
       >
         {/* Logo */}
         <div className={cn(
-          "h-16 flex items-center border-b border-gray-100 px-4",
+          "h-16 flex items-center border-b border-border px-4",
           isCollapsed ? "justify-center" : "justify-between"
         )}>
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-sm">I</span>
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-primary-foreground font-bold text-sm">I</span>
             </div>
             {!isCollapsed && (
-              <span className="font-semibold text-lg text-gray-900">Inkog</span>
+              <span className="font-semibold text-lg text-foreground">Inkog</span>
             )}
           </Link>
         </div>
@@ -56,23 +57,23 @@ export function Sidebar({
                 <TooltipTrigger asChild>
                   <button
                     onClick={onCommandPaletteOpen}
-                    className="w-full flex items-center justify-center p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="w-full flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
                   >
                     <Command className="h-5 w-5" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  Search <kbd className="ml-2 text-xs bg-gray-100 px-1.5 py-0.5 rounded">Cmd K</kbd>
+                  Search <kbd className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded">Cmd K</kbd>
                 </TooltipContent>
               </Tooltip>
             ) : (
               <button
                 onClick={onCommandPaletteOpen}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground bg-muted hover:bg-accent rounded-lg border border-border transition-colors"
               >
                 <Command className="h-4 w-4" />
                 <span className="flex-1 text-left">Search...</span>
-                <kbd className="text-xs text-gray-400 bg-white px-1.5 py-0.5 rounded border">
+                <kbd className="text-xs text-muted-foreground bg-background px-1.5 py-0.5 rounded border border-border">
                   Cmd K
                 </kbd>
               </button>
@@ -92,7 +93,7 @@ export function Sidebar({
             <TooltipTrigger asChild>
               <button
                 onClick={onToggle}
-                className="w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 shadow-sm transition-colors"
+                className="w-6 h-6 bg-background border border-border rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent shadow-sm transition-colors"
               >
                 {isCollapsed ? (
                   <ChevronsRight className="h-3.5 w-3.5" />
@@ -107,18 +108,35 @@ export function Sidebar({
           </Tooltip>
         </div>
 
+        {/* Theme Toggle */}
+        <div className={cn(
+          "px-3 py-2",
+          isCollapsed ? "flex justify-center" : ""
+        )}>
+          {!isCollapsed ? (
+            <ThemeToggle />
+          ) : (
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <div><ThemeToggle /></div>
+              </TooltipTrigger>
+              <TooltipContent side="right">Toggle theme</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+
         {/* User Section */}
         <div className={cn(
-          "p-4 border-t border-gray-100",
+          "p-4 border-t border-border",
           isCollapsed ? "flex justify-center" : "flex items-center gap-3"
         )}>
           <UserButton afterSignOutUrl="/" />
           {!isCollapsed && userEmail && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
+              <p className="text-sm font-medium text-foreground truncate">
                 {userEmail.split("@")[0]}
               </p>
-              <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+              <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
             </div>
           )}
         </div>

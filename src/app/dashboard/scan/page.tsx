@@ -23,6 +23,7 @@ import {
   type ScanResult,
   type InkogAPI,
 } from "@/lib/api";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GovernanceScore } from "@/components/GovernanceScore";
 import { ComplianceMapping } from "@/components/ComplianceMapping";
 import { TopologyMapVisualization } from "@/components/TopologyMap";
@@ -163,14 +164,14 @@ export default function ScanPage() {
     <div className="space-y-8 max-w-6xl">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Agent Governance Scanner
+        <h1 className="text-2xl font-bold text-foreground">
+          AI Agent Security Scanner
         </h1>
-        <p className="text-gray-600 mt-1">
-          Verify human oversight, authorization controls, and audit trails in
-          your AI agents
+        <p className="text-muted-foreground mt-1">
+          Detect vulnerabilities and governance gaps in LangChain, CrewAI, n8n,
+          and custom AI agents
         </p>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           EU AI Act Article 14 deadline: August 2, 2026
         </p>
       </div>
@@ -360,30 +361,46 @@ export default function ScanPage() {
           {/* Governance Section */}
           {(result.governance_score !== undefined ||
             result.eu_ai_act_readiness) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <GovernanceScore
-                score={result.governance_score}
-                readiness={result.eu_ai_act_readiness}
-              />
-              <ComplianceMapping
-                articleMapping={result.article_mapping}
-                frameworkMapping={result.framework_mapping}
-              />
-            </div>
+            <ErrorBoundary>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <GovernanceScore
+                  score={result.governance_score}
+                  readiness={result.eu_ai_act_readiness}
+                />
+                <ComplianceMapping
+                  articleMapping={result.article_mapping}
+                  frameworkMapping={result.framework_mapping}
+                />
+              </div>
+            </ErrorBoundary>
           )}
 
           {/* Agent Topology Visualization */}
           {result.topology_map && (
-            <TopologyMapVisualization
-              topology={result.topology_map}
-              findings={result.findings}
-              onFindingClick={(findingId) => {
-                const finding = result.findings.find((f) => f.id === findingId);
-                if (finding) {
-                  setSelectedFinding(finding);
-                }
-              }}
-            />
+            <ErrorBoundary
+              fallback={
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+                  <AlertCircle className="h-8 w-8 text-amber-500 mx-auto mb-2" />
+                  <p className="text-amber-800 font-medium">
+                    Topology visualization failed to load
+                  </p>
+                  <p className="text-sm text-amber-600 mt-1">
+                    Your scan results are still available below.
+                  </p>
+                </div>
+              }
+            >
+              <TopologyMapVisualization
+                topology={result.topology_map}
+                findings={result.findings}
+                onFindingClick={(findingId) => {
+                  const finding = result.findings.find((f) => f.id === findingId);
+                  if (finding) {
+                    setSelectedFinding(finding);
+                  }
+                }}
+              />
+            </ErrorBoundary>
           )}
 
           {/* CLI Upsell Banner */}

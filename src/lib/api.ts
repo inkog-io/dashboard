@@ -174,6 +174,8 @@ export interface TopologyMap {
   governance: GovernanceStatus;
 }
 
+export type FindingType = 'vulnerability' | 'governance_violation';
+
 export interface Finding {
   id: string;
   pattern_id: string;
@@ -188,6 +190,7 @@ export interface Finding {
   message: string;
   category: string;
   risk_tier: 'vulnerability' | 'risk_pattern' | 'hardening';
+  finding_type?: FindingType;  // vulnerability vs governance_violation
   input_tainted: boolean;
   taint_source: string;
   code_snippet?: string;
@@ -366,6 +369,86 @@ export class InkogAPIError extends Error {
 }
 
 /**
+ * Configuration for retry behavior
+ */
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelayMs: 1000,
+  maxDelayMs: 10000,
+  timeoutMs: 30000,
+  retryableStatuses: [408, 429, 500, 502, 503, 504],
+};
+
+/**
+ * Sleep utility for retry delays
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Calculate exponential backoff delay with jitter
+ */
+function getBackoffDelay(attempt: number): number {
+  const exponentialDelay = RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt);
+  const jitter = Math.random() * 0.3 * exponentialDelay; // 0-30% jitter
+  return Math.min(exponentialDelay + jitter, RETRY_CONFIG.maxDelayMs);
+}
+
+/**
+ * Fetch with retry logic and timeout
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries: number = RETRY_CONFIG.maxRetries
+): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), RETRY_CONFIG.timeoutMs);
+
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      // Don't retry on success or non-retryable errors
+      if (response.ok || !RETRY_CONFIG.retryableStatuses.includes(response.status)) {
+        return response;
+      }
+
+      // Retryable error - store and continue
+      lastError = new Error(`HTTP ${response.status}`);
+
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Don't retry on abort (except timeout which we handle differently)
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        // This was a timeout - we can retry
+      } else if (error instanceof TypeError) {
+        // Network error - we can retry
+      } else {
+        throw error; // Unknown error - don't retry
+      }
+    }
+
+    // Wait before retry (if not last attempt)
+    if (attempt < retries) {
+      await sleep(getBackoffDelay(attempt));
+    }
+  }
+
+  // All retries exhausted
+  throw lastError || new Error('Request failed after retries');
+}
+
+/**
  * Creates an authenticated API client using Clerk session tokens.
  *
  * @param getToken - Function to get the current Clerk session token
@@ -385,7 +468,7 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
       throw new InkogAPIError('Not authenticated', 'not_authenticated', 401);
     }
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetchWithRetry(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -494,7 +577,7 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
           formData.append('files', file);
         });
 
-        const response = await fetch(`${API_BASE_URL}/api/v1/scan`, {
+        const response = await fetchWithRetry(`${API_BASE_URL}/api/v1/scan`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
