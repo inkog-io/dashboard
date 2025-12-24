@@ -72,14 +72,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem(STORAGE_KEY, newTheme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, newTheme);
+    }
   };
 
-  // Prevent hydration mismatch
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
+  // Always provide context, but theme changes only apply after mount
   return (
     <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
       {children}

@@ -31,12 +31,14 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Report to PostHog for monitoring
-    posthog.capture("error_boundary_triggered", {
-      error_name: error.name,
-      error_message: error.message,
-      component_stack: errorInfo.componentStack,
-    });
+    // Report to PostHog for monitoring (only in browser)
+    if (typeof window !== "undefined" && posthog?.capture) {
+      posthog.capture("error_boundary_triggered", {
+        error_name: error.name,
+        error_message: error.message,
+        component_stack: errorInfo.componentStack,
+      });
+    }
 
     // Call custom error handler if provided
     this.props.onError?.(error, errorInfo);
