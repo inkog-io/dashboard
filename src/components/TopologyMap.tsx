@@ -350,35 +350,87 @@ function mergeLeafNodes(
  * Find high-risk nodes that should be protected by governance controls.
  * These are nodes that would benefit from human oversight, auth, rate limiting, or audit.
  */
-function findHighRiskNodes(nodes: APITopologyNode[]): string[] {
-  return nodes
-    .filter((node) => {
-      // High-risk node types that need governance
-      const highRiskTypes = ['ToolCall', 'LLMCall', 'Delegation'];
-      const isHighRiskType = highRiskTypes.includes(node.type);
+function findHighRiskNodes(nodes: APITopologyNode[]): APITopologyNode[] {
+  return nodes.filter((node) => {
+    // High-risk node types that need governance
+    const highRiskTypes = ['ToolCall', 'LLMCall', 'Delegation'];
+    const isHighRiskType = highRiskTypes.includes(node.type);
 
-      // Check if node has risk indicators
-      const isDangerous = node.data?.is_dangerous === true;
-      const isHighRisk = node.risk_level === 'HIGH' || node.risk_level === 'CRITICAL';
+    // Check if node has risk indicators
+    const isDangerous = node.data?.is_dangerous === true;
+    const isHighRisk = node.risk_level === 'HIGH' || node.risk_level === 'CRITICAL';
 
-      return isHighRiskType || isDangerous || isHighRisk;
-    })
-    .map((node) => node.id);
+    return isHighRiskType || isDangerous || isHighRisk;
+  });
 }
 
 /**
+ * Maps governance control types to the node types they should protect.
+ * This ensures ghost nodes connect to semantically appropriate targets.
+ */
+const controlTargetTypes: Record<string, string[]> = {
+  human_oversight: ['ToolCall', 'Delegation'], // Human review for actions/delegations
+  authorization: ['ToolCall', 'LLMCall'],      // Auth before operations
+  rate_limit: ['LLMCall', 'ToolCall'],         // Rate limit API calls
+  audit_log: ['ToolCall', 'LLMCall', 'Delegation'], // Audit everything
+};
+
+/**
  * Inject ghost nodes for missing governance controls.
- * Ghost nodes are connected to high-risk nodes to show what SHOULD be protected.
+ * Ghost nodes are connected to semantically appropriate high-risk nodes
+ * based on what each control type should protect.
  */
 function injectGhostNodes(
   governance: GovernanceStatus,
-  highRiskNodeIds: string[]
+  highRiskNodes: APITopologyNode[]
 ): { nodes: Node<GhostNodeData>[]; edges: Edge[] } {
   const ghostNodes: Node<GhostNodeData>[] = [];
   const ghostEdges: Edge[] = [];
 
-  // Pick the first high-risk node to connect to (for visual clarity)
-  const targetNodeId = highRiskNodeIds[0];
+  /**
+   * Find target nodes for a specific control type.
+   * Returns nodes whose type matches what this control should protect.
+   */
+  function findTargetsForControl(controlType: keyof typeof controlTargetTypes): APITopologyNode[] {
+    const targetTypes = controlTargetTypes[controlType] || [];
+    return highRiskNodes.filter((node) => {
+      // Match by node type
+      if (targetTypes.includes(node.type)) return true;
+      // Also include if explicitly dangerous
+      if (node.data?.is_dangerous) return true;
+      return false;
+    });
+  }
+
+  /**
+   * Create ghost edges from a ghost node to appropriate target nodes.
+   * Limits to first 2 targets for visual clarity.
+   */
+  function createGhostEdges(ghostId: string, targets: APITopologyNode[]): Edge[] {
+    // Limit edges to avoid visual clutter (max 2 per ghost)
+    const limitedTargets = targets.slice(0, 2);
+
+    return limitedTargets.map((target) => ({
+      id: `edge-${ghostId}-${target.id}`,
+      source: ghostId,
+      target: target.id,
+      animated: false,
+      style: {
+        stroke: '#ef4444',
+        strokeWidth: 2,
+        strokeDasharray: '8,4',
+      },
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: '#ef4444',
+        width: 14,
+        height: 14,
+      },
+      label: 'should guard',
+      labelStyle: { fill: '#ef4444', fontSize: 10 },
+      labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
+    }));
+  }
 
   if (!governance.has_human_oversight) {
     const ghostId = 'ghost-oversight';
@@ -393,29 +445,8 @@ function injectGhostNodes(
       },
     });
 
-    // Connect ghost to high-risk node
-    if (targetNodeId) {
-      ghostEdges.push({
-        id: `edge-${ghostId}-${targetNodeId}`,
-        source: ghostId,
-        target: targetNodeId,
-        animated: false,
-        style: {
-          stroke: '#ef4444',
-          strokeWidth: 2,
-          strokeDasharray: '8,4',
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: '#ef4444',
-          width: 14,
-          height: 14,
-        },
-        label: 'should guard',
-        labelStyle: { fill: '#ef4444', fontSize: 10 },
-        labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
-      });
-    }
+    const targets = findTargetsForControl('human_oversight');
+    ghostEdges.push(...createGhostEdges(ghostId, targets));
   }
 
   if (!governance.has_auth_checks) {
@@ -431,28 +462,8 @@ function injectGhostNodes(
       },
     });
 
-    if (targetNodeId) {
-      ghostEdges.push({
-        id: `edge-${ghostId}-${targetNodeId}`,
-        source: ghostId,
-        target: targetNodeId,
-        animated: false,
-        style: {
-          stroke: '#ef4444',
-          strokeWidth: 2,
-          strokeDasharray: '8,4',
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: '#ef4444',
-          width: 14,
-          height: 14,
-        },
-        label: 'should guard',
-        labelStyle: { fill: '#ef4444', fontSize: 10 },
-        labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
-      });
-    }
+    const targets = findTargetsForControl('authorization');
+    ghostEdges.push(...createGhostEdges(ghostId, targets));
   }
 
   if (!governance.has_rate_limiting) {
@@ -468,28 +479,8 @@ function injectGhostNodes(
       },
     });
 
-    if (targetNodeId) {
-      ghostEdges.push({
-        id: `edge-${ghostId}-${targetNodeId}`,
-        source: ghostId,
-        target: targetNodeId,
-        animated: false,
-        style: {
-          stroke: '#ef4444',
-          strokeWidth: 2,
-          strokeDasharray: '8,4',
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: '#ef4444',
-          width: 14,
-          height: 14,
-        },
-        label: 'should guard',
-        labelStyle: { fill: '#ef4444', fontSize: 10 },
-        labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
-      });
-    }
+    const targets = findTargetsForControl('rate_limit');
+    ghostEdges.push(...createGhostEdges(ghostId, targets));
   }
 
   if (!governance.has_audit_logging) {
@@ -505,28 +496,8 @@ function injectGhostNodes(
       },
     });
 
-    if (targetNodeId) {
-      ghostEdges.push({
-        id: `edge-${ghostId}-${targetNodeId}`,
-        source: ghostId,
-        target: targetNodeId,
-        animated: false,
-        style: {
-          stroke: '#ef4444',
-          strokeWidth: 2,
-          strokeDasharray: '8,4',
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: '#ef4444',
-          width: 14,
-          height: 14,
-        },
-        label: 'should guard',
-        labelStyle: { fill: '#ef4444', fontSize: 10 },
-        labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
-      });
-    }
+    const targets = findTargetsForControl('audit_log');
+    ghostEdges.push(...createGhostEdges(ghostId, targets));
   }
 
   return { nodes: ghostNodes, edges: ghostEdges };
@@ -637,12 +608,13 @@ function convertToReactFlow(
     });
 
   // Step 4: Find high-risk nodes for ghost connections
-  const highRiskNodeIds = findHighRiskNodes(mergedNodes);
+  const highRiskNodes = findHighRiskNodes(mergedNodes);
 
   // Step 5: Inject ghost nodes for missing controls (with edges to high-risk nodes)
+  // Ghost nodes connect to semantically appropriate nodes by control type
   const { nodes: ghostNodes, edges: ghostEdges } = injectGhostNodes(
     topology.governance,
-    highRiskNodeIds
+    highRiskNodes
   );
 
   // Add click handlers to ghost nodes
