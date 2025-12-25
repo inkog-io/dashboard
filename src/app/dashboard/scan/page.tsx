@@ -29,7 +29,8 @@ import { ComplianceMapping } from "@/components/ComplianceMapping";
 import { TopologyMapVisualization } from "@/components/TopologyMap";
 import { FindingCard } from "@/components/FindingCard";
 import { FindingDetailsPanel } from "@/components/FindingDetailsPanel";
-import { FindingsToolbar, type SeverityFilter } from "@/components/FindingsToolbar";
+import { FindingsToolbar, type SeverityFilter, type TypeFilter } from "@/components/FindingsToolbar";
+import { PolicySelector, type ScanPolicy, getStoredPolicy } from "@/components/PolicySelector";
 
 export default function ScanPage() {
   const { getToken } = useAuth();
@@ -40,10 +41,12 @@ export default function ScanPage() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [scanPolicy, setScanPolicy] = useState<ScanPolicy>("balanced");
 
   // Findings panel state
   const [selectedFinding, setSelectedFinding] = useState<Finding | null>(null);
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("ALL");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Initialize API client
@@ -52,11 +55,62 @@ export default function ScanPage() {
     setApi(client);
   }, [getToken]);
 
-  // Filter findings based on severity and search
+  // Load stored policy preference
+  useEffect(() => {
+    setScanPolicy(getStoredPolicy());
+  }, []);
+
+  // Compute type counts from findings
+  const typeCounts = useMemo(() => {
+    if (!result?.findings) return { vulnerability: 0, governance: 0 };
+
+    return result.findings.reduce(
+      (acc, finding) => {
+        // Use finding_type if available, otherwise infer from pattern_id
+        const type = finding.finding_type ||
+          (finding.pattern_id?.includes("missing_") ||
+           finding.pattern_id?.includes("oversight") ||
+           finding.pattern_id?.includes("rate_limit") ||
+           finding.pattern_id?.includes("audit") ||
+           finding.pattern_id?.includes("authorization")
+            ? "governance_violation"
+            : "vulnerability");
+
+        if (type === "governance_violation") {
+          acc.governance++;
+        } else {
+          acc.vulnerability++;
+        }
+        return acc;
+      },
+      { vulnerability: 0, governance: 0 }
+    );
+  }, [result?.findings]);
+
+  // Filter findings based on type, severity and search
   const filteredFindings = useMemo(() => {
     if (!result?.findings) return [];
 
     return result.findings.filter((finding) => {
+      // Type filter
+      if (typeFilter !== "ALL") {
+        const findingType = finding.finding_type ||
+          (finding.pattern_id?.includes("missing_") ||
+           finding.pattern_id?.includes("oversight") ||
+           finding.pattern_id?.includes("rate_limit") ||
+           finding.pattern_id?.includes("audit") ||
+           finding.pattern_id?.includes("authorization")
+            ? "governance_violation"
+            : "vulnerability");
+
+        if (typeFilter === "VULNERABILITY" && findingType !== "vulnerability") {
+          return false;
+        }
+        if (typeFilter === "GOVERNANCE" && findingType !== "governance_violation") {
+          return false;
+        }
+      }
+
       // Severity filter
       if (severityFilter !== "ALL" && finding.severity !== severityFilter) {
         return false;
@@ -75,7 +129,7 @@ export default function ScanPage() {
 
       return true;
     });
-  }, [result?.findings, severityFilter, searchQuery]);
+  }, [result?.findings, typeFilter, severityFilter, searchQuery]);
 
   // Handle file drop
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -132,6 +186,7 @@ export default function ScanPage() {
     setResult(null);
     setError(null);
     setSeverityFilter("ALL");
+    setTypeFilter("ALL");
     setSearchQuery("");
   }, []);
 
@@ -144,6 +199,7 @@ export default function ScanPage() {
     setResult(null);
     setSelectedFinding(null);
     setSeverityFilter("ALL");
+    setTypeFilter("ALL");
     setSearchQuery("");
 
     try {
@@ -170,9 +226,6 @@ export default function ScanPage() {
         <p className="text-muted-foreground mt-1">
           Detect vulnerabilities and governance gaps in LangChain, CrewAI, n8n,
           and custom AI agents
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          EU AI Act Article 14 deadline: August 2, 2026
         </p>
       </div>
 
@@ -269,10 +322,19 @@ export default function ScanPage() {
               </li>
             ))}
           </ul>
+
+          {/* Policy Selector */}
+          <div className="mt-4 mb-3">
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+              Scan Policy
+            </label>
+            <PolicySelector value={scanPolicy} onChange={setScanPolicy} />
+          </div>
+
           <button
             onClick={runScan}
             disabled={scanning}
-            className="mt-4 w-full py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 bg-black dark:bg-white text-white dark:text-black font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {scanning ? (
               <>
@@ -315,9 +377,10 @@ export default function ScanPage() {
                 setError(null);
                 setSelectedFinding(null);
                 setSeverityFilter("ALL");
+                setTypeFilter("ALL");
                 setSearchQuery("");
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
             >
               <Plus className="h-4 w-4" />
               New Scan
@@ -428,23 +491,27 @@ export default function ScanPage() {
 
           {/* Findings Section */}
           {result.findings.length > 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-5 border-b border-gray-100">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+              <div className="px-5 border-b border-gray-100 dark:border-gray-800">
                 <FindingsToolbar
                   totalCount={result.findings_count}
                   criticalCount={result.critical_count}
                   highCount={result.high_count}
                   mediumCount={result.medium_count}
                   lowCount={result.low_count}
+                  vulnerabilityCount={typeCounts.vulnerability}
+                  governanceCount={typeCounts.governance}
                   selectedSeverity={severityFilter}
                   onSeverityChange={setSeverityFilter}
+                  selectedType={typeFilter}
+                  onTypeChange={setTypeFilter}
                   searchQuery={searchQuery}
                   onSearchChange={setSearchQuery}
                 />
               </div>
 
               {/* Findings List */}
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {filteredFindings.length > 0 ? (
                   filteredFindings.map((finding, index) => (
                     <FindingCard
@@ -454,7 +521,7 @@ export default function ScanPage() {
                     />
                   ))
                 ) : (
-                  <div className="px-5 py-8 text-center text-gray-500">
+                  <div className="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
                     No findings match your filters
                   </div>
                 )}
@@ -462,7 +529,7 @@ export default function ScanPage() {
 
               {/* Results count */}
               {filteredFindings.length > 0 && (
-                <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-500">
+                <div className="px-5 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
                   Showing {filteredFindings.length} of {result.findings_count}{" "}
                   findings
                 </div>

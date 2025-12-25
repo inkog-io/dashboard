@@ -197,6 +197,10 @@ export interface Finding {
   // Governance fields (EU AI Act compliance)
   governance_category?: 'oversight' | 'authorization' | 'audit' | 'privacy';
   compliance_mapping?: ComplianceMapping;
+  // Calibration fields (self-learning confidence)
+  calibrated_confidence?: number;
+  calibration_reliability?: 'insufficient' | 'low' | 'moderate' | 'high' | 'very_high';
+  calibration_samples?: number;
 }
 
 /**

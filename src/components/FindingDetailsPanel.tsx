@@ -191,7 +191,30 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
                   )}
                   <div className="mt-2 text-sm text-gray-500">
                     Confidence: {Math.round((finding.confidence || 0) * 100)}%
+                    {finding.calibrated_confidence !== undefined && (
+                      <span className="ml-2">
+                        → <span className="font-medium">{Math.round(finding.calibrated_confidence * 100)}%</span>
+                        <span className="ml-1 text-xs">
+                          (calibrated, {finding.calibration_samples || 0} samples)
+                        </span>
+                      </span>
+                    )}
                   </div>
+                  {finding.calibration_reliability && (
+                    <div className="mt-1 flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded ${
+                          finding.calibration_reliability === 'high' || finding.calibration_reliability === 'very_high'
+                            ? 'bg-green-100 text-green-700'
+                            : finding.calibration_reliability === 'moderate'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {finding.calibration_reliability.replace('_', ' ')} reliability
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

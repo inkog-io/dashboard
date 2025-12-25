@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Inkog Dashboard - Ship Safe Agents",
-  description: "Scan. Ship. Comply. Verify AI agent governance before deployment. EU AI Act Article 14 deadline: August 2, 2026.",
+  description: "Scan. Ship. Comply. Detect vulnerabilities and governance gaps in AI agents before deployment.",
 };
 
 export default function RootLayout({
