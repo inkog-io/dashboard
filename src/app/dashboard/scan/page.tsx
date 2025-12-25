@@ -203,7 +203,8 @@ export default function ScanPage() {
     setSearchQuery("");
 
     try {
-      const scanResult = await api.scan.upload(files);
+      // Pass scan policy to backend for filtering
+      const scanResult = await api.scan.upload(files, scanPolicy);
       setResult(scanResult);
     } catch (err) {
       if (err instanceof InkogAPIError) {
@@ -214,7 +215,7 @@ export default function ScanPage() {
     } finally {
       setScanning(false);
     }
-  }, [api, files]);
+  }, [api, files, scanPolicy]);
 
   return (
     <div className="space-y-8 max-w-6xl">
@@ -429,6 +430,8 @@ export default function ScanPage() {
                 <GovernanceScore
                   score={result.governance_score}
                   readiness={result.eu_ai_act_readiness}
+                  articleMapping={result.article_mapping}
+                  frameworkMapping={result.framework_mapping}
                 />
                 <ComplianceMapping
                   articleMapping={result.article_mapping}

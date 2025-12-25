@@ -557,7 +557,7 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
        * Scan uploaded code files
        * Uses multipart form data to upload files
        */
-      upload: async (files: File[]): Promise<ScanResult> => {
+      upload: async (files: File[], policy?: string): Promise<ScanResult> => {
         const token = await getToken();
 
         if (!token) {
@@ -573,6 +573,7 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
           secrets_version: '',
           local_secrets_found: 0,
           redacted_file_count: 0,
+          scan_policy: policy || 'balanced',
         };
         formData.append('request', JSON.stringify(requestMetadata));
 
