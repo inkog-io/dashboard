@@ -85,9 +85,22 @@ interface TopologyNodeSheetProps {
 }
 
 /**
- * Find findings related to a node by matching file and line proximity.
+ * Find findings related to a node.
+ *
+ * Uses a two-phase approach:
+ * 1. First, look for exact matches via topology_node_id (precise linkage)
+ * 2. If no explicit matches, fall back to file + line proximity matching
+ *
+ * This ensures backward compatibility while enabling precise finding-to-node linkage.
  */
 function findRelatedFindings(node: SelectedNodeData, findings: Finding[]): Finding[] {
+  // Phase 1: Check for explicit topology_node_id matches
+  const exactMatches = findings.filter((f) => f.topology_node_id === node.id);
+  if (exactMatches.length > 0) {
+    return exactMatches;
+  }
+
+  // Phase 2: Fall back to file + line proximity matching (backward compatibility)
   if (!node.location?.file) return [];
 
   return findings.filter((f) => {

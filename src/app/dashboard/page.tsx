@@ -137,6 +137,7 @@ export default function DashboardPage() {
           icon={Shield}
           variant={getRiskScoreVariant(riskScore)}
           loading={loading}
+          trend={stats?.findings_trend}
         />
         <SecurityMetricCard
           title="Critical Issues"
@@ -169,15 +170,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <History className="h-5 w-5 text-gray-400" />
-            <h2 className="font-semibold text-gray-900">Recent Activity</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-gray-100">Recent Activity</h2>
           </div>
           <Link
             href="/dashboard/history"
-            className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+            className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 flex items-center gap-1"
           >
             View all
             <ArrowRight className="h-3.5 w-3.5" />
@@ -187,67 +188,79 @@ export default function DashboardPage() {
         {loading ? (
           <div className="p-5 space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-14 bg-gray-50 animate-pulse rounded-lg" />
+              <div key={i} className="h-14 bg-gray-50 dark:bg-gray-700 animate-pulse rounded-lg" />
             ))}
           </div>
         ) : recentScans.length > 0 ? (
-          <div className="divide-y divide-gray-50">
-            {recentScans.slice(0, 5).map((scan) => (
-              <div
-                key={scan.id}
-                className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      scan.critical_count > 0
-                        ? "bg-red-500"
-                        : scan.high_count > 0
-                        ? "bg-orange-500"
-                        : "bg-green-500"
-                    }`}
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      Scan completed
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {scan.findings_count} findings
-                      {scan.critical_count > 0 && (
-                        <span className="text-red-600 ml-1">
-                          ({scan.critical_count} critical)
+          <div className="divide-y divide-gray-50 dark:divide-gray-700">
+            {recentScans.slice(0, 5).map((scan) => {
+              // Determine severity badge
+              const severityBadge = scan.critical_count > 0
+                ? { text: "Critical", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" }
+                : scan.high_count > 0
+                ? { text: "High", className: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" }
+                : scan.findings_count > 0
+                ? { text: "Medium", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" }
+                : { text: "Clean", className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" };
+
+              return (
+                <Link
+                  key={scan.id}
+                  href={`/dashboard/results/${scan.id}`}
+                  className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        scan.critical_count > 0
+                          ? "bg-red-500"
+                          : scan.high_count > 0
+                          ? "bg-orange-500"
+                          : scan.findings_count > 0
+                          ? "bg-amber-500"
+                          : "bg-green-500"
+                      }`}
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          Scan completed
+                        </p>
+                        <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${severityBadge.className}`}>
+                          {severityBadge.text}
                         </span>
-                      )}
-                    </p>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {scan.findings_count} findings &middot; {scan.files_scanned} files
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-4 text-right">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      Risk: {scan.risk_score}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {scan.files_scanned} files scanned
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        Score: {scan.risk_score}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 justify-end">
+                        <Clock className="h-3 w-3" />
+                        {formatRelativeTime(scan.created_at)}
+                      </p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-colors" />
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-gray-400">
-                    <Clock className="h-3 w-3" />
-                    {formatRelativeTime(scan.created_at)}
-                  </div>
-                </div>
-              </div>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         ) : (
           <div className="px-5 py-12 text-center">
-            <Shield className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-600 font-medium">No scans yet</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <Shield className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-600 dark:text-gray-400 font-medium">No scans yet</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
               Run your first scan to see security insights
             </p>
             <Link
               href="/dashboard/scan"
-              className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+              className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
             >
               <Shield className="h-4 w-4" />
               Start Scanning
@@ -257,10 +270,10 @@ export default function DashboardPage() {
 
         {/* Quick Action */}
         {recentScans.length > 0 && (
-          <div className="px-5 py-3 bg-gray-50 border-t border-gray-100">
+          <div className="px-5 py-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700">
             <Link
               href="/dashboard/scan"
-              className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+              className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
             >
               <Shield className="h-4 w-4" />
               Run New Scan
@@ -273,35 +286,35 @@ export default function DashboardPage() {
       {/* Summary Stats (if available) */}
       {summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-2xl font-semibold text-gray-900">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
+            <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
               {summary.total_scans}
             </p>
-            <p className="text-xs text-gray-500 uppercase tracking-wide mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
               Total Scans
             </p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-2xl font-semibold text-gray-900">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
+            <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
               {summary.total_files_scanned.toLocaleString()}
             </p>
-            <p className="text-xs text-gray-500 uppercase tracking-wide mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
               Files Analyzed
             </p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-2xl font-semibold text-gray-900">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
+            <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
               {summary.total_findings}
             </p>
-            <p className="text-xs text-gray-500 uppercase tracking-wide mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
               Issues Found
             </p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-2xl font-semibold text-gray-900">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
+            <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
               {Math.round(summary.average_risk_score)}
             </p>
-            <p className="text-xs text-gray-500 uppercase tracking-wide mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
               Avg Risk Score
             </p>
           </div>

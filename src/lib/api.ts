@@ -75,6 +75,35 @@ export interface HistoryResponse {
   count: number;
 }
 
+/** Pagination metadata for paginated responses */
+export interface PaginationMeta {
+  page: number;
+  page_size: number;
+  total_items: number;
+  total_pages: number;
+}
+
+/** Paginated history response from new enterprise API */
+export interface PaginatedHistoryResponse {
+  success: boolean;
+  scans: Scan[];
+  summary?: ScanSummary;
+  pagination: PaginationMeta;
+}
+
+/** Parameters for paginated history queries */
+export interface HistoryParams {
+  page?: number;
+  page_size?: number;
+  sort_by?: 'date' | 'risk_score' | 'findings_count';
+  sort_order?: 'asc' | 'desc';
+  date_from?: string;  // YYYY-MM-DD
+  date_to?: string;    // YYYY-MM-DD
+  severity?: 'critical' | 'high' | 'medium' | 'low';
+  search?: string;
+  summary?: boolean;
+}
+
 export interface DashboardStats {
   // Basic stats (backwards compatible)
   api_key_count: number;
@@ -194,6 +223,8 @@ export interface Finding {
   input_tainted: boolean;
   taint_source: string;
   code_snippet?: string;
+  // Topology linkage
+  topology_node_id?: string;  // Explicit link to topology node for precise matching
   // Governance fields (EU AI Act compliance)
   governance_category?: 'oversight' | 'authorization' | 'audit' | 'privacy';
   compliance_mapping?: ComplianceMapping;
@@ -528,7 +559,7 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
      */
     history: {
       /**
-       * Get scan history for the current user
+       * Get scan history for the current user (legacy mode)
        */
       list: (options?: { limit?: number; summary?: boolean }) => {
         const params = new URLSearchParams();
@@ -536,6 +567,24 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
         if (options?.summary) params.set('summary', 'true');
         const query = params.toString();
         return request<HistoryResponse>(`/v1/history${query ? `?${query}` : ''}`);
+      },
+
+      /**
+       * Get paginated scan history with filtering and sorting (enterprise mode)
+       */
+      listPaginated: (options?: HistoryParams) => {
+        const params = new URLSearchParams();
+        if (options?.page) params.set('page', options.page.toString());
+        if (options?.page_size) params.set('page_size', options.page_size.toString());
+        if (options?.sort_by) params.set('sort_by', options.sort_by);
+        if (options?.sort_order) params.set('sort_order', options.sort_order);
+        if (options?.date_from) params.set('date_from', options.date_from);
+        if (options?.date_to) params.set('date_to', options.date_to);
+        if (options?.severity) params.set('severity', options.severity);
+        if (options?.search) params.set('search', options.search);
+        if (options?.summary) params.set('summary', 'true');
+        const query = params.toString();
+        return request<PaginatedHistoryResponse>(`/v1/history${query ? `?${query}` : ''}`);
       },
     },
 
