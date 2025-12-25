@@ -5,6 +5,7 @@ import { X, MapPin, Shield, ExternalLink, AlertTriangle, CheckCircle } from "luc
 import type { Finding } from "@/lib/api";
 import { CodeSnippetDisplay } from "./CodeSnippetDisplay";
 import { getRemediationGuide } from "@/lib/remediationGuides";
+import { getPatternLabel } from "@/lib/patternLabels";
 
 interface FindingDetailsPanelProps {
   finding: Finding | null;
@@ -64,11 +65,8 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
   const colors = severityColors[finding.severity] || severityColors.LOW;
   const tier = tierDescriptions[finding.risk_tier] || tierDescriptions.risk_pattern;
 
-  // Get a title from pattern_id
-  const title = finding.pattern_id
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+  // Get developer-friendly title from pattern labels
+  const { title, shortDesc } = getPatternLabel(finding.pattern_id);
 
   // Get remediation guide
   const remediation = getRemediationGuide(finding.pattern_id);
@@ -103,17 +101,17 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - z-50 to cover Sheet overlay (z-50) */}
       <div
-        className={`fixed inset-0 bg-black/20 z-40 transition-opacity duration-200 ${
+        className={`fixed inset-0 bg-black/20 z-50 transition-opacity duration-200 ${
           open ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
       />
 
-      {/* Panel */}
+      {/* Panel - z-[60] to appear above Sheet content (z-50) */}
       <div
         ref={panelRef}
-        className={`fixed right-0 top-0 h-full w-full max-w-xl bg-white dark:bg-gray-900 shadow-2xl z-50 transform transition-transform duration-300 ease-out overflow-hidden flex flex-col ${
+        className={`fixed right-0 top-0 h-full w-full max-w-xl bg-white dark:bg-gray-900 shadow-2xl z-[60] transform transition-transform duration-300 ease-out overflow-hidden flex flex-col ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >

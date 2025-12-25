@@ -176,17 +176,19 @@ export function TopologyNodeSheet({
             </div>
           )}
 
-          {/* Ghost Node Info */}
+          {/* Ghost Node Info with Actionable Remediation */}
           {node.isGhost && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg">
-              <div className="flex items-center gap-2 text-red-700 dark:text-red-400 mb-2">
-                <AlertTriangle className="h-4 w-4" />
-                <span className="font-medium">Missing Control</span>
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <div className="flex items-center gap-2 text-red-700 dark:text-red-400 mb-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="font-medium">Missing: {node.missingControl?.replace(/_/g, ' ')}</span>
+                </div>
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  Required for EU AI Act compliance (Article 14).
+                </p>
               </div>
-              <p className="text-sm text-red-600 dark:text-red-400">
-                This control is required for EU AI Act compliance and secure agent operation.
-                Add {node.missingControl?.replace('_', ' ')} to your agent workflow.
-              </p>
+              <GhostNodeRemediation controlType={node.missingControl} />
             </div>
           )}
 
@@ -275,6 +277,151 @@ export function TopologyNodeSheet({
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/**
+ * Ghost node remediation guidance with LangChain code examples.
+ */
+function GhostNodeRemediation({ controlType }: { controlType?: string }) {
+  const remediations: Record<string, { title: string; steps: string[]; code: string }> = {
+    human_approval: {
+      title: "Add Human Approval",
+      steps: [
+        "Add HumanApprovalCallbackHandler to your agent",
+        "Configure approval for high-risk tool calls",
+      ],
+      code: `from langchain.callbacks import HumanApprovalCallbackHandler
+
+# Require human approval for sensitive operations
+agent = initialize_agent(
+    tools=tools,
+    llm=llm,
+    callbacks=[HumanApprovalCallbackHandler()]
+)`,
+    },
+    human_oversight: {
+      title: "Add Human Oversight",
+      steps: [
+        "Implement approval workflow for critical actions",
+        "Log all agent decisions for audit",
+      ],
+      code: `from langchain.callbacks import HumanApprovalCallbackHandler
+
+def should_approve(action: str) -> bool:
+    # High-risk actions require human approval
+    HIGH_RISK = ["delete", "transfer", "execute", "admin"]
+    return not any(r in action.lower() for r in HIGH_RISK)
+
+agent = initialize_agent(
+    tools=tools,
+    llm=llm,
+    callbacks=[HumanApprovalCallbackHandler(
+        should_check=lambda inp: not should_approve(inp['action'])
+    )]
+)`,
+    },
+    rate_limiting: {
+      title: "Add Rate Limiting",
+      steps: [
+        "Wrap LLM calls with rate limiter",
+        "Set per-user and per-IP limits",
+      ],
+      code: `from ratelimit import limits, sleep_and_retry
+
+# Limit to 10 requests per minute
+@sleep_and_retry
+@limits(calls=10, period=60)
+def get_completion(prompt: str) -> str:
+    return llm.predict(prompt)`,
+    },
+    authorization_check: {
+      title: "Add Authorization",
+      steps: [
+        "Add permission checks before tool execution",
+        "Validate user context on each request",
+      ],
+      code: `def execute_tool(user, tool_name: str, params: dict):
+    # Check user permissions before execution
+    if not user.can_access(tool_name):
+        raise PermissionError(f"Unauthorized: {tool_name}")
+    return tools[tool_name].run(params)`,
+    },
+    auth_checks: {
+      title: "Add Authorization Checks",
+      steps: [
+        "Verify user identity before agent operations",
+        "Implement role-based access control",
+      ],
+      code: `from functools import wraps
+
+def require_auth(permission: str):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(user, *args, **kwargs):
+            if not user.has_permission(permission):
+                raise PermissionError(f"Missing: {permission}")
+            return func(user, *args, **kwargs)
+        return wrapper
+    return decorator
+
+@require_auth("agent:execute")
+def run_agent(user, query: str):
+    return agent.invoke(query)`,
+    },
+    audit_logging: {
+      title: "Add Audit Logging",
+      steps: [
+        "Log all agent actions with timestamps",
+        "Include user context in audit trail",
+      ],
+      code: `import logging
+from datetime import datetime
+
+audit_logger = logging.getLogger("audit")
+
+def log_action(user_id: str, action: str, result: str):
+    audit_logger.info(
+        f"[{datetime.utcnow().isoformat()}] "
+        f"user={user_id} action={action} result={result}"
+    )
+
+# Usage in agent callback
+class AuditCallback(BaseCallbackHandler):
+    def on_tool_end(self, output: str, **kwargs):
+        log_action(self.user_id, kwargs.get("name"), "success")`,
+    },
+  };
+
+  const rem = remediations[controlType || ""];
+  if (!rem) {
+    // Fallback for unknown control types
+    return (
+      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-2">How to Fix</h4>
+        <p className="text-sm text-blue-700 dark:text-blue-400">
+          Add the missing {controlType?.replace(/_/g, " ")} control to your agent workflow.
+          See EU AI Act Article 14 for requirements.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+      <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-3">{rem.title}</h4>
+      <ul className="space-y-1 mb-3">
+        {rem.steps.map((step, i) => (
+          <li key={i} className="text-sm text-blue-800 dark:text-blue-300 flex items-start gap-2">
+            <span className="text-blue-500 font-medium">{i + 1}.</span>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ul>
+      <pre className="text-xs bg-white/50 dark:bg-gray-900/50 p-3 rounded border border-blue-200 dark:border-blue-800 overflow-x-auto font-mono text-gray-800 dark:text-gray-200">
+        {rem.code}
+      </pre>
+    </div>
   );
 }
 

@@ -88,6 +88,21 @@ export default function DashboardPage() {
     return { text: "NOT READY", variant: "danger" as const };
   };
 
+  // Contextual descriptions for metrics
+  const getRiskContext = (score: number): string => {
+    if (score >= 80) return "Critical - Fix immediately";
+    if (score >= 50) return "High risk - Address this week";
+    if (score >= 30) return "Moderate - Plan remediation";
+    if (score > 0) return "Low risk - Keep monitoring";
+    return "No issues detected";
+  };
+
+  const getGovernanceContext = (score: number): string => {
+    if (score >= 80) return "Compliant with EU AI Act";
+    if (score >= 50) return "Partial compliance - Review controls";
+    return "Missing required controls";
+  };
+
   // Use enhanced stats from backend, with fallbacks
   const riskScore = stats?.risk_score_avg ?? summary?.average_risk_score ?? 0;
   const criticalCount = stats?.critical_unresolved ?? recentScans[0]?.critical_count ?? 0;
@@ -131,34 +146,37 @@ export default function DashboardPage() {
       {/* Security Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SecurityMetricCard
-          title="Risk Score"
+          title="Security Health"
           value={riskScore}
-          subtitle="7-day average"
+          subtitle={getRiskContext(riskScore)}
           icon={Shield}
           variant={getRiskScoreVariant(riskScore)}
           loading={loading}
           trend={stats?.findings_trend}
+          tooltip="Sum of finding severity weights (CRITICAL=30, HIGH=20, MEDIUM=10, LOW=5). Lower is better."
         />
         <SecurityMetricCard
           title="Critical Issues"
           value={criticalCount}
-          subtitle="Latest scan"
+          subtitle={criticalCount > 0 ? "Requires immediate attention" : "No critical issues found"}
           icon={AlertTriangle}
           variant={criticalCount > 0 ? "danger" : "success"}
           loading={loading}
+          tooltip="Number of CRITICAL severity findings in your latest scan. These should be fixed immediately."
         />
         <SecurityMetricCard
-          title="Governance Score"
+          title="Compliance Readiness"
           value={`${governanceScore}%`}
-          subtitle="EU AI Act readiness"
+          subtitle={getGovernanceContext(governanceScore)}
           icon={CheckCircle}
           variant={getGovernanceVariant(governanceScore)}
           loading={loading}
+          tooltip="100 minus penalties for EU AI Act violations. 80+ = Ready, 50-79 = Partial, <50 = Not Ready."
         />
         <SecurityMetricCard
-          title="Compliance"
-          value="EU AI Act"
-          subtitle="Article 14 deadline: Aug 2026"
+          title="EU AI Act"
+          value="Article 14"
+          subtitle="Human oversight deadline: Aug 2026"
           icon={FileCheck}
           variant="info"
           badge={{
@@ -166,6 +184,7 @@ export default function DashboardPage() {
             variant: euAiActReadiness === 'READY' ? 'success' : euAiActReadiness === 'PARTIAL' ? 'warning' : 'danger'
           }}
           loading={loading}
+          tooltip="EU AI Act compliance status based on governance controls detected in your agent."
         />
       </div>
 

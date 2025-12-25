@@ -1,6 +1,6 @@
 "use client";
 
-import { type LucideIcon } from "lucide-react";
+import { type LucideIcon, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sparkline } from "@/components/ui/sparkline";
 
@@ -19,6 +19,8 @@ interface SecurityMetricCardProps {
   };
   /** 7-day trend data for sparkline visualization */
   trend?: number[];
+  /** Tooltip explaining what this metric means */
+  tooltip?: string;
 }
 
 const variantStyles: Record<MetricVariant, { bg: string; iconBg: string; iconColor: string }> = {
@@ -64,6 +66,7 @@ export function SecurityMetricCard({
   loading = false,
   badge,
   trend,
+  tooltip,
 }: SecurityMetricCardProps) {
   const styles = variantStyles[variant];
 
@@ -108,7 +111,18 @@ export function SecurityMetricCard({
         ) : (
           <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{value}</p>
         )}
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">{title}</p>
+        <div className="flex items-center gap-1.5 mt-1">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
+          {tooltip && (
+            <div className="relative group">
+              <Info className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500 cursor-help" />
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 w-56 z-50 pointer-events-none">
+                {tooltip}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
+              </div>
+            </div>
+          )}
+        </div>
         {subtitle && (
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{subtitle}</p>
         )}

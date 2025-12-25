@@ -2,6 +2,7 @@
 
 import { ChevronRight, Shield, AlertTriangle } from "lucide-react";
 import type { Finding } from "@/lib/api";
+import { getPatternLabel } from "@/lib/patternLabels";
 
 interface FindingCardProps {
   finding: Finding;
@@ -9,10 +10,10 @@ interface FindingCardProps {
 }
 
 const severityColors: Record<string, { bg: string; text: string; border: string }> = {
-  CRITICAL: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" },
-  HIGH: { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200" },
-  MEDIUM: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
-  LOW: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
+  CRITICAL: { bg: "bg-red-50 dark:bg-red-900/30", text: "text-red-700 dark:text-red-400", border: "border-red-200 dark:border-red-800" },
+  HIGH: { bg: "bg-orange-50 dark:bg-orange-900/30", text: "text-orange-700 dark:text-orange-400", border: "border-orange-200 dark:border-orange-800" },
+  MEDIUM: { bg: "bg-amber-50 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-400", border: "border-amber-200 dark:border-amber-800" },
+  LOW: { bg: "bg-blue-50 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-400", border: "border-blue-200 dark:border-blue-800" },
 };
 
 const tierLabels: Record<string, string> = {
@@ -56,11 +57,8 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
   const colors = severityColors[finding.severity] || severityColors.LOW;
   const isGovernance = isGovernanceFinding(finding);
 
-  // Get a short title from pattern_id (e.g., "infinite_loop" -> "Infinite Loop")
-  const title = finding.pattern_id
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+  // Get developer-friendly title from pattern labels
+  const { title } = getPatternLabel(finding.pattern_id);
 
   // Get the most relevant compliance tag
   const complianceTag =
@@ -77,7 +75,7 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left px-5 py-4 flex items-center justify-between gap-4 hover:bg-gray-50/80 transition-colors duration-150 focus:outline-none focus:bg-gray-50 group"
+      className="w-full text-left px-5 py-4 flex items-center justify-between gap-4 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors duration-150 focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-800 group"
     >
       <div className="flex items-start gap-4 min-w-0 flex-1">
         {/* Type Icon - Governance vs Vulnerability */}
@@ -100,20 +98,20 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
         <div className="min-w-0 flex-1">
           {/* Title Row */}
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-medium text-gray-900 truncate">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
               {title}
             </h3>
             {/* Governance Badge */}
             {isGovernance && (
-              <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-indigo-50 text-indigo-700 rounded border border-indigo-200">
+              <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded border border-indigo-200 dark:border-indigo-800">
                 Governance
               </span>
             )}
           </div>
 
           {/* File and metadata */}
-          <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
-            <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">
+          <div className="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+            <code className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded font-mono text-gray-700 dark:text-gray-300">
               {finding.file}:{finding.line}
             </code>
             {/* Calibration indicator */}
