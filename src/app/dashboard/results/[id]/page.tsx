@@ -16,6 +16,10 @@ import {
   Clock,
   Bot,
   X,
+  Download,
+  FileJson,
+  FileText,
+  Code,
 } from "lucide-react";
 
 import {
@@ -32,7 +36,14 @@ import {
   frameworkDisplayNames,
 } from "@/lib/finding-utils";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { downloadBlob, downloadJSON, generateExportFilename } from "@/lib/export-utils";
 import { GovernanceScore } from "@/components/GovernanceScore";
 import { TopologyMapVisualization } from "@/components/TopologyMap";
 import { FindingCard } from "@/components/FindingCard";
@@ -56,6 +67,9 @@ export default function ScanResultsPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [frameworkFilter, setFrameworkFilter] = useState<string | null>(null);
+
+  // Export state
+  const [exporting, setExporting] = useState<'json' | 'sarif' | 'pdf' | null>(null);
 
   // Initialize API client
   useEffect(() => {
@@ -149,6 +163,40 @@ export default function ScanResultsPage() {
     });
   }, [scan?.findings, typeFilter, severityFilter, frameworkFilter, searchQuery]);
 
+  // Handle export to different formats
+  const handleExport = async (format: 'json' | 'sarif' | 'pdf') => {
+    if (!api || !scan) return;
+
+    setExporting(format);
+
+    try {
+      const filename = generateExportFilename(scan.agent_name, scan.scan_number, format);
+
+      switch (format) {
+        case 'json': {
+          const data = await api.scans.exportJSON(scan.id);
+          downloadJSON(data, filename);
+          break;
+        }
+        case 'sarif': {
+          const data = await api.scans.exportSARIF(scan.id);
+          downloadJSON(data, filename);
+          break;
+        }
+        case 'pdf': {
+          const blob = await api.scans.exportPDF(scan.id);
+          downloadBlob(blob, filename);
+          break;
+        }
+      }
+    } catch (err) {
+      console.error('Export failed:', err);
+      // Could add toast notification here in the future
+    } finally {
+      setExporting(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -223,13 +271,42 @@ export default function ScanResultsPage() {
           </div>
         </div>
 
-        <Button
-          onClick={() => router.push(`/dashboard/scan?agent=${encodeURIComponent(scan.agent_name || "")}&path=${encodeURIComponent(scan.agent_path || "")}`)}
-          className="h-9"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Rescan Agent
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-9" disabled={!!exporting}>
+                {exporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                {exporting ? 'Exporting...' : 'Export'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport('json')}>
+                <FileJson className="h-4 w-4 mr-2" />
+                JSON (Raw Data)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('sarif')}>
+                <Code className="h-4 w-4 mr-2" />
+                SARIF (GitHub Security)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                <FileText className="h-4 w-4 mr-2" />
+                PDF Report (Compliance)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button
+            onClick={() => router.push(`/dashboard/scan?agent=${encodeURIComponent(scan.agent_name || "")}&path=${encodeURIComponent(scan.agent_path || "")}`)}
+            className="h-9"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Rescan Agent
+          </Button>
+        </div>
       </div>
 
       {/* Summary Stats */}

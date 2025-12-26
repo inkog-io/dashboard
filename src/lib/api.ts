@@ -338,6 +338,130 @@ export interface BackendScanResponse {
 export type EUAIActReadiness = 'READY' | 'PARTIAL' | 'NOT_READY';
 
 /**
+ * Export format types
+ */
+export interface ExportMetadata {
+  tool: string;
+  version: string;
+  exported_at: string;
+  scan_id: string;
+  agent_name?: string;
+  agent_path?: string;
+  scan_number?: number;
+}
+
+export interface ExportSummary {
+  files_scanned: number;
+  lines_of_code: number;
+  total_findings: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  risk_score: number;
+  governance_score: number;
+  eu_ai_act_readiness: string;
+  duration_ms: number;
+  scan_policy?: string;
+}
+
+export interface FrameworkCompliance {
+  name: string;
+  status: 'PASS' | 'PARTIAL' | 'FAIL';
+  finding_count: number;
+  items?: string[];
+}
+
+export interface ExportComplianceReport {
+  eu_ai_act?: FrameworkCompliance;
+  nist_ai_rmf?: FrameworkCompliance;
+  owasp_llm_top_10?: FrameworkCompliance;
+  iso_42001?: FrameworkCompliance;
+}
+
+export interface ExportData {
+  metadata: ExportMetadata;
+  summary: ExportSummary;
+  compliance: ExportComplianceReport;
+  findings: Finding[];
+  strengths?: Strength[];
+}
+
+/**
+ * SARIF v2.1.0 types for export
+ */
+export interface SARIFMessage {
+  text: string;
+}
+
+export interface SARIFConfiguration {
+  level: string;
+}
+
+export interface SARIFRuleProperties {
+  tags?: string[];
+  'security-severity'?: string;
+}
+
+export interface SARIFRule {
+  id: string;
+  name: string;
+  shortDescription: SARIFMessage;
+  fullDescription?: SARIFMessage;
+  helpUri?: string;
+  defaultConfiguration: SARIFConfiguration;
+  properties?: SARIFRuleProperties;
+}
+
+export interface SARIFDriver {
+  name: string;
+  version: string;
+  informationUri: string;
+  semanticVersion: string;
+  rules: SARIFRule[];
+}
+
+export interface SARIFTool {
+  driver: SARIFDriver;
+}
+
+export interface SARIFRegion {
+  startLine: number;
+  startColumn?: number;
+}
+
+export interface SARIFArtifact {
+  uri: string;
+}
+
+export interface SARIFPhysicalLocation {
+  artifactLocation: SARIFArtifact;
+  region: SARIFRegion;
+}
+
+export interface SARIFLocation {
+  physicalLocation: SARIFPhysicalLocation;
+}
+
+export interface SARIFResult {
+  ruleId: string;
+  level: string;
+  message: SARIFMessage;
+  locations: SARIFLocation[];
+}
+
+export interface SARIFRun {
+  tool: SARIFTool;
+  results: SARIFResult[];
+}
+
+export interface SARIFReport {
+  $schema: string;
+  version: string;
+  runs: SARIFRun[];
+}
+
+/**
  * Frontend ScanResult - normalized format for UI components
  * This is what components receive after transformation
  */
@@ -696,6 +820,44 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
        * Used for re-opening previous scan results
        */
       get: (scanId: string) => request<ScanDetailResponse>(`/v1/scans/${scanId}`),
+
+      /**
+       * Export scan as JSON (structured ExportData format)
+       */
+      exportJSON: (scanId: string) => request<ExportData>(`/v1/scans/${scanId}/export/json`),
+
+      /**
+       * Export scan as SARIF v2.1.0 (GitHub Security compatible)
+       */
+      exportSARIF: (scanId: string) => request<SARIFReport>(`/v1/scans/${scanId}/export/sarif`),
+
+      /**
+       * Export scan as PDF (compliance report)
+       * Returns a Blob for download
+       */
+      exportPDF: async (scanId: string): Promise<Blob> => {
+        const token = await getToken();
+        if (!token) {
+          throw new InkogAPIError('Not authenticated', 'not_authenticated', 401);
+        }
+
+        const response = await fetchWithRetry(`${API_BASE_URL}/v1/scans/${scanId}/export/pdf`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const data = await response.json() as APIError;
+          throw new InkogAPIError(
+            data.message || data.error || 'Export failed',
+            data.code || 'export_error',
+            response.status
+          );
+        }
+
+        return response.blob();
+      },
     },
 
     /**
