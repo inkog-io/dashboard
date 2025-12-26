@@ -82,6 +82,20 @@ const typeLabels: Record<string, string> = {
   MemoryAccess: 'Memory',
 };
 
+// Dangerous function names that need special labeling
+const dangerousFunctions = ['eval', 'exec', 'compile', 'system', 'popen', 'os.system', 'subprocess'];
+
+/**
+ * Enhance labels for dangerous functions to make them clearer.
+ * Adds () suffix and warning context for dangerous ToolCall nodes.
+ */
+function getEnhancedLabel(label: string, type: string): string {
+  if (type === 'ToolCall' && dangerousFunctions.some(fn => label.toLowerCase().includes(fn))) {
+    return `${label}()`;
+  }
+  return label;
+}
+
 interface CustomNodeData {
   label: string;
   type: string;
@@ -119,8 +133,9 @@ function TopologyCustomNode({ data }: { data: CustomNodeData }) {
           <span
             className="text-sm font-medium truncate max-w-[120px]"
             style={{ color: colors.text }}
+            title={data.type === 'ToolCall' ? `${data.label} - Function call` : data.label}
           >
-            {data.label}
+            {getEnhancedLabel(data.label, data.type)}
           </span>
         </div>
       </div>

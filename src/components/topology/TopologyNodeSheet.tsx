@@ -161,6 +161,16 @@ export function TopologyNodeSheet({
                   </>
                 )}
               </SheetDescription>
+              {node.type === 'ToolCall' && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {['eval', 'exec', 'compile', 'system', 'popen', 'os.system', 'subprocess'].some(fn =>
+                    node.label.toLowerCase().includes(fn)
+                  )
+                    ? 'Dangerous function that can execute arbitrary code'
+                    : 'External function or tool call'
+                  }
+                </p>
+              )}
             </div>
           </div>
         </SheetHeader>

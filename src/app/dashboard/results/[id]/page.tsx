@@ -27,7 +27,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GovernanceScore } from "@/components/GovernanceScore";
-import { ComplianceMapping } from "@/components/ComplianceMapping";
 import { TopologyMapVisualization } from "@/components/TopologyMap";
 import { FindingCard } from "@/components/FindingCard";
 import { FindingDetailsPanel } from "@/components/FindingDetailsPanel";
@@ -304,32 +303,18 @@ export default function ScanResultsPage() {
       {/* Governance Section */}
       {scan.governance_score !== undefined && (
         <ErrorBoundary>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <GovernanceScore
-              score={scan.governance_score}
-              readiness="PARTIAL"
-              onFrameworkClick={(frameworkId) => {
-                // Filter findings by framework - scroll to findings and set search
-                setSearchQuery(frameworkId);
-                document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              onArticleClick={(article) => {
-                // Filter findings by article
-                setSearchQuery(article);
-                document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            />
-            <ComplianceMapping
-              onFrameworkClick={(framework) => {
-                setSearchQuery(framework);
-                document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              onArticleClick={(article) => {
-                setSearchQuery(article);
-                document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            />
-          </div>
+          <GovernanceScore
+            score={scan.governance_score}
+            readiness="PARTIAL"
+            onFrameworkClick={(frameworkId) => {
+              setSearchQuery(frameworkId);
+              document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            onArticleClick={(article) => {
+              setSearchQuery(article);
+              document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          />
         </ErrorBoundary>
       )}
 

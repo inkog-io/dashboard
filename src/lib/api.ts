@@ -45,6 +45,11 @@ export interface Scan {
   user_id: string;
   org_id: string | null;
   api_key_id: string | null;
+  agent_id?: string | null;
+  agent_name?: string;
+  agent_path?: string;
+  scan_policy?: string;
+  scan_number?: number;
   files_scanned: number;
   lines_of_code: number;
   findings_count: number;
@@ -53,6 +58,7 @@ export interface Scan {
   medium_count: number;
   low_count: number;
   risk_score: number;
+  governance_score?: number;
   duration_ms: number;
   request_id: string;
   client_ip: string;
@@ -696,7 +702,7 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
        * Scan uploaded code files
        * Uses multipart form data to upload files
        */
-      upload: async (files: File[], policy?: string): Promise<ScanResult> => {
+      upload: async (files: File[], policy?: string, agentName?: string): Promise<ScanResult> => {
         const token = await getToken();
 
         if (!token) {
@@ -713,6 +719,7 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
           local_secrets_found: 0,
           redacted_file_count: 0,
           scan_policy: policy || 'balanced',
+          agent_name: agentName || '',
         };
         formData.append('request', JSON.stringify(requestMetadata));
 

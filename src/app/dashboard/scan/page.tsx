@@ -25,7 +25,6 @@ import {
 } from "@/lib/api";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GovernanceScore } from "@/components/GovernanceScore";
-import { ComplianceMapping } from "@/components/ComplianceMapping";
 import { TopologyMapVisualization } from "@/components/TopologyMap";
 import { FindingCard } from "@/components/FindingCard";
 import { FindingDetailsPanel } from "@/components/FindingDetailsPanel";
@@ -42,6 +41,7 @@ export default function ScanPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [scanPolicy, setScanPolicy] = useState<ScanPolicy>("balanced");
+  const [agentName, setAgentName] = useState("");
 
   // Findings panel state
   const [selectedFinding, setSelectedFinding] = useState<Finding | null>(null);
@@ -203,8 +203,8 @@ export default function ScanPage() {
     setSearchQuery("");
 
     try {
-      // Pass scan policy to backend for filtering
-      const scanResult = await api.scan.upload(files, scanPolicy);
+      // Pass scan policy and agent name to backend
+      const scanResult = await api.scan.upload(files, scanPolicy, agentName || undefined);
       setResult(scanResult);
     } catch (err) {
       if (err instanceof InkogAPIError) {
@@ -215,7 +215,7 @@ export default function ScanPage() {
     } finally {
       setScanning(false);
     }
-  }, [api, files, scanPolicy]);
+  }, [api, files, scanPolicy, agentName]);
 
   return (
     <div className="space-y-8 max-w-6xl">
@@ -332,6 +332,21 @@ export default function ScanPage() {
             <PolicySelector value={scanPolicy} onChange={setScanPolicy} />
           </div>
 
+          {/* Agent Name */}
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+              Agent Name
+            </label>
+            <input
+              type="text"
+              placeholder="e.g., customer-support-bot"
+              value={agentName}
+              onChange={(e) => setAgentName(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-400 mt-1">Leave blank to auto-detect from filename</p>
+          </div>
+
           <button
             onClick={runScan}
             disabled={scanning}
@@ -379,6 +394,7 @@ export default function ScanPage() {
                 setSelectedFinding(null);
                 setSeverityFilter("ALL");
                 setTypeFilter("ALL");
+                setAgentName("");
                 setSearchQuery("");
               }}
               className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
@@ -426,18 +442,20 @@ export default function ScanPage() {
           {(result.governance_score !== undefined ||
             result.eu_ai_act_readiness) && (
             <ErrorBoundary>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <GovernanceScore
-                  score={result.governance_score}
-                  readiness={result.eu_ai_act_readiness}
-                  articleMapping={result.article_mapping}
-                  frameworkMapping={result.framework_mapping}
-                />
-                <ComplianceMapping
-                  articleMapping={result.article_mapping}
-                  frameworkMapping={result.framework_mapping}
-                />
-              </div>
+              <GovernanceScore
+                score={result.governance_score}
+                readiness={result.eu_ai_act_readiness}
+                articleMapping={result.article_mapping}
+                frameworkMapping={result.framework_mapping}
+                onFrameworkClick={(frameworkId) => {
+                  setSearchQuery(frameworkId);
+                  document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                onArticleClick={(article) => {
+                  setSearchQuery(article);
+                  document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              />
             </ErrorBoundary>
           )}
 
@@ -494,7 +512,7 @@ export default function ScanPage() {
 
           {/* Findings Section */}
           {result.findings.length > 0 ? (
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div id="findings-section" className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden scroll-mt-4">
               <div className="px-5 border-b border-gray-100 dark:border-gray-800">
                 <FindingsToolbar
                   totalCount={result.findings_count}

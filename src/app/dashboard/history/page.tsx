@@ -329,6 +329,7 @@ export default function HistoryPage() {
                         onSort={handleSort}
                       />
                     </TableHead>
+                    <TableHead className="dark:text-gray-400">Agent</TableHead>
                     <TableHead className="dark:text-gray-400">Files</TableHead>
                     <TableHead className="dark:text-gray-400">
                       <SortableHeader
@@ -362,6 +363,9 @@ export default function HistoryPage() {
                     >
                       <TableCell className="text-gray-600 dark:text-gray-400">
                         {formatDate(scan.created_at)}
+                      </TableCell>
+                      <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                        {scan.agent_name || <span className="text-gray-400 italic">Unnamed</span>}
                       </TableCell>
                       <TableCell className="dark:text-gray-300">
                         {scan.files_scanned}
