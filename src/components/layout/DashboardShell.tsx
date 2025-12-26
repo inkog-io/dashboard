@@ -3,6 +3,7 @@
 import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
 import { CommandPalette, useCommandPalette } from "./CommandPalette";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +48,9 @@ export function DashboardShell({ children, userEmail }: DashboardShellProps) {
 
       {/* Command Palette */}
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+
+      {/* Offline Banner */}
+      <OfflineBanner />
     </>
   );
 }

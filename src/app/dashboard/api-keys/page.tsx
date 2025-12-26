@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { Plus, Copy, Check, Trash2, Key, AlertCircle } from "lucide-react";
+import { Plus, Copy, Check, Trash2, Key, AlertCircle, RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +56,11 @@ export default function APIKeysPage() {
   const [showRevokeDialog, setShowRevokeDialog] = useState(false);
   const [keyToRevoke, setKeyToRevoke] = useState<APIKey | null>(null);
   const [revoking, setRevoking] = useState(false);
+
+  // Rotate dialog state
+  const [showRotateDialog, setShowRotateDialog] = useState(false);
+  const [keyToRotate, setKeyToRotate] = useState<APIKey | null>(null);
+  const [rotating, setRotating] = useState(false);
 
   // Initialize API client
   useEffect(() => {
@@ -130,6 +135,33 @@ export default function APIKeysPage() {
       setError(err instanceof Error ? err.message : "Failed to revoke API key");
     } finally {
       setRevoking(false);
+    }
+  };
+
+  // Rotate a key (revoke old, create new with same name)
+  const handleRotateKey = async () => {
+    if (!api || !keyToRotate) return;
+
+    try {
+      setRotating(true);
+      // First revoke the old key
+      await api.keys.revoke(keyToRotate.id);
+      // Then create a new key with the same name
+      const response = await api.keys.create(keyToRotate.name);
+      setNewKey(response.key);
+      setShowRotateDialog(false);
+      setKeyToRotate(null);
+      setShowKeyDialog(true);
+      fetchKeys();
+
+      // Track key rotation event
+      posthog.capture("api_key_rotated", {
+        key_name: keyToRotate.name,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to rotate API key");
+    } finally {
+      setRotating(false);
     }
   };
 
@@ -228,7 +260,19 @@ export default function APIKeysPage() {
                     <TableCell className="text-gray-500">
                       {formatDate(key.last_used_at)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => {
+                          setKeyToRotate(key);
+                          setShowRotateDialog(true);
+                        }}
+                        title="Rotate key"
+                      >
+                        <RotateCw className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -237,6 +281,7 @@ export default function APIKeysPage() {
                           setKeyToRevoke(key);
                           setShowRevokeDialog(true);
                         }}
+                        title="Revoke key"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -363,6 +408,55 @@ export default function APIKeysPage() {
               disabled={revoking}
             >
               {revoking ? "Revoking..." : "Revoke Key"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rotate Key Dialog */}
+      <Dialog open={showRotateDialog} onOpenChange={setShowRotateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rotate API Key</DialogTitle>
+            <DialogDescription>
+              This will revoke the current key and generate a new one with the
+              same name. Any applications using the old key will need to be
+              updated with the new key.
+            </DialogDescription>
+          </DialogHeader>
+          {keyToRotate && (
+            <div className="py-4">
+              <p className="text-sm text-gray-600">
+                <strong>Name:</strong> {keyToRotate.name}
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>Current Key:</strong>{" "}
+                <code className="bg-gray-100 px-1 rounded">
+                  {keyToRotate.key_prefix}
+                </code>
+              </p>
+              <p className="mt-3 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded">
+                After rotation, you&apos;ll receive a new key. Make sure to update
+                your applications immediately.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRotateDialog(false);
+                setKeyToRotate(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRotateKey}
+              disabled={rotating}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {rotating ? "Rotating..." : "Rotate Key"}
             </Button>
           </DialogFooter>
         </DialogContent>
