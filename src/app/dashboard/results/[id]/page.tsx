@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
@@ -25,6 +25,12 @@ import {
   type ScanFull,
   type InkogAPI,
 } from "@/lib/api";
+import {
+  getFindingType,
+  matchesFindingSearch,
+  matchesFramework,
+  frameworkDisplayNames,
+} from "@/lib/finding-utils";
 import { Button } from "@/components/ui/button";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GovernanceScore } from "@/components/GovernanceScore";
@@ -50,33 +56,6 @@ export default function ScanResultsPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [frameworkFilter, setFrameworkFilter] = useState<string | null>(null);
-
-  // Map frontend framework IDs to display names
-  const frameworkDisplayNames: Record<string, string> = {
-    'eu-ai-act': 'EU AI Act',
-    'nist-ai-rmf': 'NIST AI RMF',
-    'iso-42001': 'ISO 42001',
-    'owasp-llm': 'OWASP LLM Top 10',
-  };
-
-  // Helper to check if a finding matches a framework filter
-  const matchesFramework = useCallback((finding: Finding, fwId: string): boolean => {
-    const cm = finding.compliance_mapping;
-    if (!cm) return false;
-
-    switch (fwId) {
-      case 'eu-ai-act':
-        return (cm.eu_ai_act_articles?.length ?? 0) > 0;
-      case 'nist-ai-rmf':
-        return (cm.nist_categories?.length ?? 0) > 0;
-      case 'iso-42001':
-        return (cm.iso_42001_clauses?.length ?? 0) > 0;
-      case 'owasp-llm':
-        return (cm.owasp_items?.length ?? 0) > 0;
-      default:
-        return false;
-    }
-  }, []);
 
   // Initialize API client
   useEffect(() => {
@@ -113,21 +92,13 @@ export default function ScanResultsPage() {
     fetchScan();
   }, [api, params.id]);
 
-  // Compute type counts from findings
+  // Compute type counts from findings using shared utility
   const typeCounts = useMemo(() => {
     if (!scan?.findings) return { vulnerability: 0, governance: 0 };
 
     return scan.findings.reduce(
       (acc, finding) => {
-        const type = finding.finding_type ||
-          (finding.pattern_id?.includes("missing_") ||
-           finding.pattern_id?.includes("oversight") ||
-           finding.pattern_id?.includes("rate_limit") ||
-           finding.pattern_id?.includes("audit") ||
-           finding.pattern_id?.includes("authorization")
-            ? "governance_violation"
-            : "vulnerability");
-
+        const type = getFindingType(finding);
         if (type === "governance_violation") {
           acc.governance++;
         } else {
@@ -139,22 +110,14 @@ export default function ScanResultsPage() {
     );
   }, [scan?.findings]);
 
-  // Filter findings based on type, severity, framework and search
+  // Filter findings based on type, severity, framework and search using shared utilities
   const filteredFindings = useMemo(() => {
     if (!scan?.findings) return [];
 
     return scan.findings.filter((finding) => {
-      // Type filter
+      // Type filter using shared utility
       if (typeFilter !== "ALL") {
-        const findingType = finding.finding_type ||
-          (finding.pattern_id?.includes("missing_") ||
-           finding.pattern_id?.includes("oversight") ||
-           finding.pattern_id?.includes("rate_limit") ||
-           finding.pattern_id?.includes("audit") ||
-           finding.pattern_id?.includes("authorization")
-            ? "governance_violation"
-            : "vulnerability");
-
+        const findingType = getFindingType(finding);
         if (typeFilter === "VULNERABILITY" && findingType !== "vulnerability") {
           return false;
         }
@@ -175,34 +138,16 @@ export default function ScanResultsPage() {
         }
       }
 
-      // Search filter (includes compliance mapping)
+      // Search filter using shared utility (includes compliance fields)
       if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-
-        // Check basic fields
-        const matchesBasic =
-          finding.message?.toLowerCase().includes(query) ||
-          finding.pattern_id?.toLowerCase().includes(query) ||
-          finding.file?.toLowerCase().includes(query) ||
-          finding.cwe?.toLowerCase().includes(query) ||
-          finding.owasp_category?.toLowerCase().includes(query);
-
-        // Check compliance mappings (for article filtering)
-        const complianceMapping = finding.compliance_mapping;
-        const matchesCompliance = complianceMapping && (
-          complianceMapping.eu_ai_act_articles?.some(a => a.toLowerCase().includes(query)) ||
-          complianceMapping.nist_categories?.some(c => c.toLowerCase().includes(query)) ||
-          complianceMapping.iso_42001_clauses?.some(c => c.toLowerCase().includes(query)) ||
-          complianceMapping.owasp_items?.some(i => i.toLowerCase().includes(query)) ||
-          complianceMapping.cwe_ids?.some(c => c.toLowerCase().includes(query))
-        );
-
-        if (!matchesBasic && !matchesCompliance) return false;
+        if (!matchesFindingSearch(finding, searchQuery)) {
+          return false;
+        }
       }
 
       return true;
     });
-  }, [scan?.findings, typeFilter, severityFilter, frameworkFilter, searchQuery, matchesFramework]);
+  }, [scan?.findings, typeFilter, severityFilter, frameworkFilter, searchQuery]);
 
   if (loading) {
     return (

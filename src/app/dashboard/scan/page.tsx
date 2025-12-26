@@ -25,6 +25,12 @@ import {
   type ScanResult,
   type InkogAPI,
 } from "@/lib/api";
+import {
+  getFindingType,
+  matchesFindingSearch,
+  matchesFramework,
+  frameworkDisplayNames,
+} from "@/lib/finding-utils";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GovernanceScore } from "@/components/GovernanceScore";
 import { TopologyMapVisualization } from "@/components/TopologyMap";
@@ -52,33 +58,6 @@ export default function ScanPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [frameworkFilter, setFrameworkFilter] = useState<string | null>(null);
 
-  // Map frontend framework IDs to display names
-  const frameworkDisplayNames: Record<string, string> = {
-    'eu-ai-act': 'EU AI Act',
-    'nist-ai-rmf': 'NIST AI RMF',
-    'iso-42001': 'ISO 42001',
-    'owasp-llm': 'OWASP LLM Top 10',
-  };
-
-  // Helper to check if a finding matches a framework filter
-  const matchesFramework = useCallback((finding: Finding, fwId: string): boolean => {
-    const cm = finding.compliance_mapping;
-    if (!cm) return false;
-
-    switch (fwId) {
-      case 'eu-ai-act':
-        return (cm.eu_ai_act_articles?.length ?? 0) > 0;
-      case 'nist-ai-rmf':
-        return (cm.nist_categories?.length ?? 0) > 0;
-      case 'iso-42001':
-        return (cm.iso_42001_clauses?.length ?? 0) > 0;
-      case 'owasp-llm':
-        return (cm.owasp_items?.length ?? 0) > 0;
-      default:
-        return false;
-    }
-  }, []);
-
   // Initialize API client
   useEffect(() => {
     const client = createAPIClient(getToken);
@@ -90,22 +69,13 @@ export default function ScanPage() {
     setScanPolicy(getStoredPolicy());
   }, []);
 
-  // Compute type counts from findings
+  // Compute type counts from findings using shared utility
   const typeCounts = useMemo(() => {
     if (!result?.findings) return { vulnerability: 0, governance: 0 };
 
     return result.findings.reduce(
       (acc, finding) => {
-        // Use finding_type if available, otherwise infer from pattern_id
-        const type = finding.finding_type ||
-          (finding.pattern_id?.includes("missing_") ||
-           finding.pattern_id?.includes("oversight") ||
-           finding.pattern_id?.includes("rate_limit") ||
-           finding.pattern_id?.includes("audit") ||
-           finding.pattern_id?.includes("authorization")
-            ? "governance_violation"
-            : "vulnerability");
-
+        const type = getFindingType(finding);
         if (type === "governance_violation") {
           acc.governance++;
         } else {
@@ -117,22 +87,14 @@ export default function ScanPage() {
     );
   }, [result?.findings]);
 
-  // Filter findings based on type, severity, framework and search
+  // Filter findings based on type, severity, framework and search using shared utilities
   const filteredFindings = useMemo(() => {
     if (!result?.findings) return [];
 
     return result.findings.filter((finding) => {
-      // Type filter
+      // Type filter using shared utility
       if (typeFilter !== "ALL") {
-        const findingType = finding.finding_type ||
-          (finding.pattern_id?.includes("missing_") ||
-           finding.pattern_id?.includes("oversight") ||
-           finding.pattern_id?.includes("rate_limit") ||
-           finding.pattern_id?.includes("audit") ||
-           finding.pattern_id?.includes("authorization")
-            ? "governance_violation"
-            : "vulnerability");
-
+        const findingType = getFindingType(finding);
         if (typeFilter === "VULNERABILITY" && findingType !== "vulnerability") {
           return false;
         }
@@ -153,20 +115,16 @@ export default function ScanPage() {
         }
       }
 
-      // Search filter
+      // Search filter using shared utility (includes compliance fields)
       if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-          finding.message?.toLowerCase().includes(query) ||
-          finding.pattern_id?.toLowerCase().includes(query) ||
-          finding.file?.toLowerCase().includes(query) ||
-          finding.cwe?.toLowerCase().includes(query);
-        if (!matchesSearch) return false;
+        if (!matchesFindingSearch(finding, searchQuery)) {
+          return false;
+        }
       }
 
       return true;
     });
-  }, [result?.findings, typeFilter, severityFilter, frameworkFilter, searchQuery, matchesFramework]);
+  }, [result?.findings, typeFilter, severityFilter, frameworkFilter, searchQuery]);
 
   // Handle file drop
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
