@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
@@ -15,6 +15,7 @@ import {
   FileCode,
   Clock,
   Bot,
+  X,
 } from "lucide-react";
 
 import {
@@ -48,6 +49,34 @@ export default function ScanResultsPage() {
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("ALL");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [frameworkFilter, setFrameworkFilter] = useState<string | null>(null);
+
+  // Map frontend framework IDs to display names
+  const frameworkDisplayNames: Record<string, string> = {
+    'eu-ai-act': 'EU AI Act',
+    'nist-ai-rmf': 'NIST AI RMF',
+    'iso-42001': 'ISO 42001',
+    'owasp-llm': 'OWASP LLM Top 10',
+  };
+
+  // Helper to check if a finding matches a framework filter
+  const matchesFramework = useCallback((finding: Finding, fwId: string): boolean => {
+    const cm = finding.compliance_mapping;
+    if (!cm) return false;
+
+    switch (fwId) {
+      case 'eu-ai-act':
+        return (cm.eu_ai_act_articles?.length ?? 0) > 0;
+      case 'nist-ai-rmf':
+        return (cm.nist_categories?.length ?? 0) > 0;
+      case 'iso-42001':
+        return (cm.iso_42001_clauses?.length ?? 0) > 0;
+      case 'owasp-llm':
+        return (cm.owasp_items?.length ?? 0) > 0;
+      default:
+        return false;
+    }
+  }, []);
 
   // Initialize API client
   useEffect(() => {
@@ -110,7 +139,7 @@ export default function ScanResultsPage() {
     );
   }, [scan?.findings]);
 
-  // Filter findings based on type, severity and search
+  // Filter findings based on type, severity, framework and search
   const filteredFindings = useMemo(() => {
     if (!scan?.findings) return [];
 
@@ -139,6 +168,13 @@ export default function ScanResultsPage() {
         return false;
       }
 
+      // Framework filter (from clicking governance items)
+      if (frameworkFilter) {
+        if (!matchesFramework(finding, frameworkFilter)) {
+          return false;
+        }
+      }
+
       // Search filter (includes compliance mapping)
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -151,7 +187,7 @@ export default function ScanResultsPage() {
           finding.cwe?.toLowerCase().includes(query) ||
           finding.owasp_category?.toLowerCase().includes(query);
 
-        // Check compliance mappings (for framework/article filtering)
+        // Check compliance mappings (for article filtering)
         const complianceMapping = finding.compliance_mapping;
         const matchesCompliance = complianceMapping && (
           complianceMapping.eu_ai_act_articles?.some(a => a.toLowerCase().includes(query)) ||
@@ -166,7 +202,7 @@ export default function ScanResultsPage() {
 
       return true;
     });
-  }, [scan?.findings, typeFilter, severityFilter, searchQuery]);
+  }, [scan?.findings, typeFilter, severityFilter, frameworkFilter, searchQuery, matchesFramework]);
 
   if (loading) {
     return (
@@ -305,13 +341,19 @@ export default function ScanResultsPage() {
         <ErrorBoundary>
           <GovernanceScore
             score={scan.governance_score}
-            readiness="PARTIAL"
+            readiness={scan.eu_ai_act_readiness as 'READY' | 'PARTIAL' | 'NOT_READY' || "PARTIAL"}
+            articleMapping={scan.article_mapping}
+            frameworkMapping={scan.framework_mapping}
             onFrameworkClick={(frameworkId) => {
-              setSearchQuery(frameworkId);
+              // Set framework filter instead of search query
+              setFrameworkFilter(frameworkId);
+              setSearchQuery('');
               document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
             }}
             onArticleClick={(article) => {
+              // For articles, search by the specific article name
               setSearchQuery(article);
+              setFrameworkFilter(null);
               document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
             }}
           />
@@ -366,6 +408,24 @@ export default function ScanResultsPage() {
               onSearchChange={setSearchQuery}
             />
           </div>
+
+          {/* Framework Filter Indicator */}
+          {frameworkFilter && (
+            <div className="px-5 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-blue-700 dark:text-blue-300">
+                  Filtered by: <strong>{frameworkDisplayNames[frameworkFilter] || frameworkFilter}</strong>
+                </span>
+                <button
+                  onClick={() => setFrameworkFilter(null)}
+                  className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                >
+                  Clear filter
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Findings List */}
           <div className="divide-y divide-gray-100 dark:divide-gray-800">

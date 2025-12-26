@@ -14,6 +14,8 @@ import {
   Terminal,
   ArrowRight,
   Plus,
+  Bot,
+  X,
 } from "lucide-react";
 
 import {
@@ -48,6 +50,34 @@ export default function ScanPage() {
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("ALL");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [frameworkFilter, setFrameworkFilter] = useState<string | null>(null);
+
+  // Map frontend framework IDs to display names
+  const frameworkDisplayNames: Record<string, string> = {
+    'eu-ai-act': 'EU AI Act',
+    'nist-ai-rmf': 'NIST AI RMF',
+    'iso-42001': 'ISO 42001',
+    'owasp-llm': 'OWASP LLM Top 10',
+  };
+
+  // Helper to check if a finding matches a framework filter
+  const matchesFramework = useCallback((finding: Finding, fwId: string): boolean => {
+    const cm = finding.compliance_mapping;
+    if (!cm) return false;
+
+    switch (fwId) {
+      case 'eu-ai-act':
+        return (cm.eu_ai_act_articles?.length ?? 0) > 0;
+      case 'nist-ai-rmf':
+        return (cm.nist_categories?.length ?? 0) > 0;
+      case 'iso-42001':
+        return (cm.iso_42001_clauses?.length ?? 0) > 0;
+      case 'owasp-llm':
+        return (cm.owasp_items?.length ?? 0) > 0;
+      default:
+        return false;
+    }
+  }, []);
 
   // Initialize API client
   useEffect(() => {
@@ -87,7 +117,7 @@ export default function ScanPage() {
     );
   }, [result?.findings]);
 
-  // Filter findings based on type, severity and search
+  // Filter findings based on type, severity, framework and search
   const filteredFindings = useMemo(() => {
     if (!result?.findings) return [];
 
@@ -116,6 +146,13 @@ export default function ScanPage() {
         return false;
       }
 
+      // Framework filter (from clicking governance items)
+      if (frameworkFilter) {
+        if (!matchesFramework(finding, frameworkFilter)) {
+          return false;
+        }
+      }
+
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -129,7 +166,7 @@ export default function ScanPage() {
 
       return true;
     });
-  }, [result?.findings, typeFilter, severityFilter, searchQuery]);
+  }, [result?.findings, typeFilter, severityFilter, frameworkFilter, searchQuery, matchesFramework]);
 
   // Handle file drop
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -201,6 +238,7 @@ export default function ScanPage() {
     setSeverityFilter("ALL");
     setTypeFilter("ALL");
     setSearchQuery("");
+    setFrameworkFilter(null);
 
     try {
       // Pass scan policy and agent name to backend
@@ -380,12 +418,21 @@ export default function ScanPage() {
       {/* Results */}
       {result && (
         <div className="space-y-6">
-          {/* Results Header with New Scan Button */}
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
-              Scan Complete
-            </h2>
+          {/* Agent Name Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <Bot className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  {agentName || 'Scan Results'}
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {result.files_scanned} files scanned • {result.findings_count} findings • {result.scan_duration}
+                </p>
+              </div>
+            </div>
             <button
               onClick={() => {
                 setResult(null);
@@ -396,6 +443,7 @@ export default function ScanPage() {
                 setTypeFilter("ALL");
                 setAgentName("");
                 setSearchQuery("");
+                setFrameworkFilter(null);
               }}
               className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
             >
@@ -448,11 +496,15 @@ export default function ScanPage() {
                 articleMapping={result.article_mapping}
                 frameworkMapping={result.framework_mapping}
                 onFrameworkClick={(frameworkId) => {
-                  setSearchQuery(frameworkId);
+                  // Set framework filter instead of search query
+                  setFrameworkFilter(frameworkId);
+                  setSearchQuery('');
                   document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
                 }}
                 onArticleClick={(article) => {
+                  // For articles, search by the specific article name
                   setSearchQuery(article);
+                  setFrameworkFilter(null);
                   document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
                 }}
               />
@@ -530,6 +582,24 @@ export default function ScanPage() {
                   onSearchChange={setSearchQuery}
                 />
               </div>
+
+              {/* Framework Filter Indicator */}
+              {frameworkFilter && (
+                <div className="px-5 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-blue-700 dark:text-blue-300">
+                      Filtered by: <strong>{frameworkDisplayNames[frameworkFilter] || frameworkFilter}</strong>
+                    </span>
+                    <button
+                      onClick={() => setFrameworkFilter(null)}
+                      className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                    >
+                      Clear filter
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Findings List */}
               <div className="divide-y divide-gray-100 dark:divide-gray-800">

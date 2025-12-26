@@ -96,13 +96,19 @@ export function GovernanceScore({
   };
 
   // Build framework list with icons - all frameworks treated equally
+  // Backend returns keys with spaces like "NIST AI RMF", so we use those exact keys
   const frameworks = [
     {
       id: 'eu-ai-act',
       name: 'EU AI Act',
       icon: FileText,
-      status: frameworkMapping?.['EU_AI_ACT']?.status ?? displayReadiness,
-      findingCount: frameworkMapping?.['EU_AI_ACT']?.finding_count ?? 0,
+      // EU AI Act uses articleMapping, not frameworkMapping
+      status: articleMapping && Object.keys(articleMapping).length > 0
+        ? (Object.values(articleMapping).some(a => a.status === 'FAIL') ? 'FAIL' : 'PARTIAL')
+        : displayReadiness,
+      findingCount: articleMapping
+        ? Object.values(articleMapping).reduce((sum, a) => sum + a.finding_count, 0)
+        : 0,
       deadline: euAiActDeadline,
       articles: articleMapping ? Object.values(articleMapping) : [],
     },
@@ -110,22 +116,22 @@ export function GovernanceScore({
       id: 'nist-ai-rmf',
       name: 'NIST AI RMF',
       icon: Shield,
-      status: frameworkMapping?.['NIST_AI_RMF']?.status ?? 'NOT_READY',
-      findingCount: frameworkMapping?.['NIST_AI_RMF']?.finding_count ?? 0,
+      status: frameworkMapping?.['NIST AI RMF']?.status ?? 'NOT_READY',
+      findingCount: frameworkMapping?.['NIST AI RMF']?.finding_count ?? 0,
     },
     {
       id: 'iso-42001',
       name: 'ISO 42001',
       icon: Award,
-      status: frameworkMapping?.['ISO_42001']?.status ?? 'NOT_READY',
-      findingCount: frameworkMapping?.['ISO_42001']?.finding_count ?? 0,
+      status: frameworkMapping?.['ISO 42001']?.status ?? 'NOT_READY',
+      findingCount: frameworkMapping?.['ISO 42001']?.finding_count ?? 0,
     },
     {
       id: 'owasp-llm',
       name: 'OWASP LLM Top 10',
       icon: AlertTriangle,
-      status: frameworkMapping?.['OWASP_LLM']?.status ?? 'NOT_READY',
-      findingCount: frameworkMapping?.['OWASP_LLM']?.finding_count ?? 0,
+      status: frameworkMapping?.['OWASP LLM Top 10']?.status ?? 'NOT_READY',
+      findingCount: frameworkMapping?.['OWASP LLM Top 10']?.finding_count ?? 0,
     },
   ];
 

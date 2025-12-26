@@ -46,10 +46,10 @@ export interface Scan {
   org_id: string | null;
   api_key_id: string | null;
   agent_id?: string | null;
-  agent_name?: string;
-  agent_path?: string;
-  scan_policy?: string;
-  scan_number?: number;
+  agent_name?: string | null;      // Allow null for old scans
+  agent_path?: string | null;      // Allow null for old scans
+  scan_policy?: string | null;     // Allow null for old scans
+  scan_number?: number | null;     // Allow null for old scans
   files_scanned: number;
   lines_of_code: number;
   findings_count: number;
@@ -58,7 +58,7 @@ export interface Scan {
   medium_count: number;
   low_count: number;
   risk_score: number;
-  governance_score?: number;
+  governance_score?: number | null; // Allow null for old scans
   duration_ms: number;
   request_id: string;
   client_ip: string;
@@ -108,6 +108,10 @@ export interface ScanFull extends Scan {
   findings: Finding[];
   topology_map: TopologyMap | null;
   strengths: Strength[];
+  // Governance compliance mappings
+  eu_ai_act_readiness?: string;
+  article_mapping?: Record<string, ArticleStatus>;
+  framework_mapping?: Record<string, FrameworkStatus>;
 }
 
 export interface HistoryResponse {
