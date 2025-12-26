@@ -25,6 +25,8 @@ interface GovernanceScoreProps {
   articleMapping?: Record<string, ArticleStatus>;
   frameworkMapping?: Record<string, FrameworkStatus>;
   euAiActDeadline?: string; // Optional deadline prop, no hardcoded default
+  onFrameworkClick?: (frameworkId: string) => void;
+  onArticleClick?: (articleId: string) => void;
 }
 
 /**
@@ -37,6 +39,8 @@ export function GovernanceScore({
   articleMapping,
   frameworkMapping,
   euAiActDeadline,
+  onFrameworkClick,
+  onArticleClick,
 }: GovernanceScoreProps) {
   const [expandedFrameworks, setExpandedFrameworks] = useState<Set<string>>(new Set());
 
@@ -91,13 +95,14 @@ export function GovernanceScore({
     setExpandedFrameworks(newExpanded);
   };
 
-  // Build framework list with icons
+  // Build framework list with icons - all frameworks treated equally
   const frameworks = [
     {
       id: 'eu-ai-act',
       name: 'EU AI Act',
       icon: FileText,
-      status: displayReadiness,
+      status: frameworkMapping?.['EU_AI_ACT']?.status ?? displayReadiness,
+      findingCount: frameworkMapping?.['EU_AI_ACT']?.finding_count ?? 0,
       deadline: euAiActDeadline,
       articles: articleMapping ? Object.values(articleMapping) : [],
     },
@@ -168,7 +173,8 @@ export function GovernanceScore({
           {frameworks.map((framework) => {
             const Icon = framework.icon;
             const isExpanded = expandedFrameworks.has(framework.id);
-            const hasDetails = framework.id === 'eu-ai-act' && framework.articles && framework.articles.length > 0;
+            // Any framework with articles can be expanded
+            const hasDetails = framework.articles && framework.articles.length > 0;
 
             return (
               <div
@@ -205,16 +211,22 @@ export function GovernanceScore({
                   </div>
                 </button>
 
-                {/* Expanded Articles (EU AI Act only) */}
+                {/* Expanded Articles (any framework with article details) */}
                 {isExpanded && framework.articles && framework.articles.length > 0 && (
                   <div className="p-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
                     <div className="space-y-2">
                       {framework.articles.map((article) => (
-                        <div
+                        <button
                           key={article.article}
-                          className="flex items-center justify-between text-sm"
+                          onClick={() => article.finding_count > 0 && onArticleClick?.(article.article)}
+                          disabled={article.finding_count === 0}
+                          className={`w-full flex items-center justify-between text-sm p-2 rounded-md transition-colors ${
+                            article.finding_count > 0
+                              ? 'hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer'
+                              : 'cursor-default'
+                          }`}
                         >
-                          <div>
+                          <div className="text-left">
                             <span className="font-medium text-gray-700 dark:text-gray-300">
                               {article.article}
                             </span>
@@ -226,8 +238,8 @@ export function GovernanceScore({
                           </div>
                           <div className="flex items-center gap-2">
                             {article.finding_count > 0 && (
-                              <span className="text-xs text-gray-500 dark:text-gray-500">
-                                {article.finding_count} issue{article.finding_count !== 1 ? 's' : ''}
+                              <span className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                                {article.finding_count} issue{article.finding_count !== 1 ? 's' : ''} →
                               </span>
                             )}
                             <span
@@ -236,7 +248,7 @@ export function GovernanceScore({
                               {statusLabels[article.status] ?? article.status}
                             </span>
                           </div>
-                        </div>
+                        </button>
                       ))}
                     </div>
                     {framework.deadline && (
@@ -247,13 +259,19 @@ export function GovernanceScore({
                   </div>
                 )}
 
-                {/* Finding count for non-EU frameworks */}
-                {!isExpanded && framework.id !== 'eu-ai-act' && framework.findingCount !== undefined && framework.findingCount > 0 && (
-                  <div className="px-3 py-2 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-                    <span className="text-xs text-gray-500 dark:text-gray-500">
-                      {framework.findingCount} related finding{framework.findingCount !== 1 ? 's' : ''}
+                {/* Finding count when not expanded - clickable to filter */}
+                {!isExpanded && framework.findingCount !== undefined && framework.findingCount > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onFrameworkClick?.(framework.id);
+                    }}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <span className="text-xs text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                      {framework.findingCount} related finding{framework.findingCount !== 1 ? 's' : ''} →
                     </span>
-                  </div>
+                  </button>
                 )}
               </div>
             );

@@ -12,6 +12,8 @@ import {
   AlertCircle,
   History,
   Clock,
+  Bot,
+  Activity,
 } from "lucide-react";
 
 import {
@@ -20,8 +22,10 @@ import {
   type InkogAPI,
   type Scan,
   type ScanSummary,
+  type Agent,
 } from "@/lib/api";
 import { SecurityMetricCard, type MetricVariant } from "@/components/dashboard/SecurityMetricCard";
+import { AgentList } from "@/components/dashboard/AgentList";
 
 export default function DashboardPage() {
   const { getToken } = useAuth();
@@ -31,6 +35,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentScans, setRecentScans] = useState<Scan[]>([]);
   const [summary, setSummary] = useState<ScanSummary | null>(null);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,21 +53,36 @@ export default function DashboardPage() {
       setLoading(true);
       setError(null);
 
-      // Fetch stats and history in parallel
-      const [statsResponse, historyResponse] = await Promise.all([
+      // Fetch stats, history, and agents in parallel
+      const [statsResponse, historyResponse, agentsResponse] = await Promise.all([
         api.stats.get(),
         api.history.list({ limit: 5, summary: true }),
+        api.agents.list(),
       ]);
 
       setStats(statsResponse.stats);
       setRecentScans(historyResponse.scans || []);
       setSummary(historyResponse.summary || null);
+      setAgents(agentsResponse.agents || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard");
     } finally {
       setLoading(false);
     }
   }, [api]);
+
+  // Handle agent rename
+  const handleRenameAgent = async (agent: Agent, newName: string) => {
+    if (!api) return;
+    try {
+      await api.agents.update(agent.id, newName);
+      // Refresh agents list
+      const response = await api.agents.list();
+      setAgents(response.agents || []);
+    } catch (err) {
+      console.error("Failed to rename agent:", err);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -107,7 +127,11 @@ export default function DashboardPage() {
   const riskScore = stats?.risk_score_avg ?? summary?.average_risk_score ?? 0;
   const criticalCount = stats?.critical_unresolved ?? recentScans[0]?.critical_count ?? 0;
   const governanceScore = stats?.governance_score_avg ?? 100;
-  const euAiActReadiness = stats?.eu_ai_act_readiness ?? 'NOT_READY';
+
+  // Agent-centric metrics
+  const criticalAgents = agents.filter(a => a.health_status === 'critical').length;
+  const warningAgents = agents.filter(a => a.health_status === 'warning').length;
+  const healthyAgents = agents.filter(a => a.health_status === 'healthy').length;
 
   const firstName = isLoaded && user?.firstName ? user.firstName : "there";
 
@@ -146,14 +170,13 @@ export default function DashboardPage() {
       {/* Security Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SecurityMetricCard
-          title="Security Health"
-          value={riskScore}
-          subtitle={getRiskContext(riskScore)}
-          icon={Shield}
-          variant={getRiskScoreVariant(riskScore)}
+          title="Agents Monitored"
+          value={agents.length}
+          subtitle={agents.length === 0 ? "Scan your first agent" : `${healthyAgents} healthy, ${warningAgents} warning, ${criticalAgents} critical`}
+          icon={Bot}
+          variant={criticalAgents > 0 ? "danger" : warningAgents > 0 ? "warning" : "success"}
           loading={loading}
-          trend={stats?.findings_trend}
-          tooltip="Sum of finding severity weights (CRITICAL=30, HIGH=20, MEDIUM=10, LOW=5). Lower is better."
+          tooltip="Total number of AI agents being monitored for security vulnerabilities."
         />
         <SecurityMetricCard
           title="Critical Issues"
@@ -162,29 +185,49 @@ export default function DashboardPage() {
           icon={AlertTriangle}
           variant={criticalCount > 0 ? "danger" : "success"}
           loading={loading}
-          tooltip="Number of CRITICAL severity findings in your latest scan. These should be fixed immediately."
+          tooltip="Number of CRITICAL severity findings across all agents. Fix these immediately."
         />
         <SecurityMetricCard
-          title="Compliance Readiness"
+          title="Governance Score"
           value={`${governanceScore}%`}
           subtitle={getGovernanceContext(governanceScore)}
           icon={CheckCircle}
           variant={getGovernanceVariant(governanceScore)}
           loading={loading}
-          tooltip="100 minus penalties for EU AI Act violations. 80+ = Ready, 50-79 = Partial, <50 = Not Ready."
+          tooltip="Average governance score across all agents. Based on security controls and compliance requirements."
         />
         <SecurityMetricCard
-          title="EU AI Act"
-          value="Article 14"
-          subtitle="Human oversight deadline: Aug 2026"
-          icon={FileCheck}
-          variant="info"
-          badge={{
-            text: euAiActReadiness === 'READY' ? 'READY' : euAiActReadiness === 'PARTIAL' ? 'PARTIAL' : 'NOT READY',
-            variant: euAiActReadiness === 'READY' ? 'success' : euAiActReadiness === 'PARTIAL' ? 'warning' : 'danger'
-          }}
+          title="Avg Risk Score"
+          value={riskScore}
+          subtitle={getRiskContext(riskScore)}
+          icon={Activity}
+          variant={getRiskScoreVariant(riskScore)}
           loading={loading}
-          tooltip="EU AI Act compliance status based on governance controls detected in your agent."
+          trend={stats?.findings_trend}
+          tooltip="Average risk score across all agents. Lower is better."
+        />
+      </div>
+
+      {/* Agents Section */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-gray-400" />
+            <h2 className="font-semibold text-gray-900 dark:text-gray-100">Your Agents</h2>
+          </div>
+          <Link
+            href="/dashboard/scan"
+            className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 flex items-center gap-1"
+          >
+            <Shield className="h-4 w-4" />
+            Scan New Agent
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        <AgentList
+          agents={agents}
+          loading={loading}
+          onRename={handleRenameAgent}
         />
       </div>
 

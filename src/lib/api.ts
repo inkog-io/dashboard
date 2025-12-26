@@ -68,6 +68,42 @@ export interface ScanSummary {
   last_scan_at: string | null;
 }
 
+/** Agent represents a named agent for agent-centric dashboard */
+export interface Agent {
+  id: string;
+  user_id: string;
+  name: string;
+  path: string;
+  last_scan_id: string | null;
+  last_scan_at: string | null;
+  total_scans: number;
+  health_status: 'unknown' | 'healthy' | 'warning' | 'critical';
+  created_at: string;
+  updated_at: string;
+}
+
+/** Strength represents a positive governance finding (good practice detected) */
+export interface Strength {
+  id: string;
+  pattern_id: string;
+  control_type: 'oversight' | 'authorization' | 'audit' | 'rate_limit';
+  title: string;
+  message: string;
+}
+
+/** Extended Scan with full data (findings, topology, strengths) */
+export interface ScanFull extends Scan {
+  agent_id: string | null;
+  agent_name: string;
+  agent_path: string;
+  scan_policy: string;
+  scan_number: number;
+  governance_score: number;
+  findings: Finding[];
+  topology_map: TopologyMap | null;
+  strengths: Strength[];
+}
+
 export interface HistoryResponse {
   success: boolean;
   scans: Scan[];
@@ -374,6 +410,25 @@ export interface StatsResponse {
   stats: DashboardStats;
 }
 
+/** Response for listing agents */
+export interface AgentsListResponse {
+  success: boolean;
+  agents: Agent[];
+  count: number;
+}
+
+/** Response for single agent */
+export interface AgentDetailResponse {
+  success: boolean;
+  agent: Agent;
+}
+
+/** Response for single scan with full data */
+export interface ScanDetailResponse {
+  success: boolean;
+  scan: ScanFull;
+}
+
 /**
  * API Error response from backend (RFC 7807 Problem Details)
  */
@@ -596,6 +651,41 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
        * Get dashboard stats for the current user
        */
       get: () => request<StatsResponse>('/v1/stats'),
+    },
+
+    /**
+     * Agents API - Agent-centric dashboard operations
+     */
+    agents: {
+      /**
+       * List all agents for the current user
+       */
+      list: () => request<AgentsListResponse>('/v1/agents'),
+
+      /**
+       * Get a single agent by ID
+       */
+      get: (agentId: string) => request<AgentDetailResponse>(`/v1/agents/${agentId}`),
+
+      /**
+       * Update an agent (rename)
+       */
+      update: (agentId: string, name: string) =>
+        request<AgentDetailResponse>(`/v1/agents/${agentId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ name }),
+        }),
+    },
+
+    /**
+     * Scans API - Individual scan operations
+     */
+    scans: {
+      /**
+       * Get a single scan with full data (findings, topology, strengths)
+       * Used for re-opening previous scan results
+       */
+      get: (scanId: string) => request<ScanDetailResponse>(`/v1/scans/${scanId}`),
     },
 
     /**

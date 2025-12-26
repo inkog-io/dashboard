@@ -5,13 +5,20 @@ import { ArticleStatus, FrameworkStatus } from '@/lib/api';
 interface ComplianceMappingProps {
   articleMapping?: Record<string, ArticleStatus>;
   frameworkMapping?: Record<string, FrameworkStatus>;
+  onFrameworkClick?: (framework: string) => void;
+  onArticleClick?: (article: string) => void;
 }
 
 /**
- * ComplianceMapping displays compliance status for EU AI Act articles
- * and security frameworks (OWASP, ISO, NIST).
+ * ComplianceMapping displays compliance status for AI governance frameworks
+ * including EU AI Act, OWASP LLM Top 10, ISO 42001, and NIST AI RMF.
  */
-export function ComplianceMapping({ articleMapping, frameworkMapping }: ComplianceMappingProps) {
+export function ComplianceMapping({
+  articleMapping,
+  frameworkMapping,
+  onFrameworkClick,
+  onArticleClick,
+}: ComplianceMappingProps) {
   const getStatusIcon = (status: 'PASS' | 'PARTIAL' | 'FAIL') => {
     switch (status) {
       case 'PASS':
@@ -50,18 +57,53 @@ export function ComplianceMapping({ articleMapping, frameworkMapping }: Complian
     <div className="bg-white dark:bg-gray-900 rounded-lg shadow dark:shadow-gray-800 p-6">
       <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Compliance Mapping</h3>
 
-      <div className="space-y-6">
-        {/* EU AI Act Articles */}
+      <div className="space-y-2">
+        {/* All Frameworks - unified display */}
+        {hasFrameworks && Object.entries(frameworkMapping!).map(([framework, status]) => (
+          <button
+            key={framework}
+            onClick={() => status.finding_count > 0 && onFrameworkClick?.(framework)}
+            disabled={status.finding_count === 0}
+            className={`w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg transition-colors ${
+              status.finding_count > 0
+                ? 'hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'
+                : 'cursor-default'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {getStatusIcon(status.status)}
+              <span className="font-medium text-gray-900 dark:text-gray-100">{status.framework}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`px-2 py-1 text-xs font-medium rounded border ${getStatusBadgeColor(status.status)}`}>
+                {status.status}
+              </span>
+              {status.finding_count > 0 && (
+                <span className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                  {status.finding_count} finding{status.finding_count !== 1 ? 's' : ''} →
+                </span>
+              )}
+            </div>
+          </button>
+        ))}
+
+        {/* Article Details (if available) */}
         {hasArticles && (
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">EU AI Act</h4>
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Article Details</h4>
             <div className="space-y-2">
               {Object.entries(articleMapping!).map(([article, status]) => (
-                <div
+                <button
                   key={article}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                  onClick={() => status.finding_count > 0 && onArticleClick?.(status.article)}
+                  disabled={status.finding_count === 0}
+                  className={`w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg transition-colors ${
+                    status.finding_count > 0
+                      ? 'hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'
+                      : 'cursor-default'
+                  }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 text-left">
                     {getStatusIcon(status.status)}
                     <div>
                       <span className="font-medium text-gray-900 dark:text-gray-100">{status.article}</span>
@@ -75,42 +117,12 @@ export function ComplianceMapping({ articleMapping, frameworkMapping }: Complian
                       {status.status}
                     </span>
                     {status.finding_count > 0 && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {status.finding_count} finding{status.finding_count !== 1 ? 's' : ''}
+                      <span className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                        {status.finding_count} finding{status.finding_count !== 1 ? 's' : ''} →
                       </span>
                     )}
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Security Frameworks */}
-        {hasFrameworks && (
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Security Frameworks</h4>
-            <div className="space-y-2">
-              {Object.entries(frameworkMapping!).map(([framework, status]) => (
-                <div
-                  key={framework}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(status.status)}
-                    <span className="font-medium text-gray-900 dark:text-gray-100">{status.framework}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 text-xs font-medium rounded border ${getStatusBadgeColor(status.status)}`}>
-                      {status.status}
-                    </span>
-                    {status.finding_count > 0 && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {status.finding_count} finding{status.finding_count !== 1 ? 's' : ''}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>

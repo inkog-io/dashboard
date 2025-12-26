@@ -185,7 +185,7 @@ export function TopologyNodeSheet({
                   <span className="font-medium">Missing: {node.missingControl?.replace(/_/g, ' ')}</span>
                 </div>
                 <p className="text-sm text-red-600 dark:text-red-400">
-                  Required for EU AI Act compliance (Article 14).
+                  Required for compliance with AI governance frameworks.
                 </p>
               </div>
               <GhostNodeRemediation controlType={node.missingControl} />
@@ -400,8 +400,8 @@ class AuditCallback(BaseCallbackHandler):
       <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
         <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-2">How to Fix</h4>
         <p className="text-sm text-blue-700 dark:text-blue-400">
-          Add the missing {controlType?.replace(/_/g, " ")} control to your agent workflow.
-          See EU AI Act Article 14 for requirements.
+          Add the missing {controlType?.replace(/_/g, " ")} control to your agent workflow
+          to improve compliance with governance frameworks.
         </p>
       </div>
     );
