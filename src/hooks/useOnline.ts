@@ -12,8 +12,8 @@ import { useState, useEffect, useCallback } from 'react';
 interface OnlineStatus {
   /** Whether the browser reports being online */
   isOnline: boolean;
-  /** Whether we've verified actual API connectivity */
-  isConnected: boolean;
+  /** Whether we've verified actual API connectivity (null = still checking) */
+  isConnected: boolean | null;
   /** When the last successful connection was made */
   lastConnectedAt: Date | null;
   /** When connectivity was lost */
@@ -33,11 +33,13 @@ export function useOnline(): OnlineStatus {
   const [isOnline, setIsOnline] = useState<boolean>(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
-  const [isConnected, setIsConnected] = useState<boolean>(true);
+  // Start with null to indicate "checking" state - don't show banner until first check completes
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [lastConnectedAt, setLastConnectedAt] = useState<Date | null>(
     typeof window !== 'undefined' ? new Date() : null
   );
   const [offlineSince, setOfflineSince] = useState<Date | null>(null);
+  const [failureCount, setFailureCount] = useState(0);
 
   /**
    * Check actual API connectivity by hitting the health endpoint
@@ -49,6 +51,8 @@ export function useOnline(): OnlineStatus {
 
       const response = await fetch(`${API_BASE_URL}/health`, {
         method: 'GET',
+        mode: 'cors',
+        credentials: 'omit', // Don't send cookies for health check
         signal: controller.signal,
         cache: 'no-store',
       });
@@ -59,16 +63,27 @@ export function useOnline(): OnlineStatus {
         setIsConnected(true);
         setLastConnectedAt(new Date());
         setOfflineSince(null);
+        setFailureCount(0);
         return true;
       }
-    } catch {
-      // Connection failed
+    } catch (err) {
+      // Log in development for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[useOnline] Health check failed:', err);
+      }
     }
 
-    setIsConnected(false);
-    if (!offlineSince) {
-      setOfflineSince(new Date());
-    }
+    // Only mark as disconnected after 2 consecutive failures to avoid flaky detection
+    setFailureCount(prev => {
+      const newCount = prev + 1;
+      if (newCount >= 2) {
+        setIsConnected(false);
+        if (!offlineSince) {
+          setOfflineSince(new Date());
+        }
+      }
+      return newCount;
+    });
     return false;
   }, [offlineSince]);
 

@@ -15,8 +15,9 @@ export function OfflineBanner() {
   const { isOnline, isConnected, offlineSince, checkConnection } = useOnline();
   const [isChecking, setIsChecking] = useState(false);
 
-  // Only show if offline or API unreachable
-  if (isOnline && isConnected) {
+  // Don't show while still checking (isConnected === null)
+  // Only show if definitively offline or API unreachable
+  if (isConnected === null || (isOnline && isConnected)) {
     return null;
   }
 
