@@ -47,11 +47,11 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { downloadBlob, downloadJSON, generateExportFilename } from "@/lib/export-utils";
 import { GovernanceScore } from "@/components/GovernanceScore";
 import { TopologyMapVisualization } from "@/components/TopologyMap";
-import { FindingCard } from "@/components/FindingCard";
 import { FindingDetailsPanel } from "@/components/FindingDetailsPanel";
 import { FindingsToolbar, type SeverityFilter, type TypeFilter } from "@/components/FindingsToolbar";
 import { StrengthsSection } from "@/components/dashboard/StrengthsSection";
 import { ScanDiffView } from "@/components/ScanDiffView";
+import { GroupedFindings } from "@/components/GroupedFindings";
 
 export default function ScanResultsPage() {
   const params = useParams();
@@ -515,22 +515,17 @@ export default function ScanResultsPage() {
             </div>
           )}
 
-          {/* Findings List */}
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {filteredFindings.length > 0 ? (
-              filteredFindings.map((finding, index) => (
-                <FindingCard
-                  key={finding.id || index}
-                  finding={finding}
-                  onClick={() => setSelectedFinding(finding)}
-                />
-              ))
-            ) : (
-              <div className="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
-                No findings match your filters
-              </div>
-            )}
-          </div>
+          {/* Findings List - grouped by line number for better overview */}
+          {filteredFindings.length > 0 ? (
+            <GroupedFindings
+              findings={filteredFindings}
+              onFindingClick={(finding) => setSelectedFinding(finding)}
+            />
+          ) : (
+            <div className="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
+              No findings match your filters
+            </div>
+          )}
 
           {/* Results count */}
           {filteredFindings.length > 0 && (
