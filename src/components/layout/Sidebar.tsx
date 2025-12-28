@@ -5,6 +5,7 @@ import { UserButton } from "@clerk/nextjs";
 import { ChevronsLeft, ChevronsRight, Command } from "lucide-react";
 import { SidebarNav } from "./SidebarNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { OrgSwitcher } from "@/components/OrgSwitcher";
 import {
   Tooltip,
   TooltipContent,
@@ -49,9 +50,14 @@ export function Sidebar({
           </Link>
         </div>
 
+        {/* Organization Switcher */}
+        <div className="px-3 pt-4">
+          <OrgSwitcher isCollapsed={isCollapsed} />
+        </div>
+
         {/* Command Palette Trigger */}
         {onCommandPaletteOpen && (
-          <div className="px-3 pt-4">
+          <div className="px-3 pt-2">
             {isCollapsed ? (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>

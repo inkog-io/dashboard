@@ -4,6 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
 import { CommandPalette, useCommandPalette } from "./CommandPalette";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +18,7 @@ export function DashboardShell({ children, userEmail }: DashboardShellProps) {
   const { open: commandOpen, setOpen: setCommandOpen } = useCommandPalette();
 
   return (
-    <>
+    <OrganizationProvider>
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <Sidebar
@@ -51,6 +52,6 @@ export function DashboardShell({ children, userEmail }: DashboardShellProps) {
 
       {/* Offline Banner */}
       <OfflineBanner />
-    </>
+    </OrganizationProvider>
   );
 }

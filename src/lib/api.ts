@@ -23,6 +23,150 @@ export interface APIKey {
   revoked_at: string | null;
 }
 
+// =============================================================================
+// Organization Types
+// =============================================================================
+
+/** User's role within an organization */
+export type OrgRole = 'owner' | 'admin' | 'member';
+
+/** Organization with user's membership info */
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  role: OrgRole;
+  member_count: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+/** Organization member with user details */
+export interface OrgMember {
+  user_id: string;
+  email: string;
+  name: string;
+  avatar_url: string | null;
+  role: OrgRole;
+  joined_at: string;
+}
+
+/** Organization statistics */
+export interface OrgStats {
+  total_scans: number;
+  unique_agents: number;
+  findings: {
+    total: number;
+    by_severity: Record<string, number>;
+    by_category: Record<string, number>;
+  };
+  risk_score: {
+    average: number;
+    trend: number;
+    trend_direction: 'improving' | 'stable' | 'degrading';
+  };
+  scan_frequency: {
+    daily_average: number;
+    weekly_total: number;
+  };
+  last_scan_at: string | null;
+}
+
+/** Response for listing organizations */
+export interface OrganizationsListResponse {
+  organizations: Organization[];
+}
+
+/** Response for organization members */
+export interface OrgMembersResponse {
+  members: OrgMember[];
+  total: number;
+}
+
+/** Response for organization stats */
+export interface OrgStatsResponse {
+  success: boolean;
+  stats: OrgStats;
+}
+
+// =============================================================================
+// Suppression Types
+// =============================================================================
+
+/** Reason for suppressing a finding */
+export type SuppressionReason = 'false_positive' | 'accepted_risk' | 'wont_fix' | 'mitigated';
+
+/** A suppressed finding */
+export interface Suppression {
+  id: string;
+  pattern_id: string;
+  pattern_title?: string;
+  pattern_severity?: string;
+  agent_id: string | null;
+  agent_name?: string | null;
+  file_path: string | null;
+  line_number: number | null;
+  finding_hash: string | null;
+  reason: SuppressionReason;
+  justification: string | null;
+  expires_at: string | null;
+  is_active: boolean;
+  created_at: string;
+  created_by: {
+    id: string;
+    email: string;
+    name?: string;
+  };
+  updated_at: string;
+  revoked_at: string | null;
+  revoked_by: {
+    id: string;
+    email: string;
+  } | null;
+}
+
+/** Request to create a suppression */
+export interface CreateSuppressionRequest {
+  pattern_id: string;
+  agent_id?: string;
+  file_path?: string;
+  line_number?: number;
+  finding_hash?: string;
+  reason: SuppressionReason;
+  justification?: string;
+  expires_at?: string;
+}
+
+/** Response for listing suppressions */
+export interface SuppressionsListResponse {
+  suppressions: Suppression[];
+  total: number;
+  has_more: boolean;
+}
+
+/** Response for creating a suppression */
+export interface CreateSuppressionResponse {
+  success: boolean;
+  suppression: Suppression;
+}
+
+/** Response for checking if a finding is suppressed */
+export interface SuppressionCheckResponse {
+  is_suppressed: boolean;
+  suppression: Suppression | null;
+}
+
+/** Suppression statistics */
+export interface SuppressionStats {
+  total_active: number;
+  total_expired: number;
+  total_revoked: number;
+  by_reason: Record<SuppressionReason, number>;
+  by_pattern: Record<string, number>;
+  expiring_soon: number;
+  expiring_soon_threshold_days: number;
+}
+
 export interface CreateKeyResponse {
   success: boolean;
   key: string;  // Raw key - only shown once!
@@ -250,6 +394,55 @@ export interface TopologyMap {
 }
 
 export type FindingType = 'vulnerability' | 'governance_violation';
+
+// =============================================================================
+// Diff Types - For comparing scans to show new/fixed findings
+// =============================================================================
+
+/** Summary of finding for diff comparison */
+export interface DiffFinding {
+  id: string;
+  pattern_id: string;
+  file: string;
+  line: number;
+  column: number;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  message: string;
+  confidence: number;
+  category: string;
+  owasp_category?: string;
+}
+
+/** Summary statistics for a diff */
+export interface DiffSummary {
+  total_new: number;
+  total_fixed: number;
+  total_unchanged: number;
+  new_by_severity: Record<string, number>;
+  fixed_by_severity: Record<string, number>;
+  base_risk_score: number;
+  head_risk_score: number;
+  risk_delta: number;
+}
+
+/** Full diff result comparing two scans */
+export interface DiffResult {
+  base_scan_id: string;
+  base_scan_time: string;
+  head_scan_id: string;
+  head_scan_time: string;
+  summary: DiffSummary;
+  new_findings: DiffFinding[];
+  fixed_findings: DiffFinding[];
+  unchanged_findings: DiffFinding[];
+}
+
+/** Response from the diff API endpoint */
+export interface DiffResponse {
+  success: boolean;
+  diff?: DiffResult;
+  error?: string;
+}
 
 export interface Finding {
   id: string;
@@ -832,6 +1025,17 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
       exportSARIF: (scanId: string) => request<SARIFReport>(`/v1/scans/${scanId}/export/sarif`),
 
       /**
+       * Get diff between this scan and a previous scan
+       * Compares to previous scan of same agent if no baseScanId provided
+       */
+      diff: (scanId: string, baseScanId?: string) => {
+        const url = baseScanId
+          ? `/v1/scans/${scanId}/diff?base=${baseScanId}`
+          : `/v1/scans/${scanId}/diff`;
+        return request<DiffResponse>(url);
+      },
+
+      /**
        * Export scan as PDF (compliance report)
        * Returns a Blob for download
        */
@@ -917,6 +1121,135 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
         // Transform backend response to frontend format with defensive defaults
         return transformScanResponse(data as BackendScanResponse);
       },
+    },
+
+    /**
+     * Organizations API - Multi-org support
+     */
+    orgs: {
+      /**
+       * List organizations the user belongs to
+       */
+      list: () => request<OrganizationsListResponse>('/v1/orgs'),
+
+      /**
+       * Get organization details
+       */
+      get: (orgId: string) => request<{ organization: Organization }>(`/v1/orgs/${orgId}`),
+
+      /**
+       * Get organization members (requires admin/owner role)
+       */
+      members: (orgId: string) => request<OrgMembersResponse>(`/v1/orgs/${orgId}/members`),
+
+      /**
+       * Get organization statistics
+       */
+      stats: (orgId: string) => request<OrgStatsResponse>(`/v1/orgs/${orgId}/stats`),
+
+      /**
+       * Get scans for an organization
+       */
+      scans: (orgId: string, options?: { limit?: number; offset?: number }) => {
+        const params = new URLSearchParams();
+        if (options?.limit) params.set('limit', options.limit.toString());
+        if (options?.offset) params.set('offset', options.offset.toString());
+        const query = params.toString();
+        return request<{ scans: Scan[]; total: number; has_more: boolean }>(
+          `/v1/orgs/${orgId}/scans${query ? `?${query}` : ''}`
+        );
+      },
+
+      /**
+       * Get API keys for an organization (requires admin/owner role)
+       */
+      apiKeys: (orgId: string) => request<{ api_keys: APIKey[]; total: number }>(
+        `/v1/orgs/${orgId}/api-keys`
+      ),
+
+      /**
+       * Create API key for an organization (requires admin/owner role)
+       */
+      createApiKey: (orgId: string, name: string, scopes: string[]) =>
+        request<CreateKeyResponse>(`/v1/orgs/${orgId}/api-keys`, {
+          method: 'POST',
+          body: JSON.stringify({ name, scopes }),
+        }),
+    },
+
+    /**
+     * Suppressions API - Baseline and exception management
+     */
+    suppressions: {
+      /**
+       * List suppressions for an organization
+       */
+      list: (orgId: string, options?: {
+        agent_id?: string;
+        pattern_id?: string;
+        reason?: SuppressionReason;
+        include_expired?: boolean;
+        include_revoked?: boolean;
+        limit?: number;
+        offset?: number;
+      }) => {
+        const params = new URLSearchParams();
+        if (options?.agent_id) params.set('agent_id', options.agent_id);
+        if (options?.pattern_id) params.set('pattern_id', options.pattern_id);
+        if (options?.reason) params.set('reason', options.reason);
+        if (options?.include_expired) params.set('include_expired', 'true');
+        if (options?.include_revoked) params.set('include_revoked', 'true');
+        if (options?.limit) params.set('limit', options.limit.toString());
+        if (options?.offset) params.set('offset', options.offset.toString());
+        const query = params.toString();
+        return request<SuppressionsListResponse>(
+          `/v1/orgs/${orgId}/suppressions${query ? `?${query}` : ''}`
+        );
+      },
+
+      /**
+       * Get a single suppression
+       */
+      get: (orgId: string, suppressionId: string) =>
+        request<{ suppression: Suppression }>(`/v1/orgs/${orgId}/suppressions/${suppressionId}`),
+
+      /**
+       * Create a suppression
+       */
+      create: (orgId: string, data: CreateSuppressionRequest) =>
+        request<CreateSuppressionResponse>(`/v1/orgs/${orgId}/suppressions`, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        }),
+
+      /**
+       * Revoke a suppression
+       */
+      revoke: (orgId: string, suppressionId: string) =>
+        request<{ id: string; revoked_at: string }>(`/v1/orgs/${orgId}/suppressions/${suppressionId}`, {
+          method: 'DELETE',
+        }),
+
+      /**
+       * Check if a finding is suppressed
+       */
+      check: (orgId: string, data: {
+        pattern_id: string;
+        agent_id?: string;
+        file_path?: string;
+        line_number?: number;
+        finding_hash?: string;
+      }) =>
+        request<SuppressionCheckResponse>(`/v1/orgs/${orgId}/suppressions/check`, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        }),
+
+      /**
+       * Get suppression statistics
+       */
+      stats: (orgId: string) =>
+        request<{ stats: SuppressionStats }>(`/v1/orgs/${orgId}/suppressions/stats`),
     },
   };
 }

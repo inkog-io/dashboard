@@ -20,6 +20,7 @@ import {
   FileJson,
   FileText,
   Code,
+  GitCompare,
 } from "lucide-react";
 
 import {
@@ -28,6 +29,7 @@ import {
   type Finding,
   type ScanFull,
   type InkogAPI,
+  type DiffResult,
 } from "@/lib/api";
 import {
   getFindingType,
@@ -50,6 +52,7 @@ import { FindingCard } from "@/components/FindingCard";
 import { FindingDetailsPanel } from "@/components/FindingDetailsPanel";
 import { FindingsToolbar, type SeverityFilter, type TypeFilter } from "@/components/FindingsToolbar";
 import { StrengthsSection } from "@/components/dashboard/StrengthsSection";
+import { ScanDiffView } from "@/components/ScanDiffView";
 
 export default function ScanResultsPage() {
   const params = useParams();
@@ -70,6 +73,12 @@ export default function ScanResultsPage() {
 
   // Export state
   const [exporting, setExporting] = useState<'json' | 'sarif' | 'pdf' | null>(null);
+
+  // Diff mode state
+  const [showDiff, setShowDiff] = useState(false);
+  const [diffData, setDiffData] = useState<DiffResult | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
+  const [diffError, setDiffError] = useState<string | null>(null);
 
   // Initialize API client
   useEffect(() => {
@@ -197,6 +206,39 @@ export default function ScanResultsPage() {
     }
   };
 
+  // Handle diff mode toggle
+  const handleToggleDiff = async () => {
+    if (showDiff) {
+      // Toggling off - just hide the diff view
+      setShowDiff(false);
+      return;
+    }
+
+    // Toggling on - fetch diff data
+    if (!api || !scan) return;
+
+    setDiffLoading(true);
+    setDiffError(null);
+
+    try {
+      const response = await api.scans.diff(scan.id);
+      if (response.diff) {
+        setDiffData(response.diff);
+        setShowDiff(true);
+      } else {
+        setDiffError('No previous scan found for comparison');
+      }
+    } catch (err) {
+      if (err instanceof InkogAPIError) {
+        setDiffError(err.message);
+      } else {
+        setDiffError(err instanceof Error ? err.message : 'Failed to load diff');
+      }
+    } finally {
+      setDiffLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -272,6 +314,20 @@ export default function ScanResultsPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant={showDiff ? "default" : "outline"}
+            className="h-9"
+            onClick={handleToggleDiff}
+            disabled={diffLoading}
+          >
+            {diffLoading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <GitCompare className="h-4 w-4 mr-2" />
+            )}
+            {diffLoading ? 'Loading...' : showDiff ? 'Hide Diff' : 'Compare'}
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-9" disabled={!!exporting}>
@@ -353,6 +409,24 @@ export default function ScanResultsPage() {
         </div>
       </div>
 
+      {/* Diff Error */}
+      {diffError && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+          <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+            <AlertCircle className="h-5 w-5" />
+            <span className="font-medium">Could not load diff</span>
+          </div>
+          <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">{diffError}</p>
+        </div>
+      )}
+
+      {/* Diff View - replaces regular findings when active */}
+      {showDiff && diffData && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+          <ScanDiffView diff={diffData} onClose={() => setShowDiff(false)} />
+        </div>
+      )}
+
       {/* Strengths Section */}
       {scan.strengths && scan.strengths.length > 0 && (
         <StrengthsSection strengths={scan.strengths} />
@@ -410,8 +484,8 @@ export default function ScanResultsPage() {
         </ErrorBoundary>
       )}
 
-      {/* Findings Section */}
-      {scan.findings && scan.findings.length > 0 ? (
+      {/* Findings Section - hidden when diff view is active */}
+      {!showDiff && scan.findings && scan.findings.length > 0 ? (
         <div id="findings-section" className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden scroll-mt-4">
           <div className="px-5 border-b border-gray-100 dark:border-gray-800">
             <FindingsToolbar
@@ -473,7 +547,7 @@ export default function ScanResultsPage() {
             </div>
           )}
         </div>
-      ) : (
+      ) : !showDiff ? (
         <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-8 text-center">
           <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
           <p className="text-lg font-medium text-green-800 dark:text-green-200">
@@ -483,7 +557,7 @@ export default function ScanResultsPage() {
             Your code passed all security checks.
           </p>
         </div>
-      )}
+      ) : null}
 
       {/* Finding Details Panel (Slide-out) */}
       <FindingDetailsPanel
