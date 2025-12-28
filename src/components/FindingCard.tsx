@@ -101,10 +101,14 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
               {title}
             </h3>
-            {/* Governance Badge */}
-            {isGovernance && (
+            {/* Finding Type Badge */}
+            {isGovernance ? (
               <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded border border-indigo-200 dark:border-indigo-800">
                 Governance
+              </span>
+            ) : (
+              <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded border border-amber-200 dark:border-amber-800">
+                Vulnerability
               </span>
             )}
           </div>

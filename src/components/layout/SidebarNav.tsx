@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Shield,
-  ShieldOff,
   Key,
   History,
   type LucideIcon,
@@ -42,7 +41,7 @@ const navGroups: NavGroup[] = [
   {
     title: "SETTINGS",
     items: [
-      { href: "/dashboard/suppressions", label: "Suppressions", icon: ShieldOff },
+      // Suppressions removed - requires Organizations feature (coming soon)
       { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
     ],
   },

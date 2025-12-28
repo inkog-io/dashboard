@@ -10,7 +10,6 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
-  RefreshCw,
   Calendar,
   FileCode,
   Clock,
@@ -354,14 +353,7 @@ export default function ScanResultsPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <Button
-            onClick={() => router.push(`/dashboard/scan?agent=${encodeURIComponent(scan.agent_name || "")}&path=${encodeURIComponent(scan.agent_path || "")}`)}
-            className="h-9"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Rescan Agent
-          </Button>
+          {/* Rescan button removed - code is ephemeral and not stored */}
         </div>
       </div>
 
