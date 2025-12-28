@@ -515,6 +515,24 @@ export default function ScanResultsPage() {
             </div>
           )}
 
+          {/* Search Query Filter Indicator (from article clicks or manual search) */}
+          {searchQuery && !frameworkFilter && (
+            <div className="px-5 py-2 bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-100 dark:border-indigo-800">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-indigo-700 dark:text-indigo-300">
+                  Searching: <strong>{searchQuery}</strong>
+                </span>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200"
+                >
+                  Clear search
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Findings List - grouped by line number for better overview */}
           {filteredFindings.length > 0 ? (
             <GroupedFindings
