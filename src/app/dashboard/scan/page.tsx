@@ -34,7 +34,7 @@ import {
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GovernanceScore } from "@/components/GovernanceScore";
 import { TopologyMapVisualization } from "@/components/TopologyMap";
-import { FindingCard } from "@/components/FindingCard";
+import { GroupedFindings } from "@/components/GroupedFindings";
 import { FindingDetailsPanel } from "@/components/FindingDetailsPanel";
 import { FindingsToolbar, type SeverityFilter, type TypeFilter } from "@/components/FindingsToolbar";
 import { PolicySelector, type ScanPolicy, getStoredPolicy } from "@/components/PolicySelector";
@@ -560,21 +560,16 @@ export default function ScanPage() {
               )}
 
               {/* Findings List */}
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {filteredFindings.length > 0 ? (
-                  filteredFindings.map((finding, index) => (
-                    <FindingCard
-                      key={finding.id || index}
-                      finding={finding}
-                      onClick={() => setSelectedFinding(finding)}
-                    />
-                  ))
-                ) : (
-                  <div className="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
-                    No findings match your filters
-                  </div>
-                )}
-              </div>
+              {filteredFindings.length > 0 ? (
+                <GroupedFindings
+                  findings={filteredFindings}
+                  onFindingClick={(finding) => setSelectedFinding(finding)}
+                />
+              ) : (
+                <div className="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
+                  No findings match your filters
+                </div>
+              )}
 
               {/* Results count */}
               {filteredFindings.length > 0 && (

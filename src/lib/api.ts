@@ -1002,6 +1002,14 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
           method: 'PUT',
           body: JSON.stringify({ name }),
         }),
+
+      /**
+       * Delete an agent and all its scan history
+       */
+      delete: (agentId: string) =>
+        request<{ success: boolean }>(`/v1/agents/${agentId}`, {
+          method: 'DELETE',
+        }),
     },
 
     /**

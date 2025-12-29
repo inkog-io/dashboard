@@ -82,6 +82,18 @@ export default function DashboardPage() {
     }
   };
 
+  // Handle agent delete
+  const handleDeleteAgent = async (agent: Agent) => {
+    if (!api) return;
+    try {
+      await api.agents.delete(agent.id);
+      // Remove from local state
+      setAgents((prev) => prev.filter((a) => a.id !== agent.id));
+    } catch (err) {
+      console.error("Failed to delete agent:", err);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
@@ -210,6 +222,7 @@ export default function DashboardPage() {
           agents={agents}
           loading={loading}
           onRename={handleRenameAgent}
+          onDelete={handleDeleteAgent}
         />
       </div>
 

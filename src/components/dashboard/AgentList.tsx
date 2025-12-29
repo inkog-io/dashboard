@@ -6,7 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import {
   Bot,
   Eye,
-  RefreshCw,
+  Trash2,
   MoreHorizontal,
   AlertTriangle,
   CheckCircle2,
@@ -31,7 +31,7 @@ interface AgentListProps {
   agents: Agent[];
   loading?: boolean;
   onAgentClick?: (agent: Agent) => void;
-  onRescan?: (agent: Agent) => void;
+  onDelete?: (agent: Agent) => Promise<void>;
   onRename?: (agent: Agent, newName: string) => Promise<void>;
 }
 
@@ -97,13 +97,15 @@ export function AgentList({
   agents,
   loading = false,
   onAgentClick,
-  onRescan,
+  onDelete,
   onRename,
 }: AgentListProps) {
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const handleRowClick = (agent: Agent) => {
     if (editingId) return; // Don't navigate while editing
@@ -113,10 +115,23 @@ export function AgentList({
     onAgentClick?.(agent);
   };
 
-  const handleRescan = (e: React.MouseEvent, agent: Agent) => {
+  const handleDelete = async (e: React.MouseEvent, agent: Agent) => {
     e.stopPropagation();
-    router.push(`/dashboard/scan?agent=${encodeURIComponent(agent.name)}&path=${encodeURIComponent(agent.path || "")}`);
-    onRescan?.(agent);
+
+    // If not confirmed yet, show confirmation
+    if (confirmDeleteId !== agent.id) {
+      setConfirmDeleteId(agent.id);
+      return;
+    }
+
+    // User confirmed, proceed with deletion
+    setDeletingId(agent.id);
+    try {
+      await onDelete?.(agent);
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
+    }
   };
 
   const handleEdit = (e: React.MouseEvent, agent: Agent) => {
@@ -281,11 +296,21 @@ export function AgentList({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => handleRescan(e, agent)}
-                    className="h-8 px-2"
+                    onClick={(e) => handleDelete(e, agent)}
+                    disabled={deletingId === agent.id}
+                    className={cn(
+                      "h-8 px-2",
+                      confirmDeleteId === agent.id
+                        ? "text-red-600 hover:text-red-700 hover:bg-red-50"
+                        : "text-gray-500 hover:text-gray-700"
+                    )}
                   >
-                    <RefreshCw className="h-4 w-4 mr-1" />
-                    Rescan
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    {deletingId === agent.id
+                      ? "Deleting..."
+                      : confirmDeleteId === agent.id
+                      ? "Confirm"
+                      : "Delete"}
                   </Button>
                   <Button
                     variant="ghost"
