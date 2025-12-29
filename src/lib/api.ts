@@ -323,6 +323,7 @@ export interface ComplianceMapping {
   owasp_items?: string[];
   gdpr_articles?: string[];
   cwe_ids?: string[];
+  owasp_agentic?: string[];  // OWASP Agentic Security Initiative (T1-T7)
 }
 
 /**
@@ -467,6 +468,11 @@ export interface Finding {
   // Governance fields (EU AI Act compliance)
   governance_category?: 'oversight' | 'authorization' | 'audit' | 'privacy' | 'governance_mismatch';
   compliance_mapping?: ComplianceMapping;
+  // CVE and External References (Phase 3 Enhancement)
+  cve_references?: string[];
+  owasp_agentic_threat?: string;  // e.g., "T1", "T3"
+  palo_alto_threat?: string;       // e.g., "1" through "7"
+  mitre_attack?: string[];         // e.g., ["T1059", "T1552.001"]
   // Calibration fields (self-learning confidence)
   calibrated_confidence?: number;
   calibration_reliability?: 'insufficient' | 'low' | 'moderate' | 'high' | 'very_high';

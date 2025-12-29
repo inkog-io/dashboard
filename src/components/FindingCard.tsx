@@ -151,6 +151,34 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
               </span>
             )}
           </div>
+
+          {/* CVE and Threat References - shown when present */}
+          {(finding.cve_references?.length || finding.owasp_agentic_threat || finding.palo_alto_threat) && (
+            <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+              {finding.owasp_agentic_threat && (
+                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded" title="OWASP Agentic Security Threat">
+                  OWASP {finding.owasp_agentic_threat}
+                </span>
+              )}
+              {finding.palo_alto_threat && (
+                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded" title="Palo Alto Unit 42 Threat Category">
+                  Unit42 #{finding.palo_alto_threat}
+                </span>
+              )}
+              {finding.cve_references?.slice(0, 2).map((cve) => (
+                <span
+                  key={cve}
+                  className="px-1.5 py-0.5 text-[10px] font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded"
+                  title="Related CVE"
+                >
+                  {cve}
+                </span>
+              ))}
+              {finding.cve_references && finding.cve_references.length > 2 && (
+                <span className="text-[10px] text-gray-400">+{finding.cve_references.length - 2}</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

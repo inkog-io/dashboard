@@ -271,6 +271,32 @@ export function TopologyNodeSheet({
                       <span>Line {finding.line}</span>
                       {finding.cwe && <span>&bull; {finding.cwe}</span>}
                     </div>
+                    {/* CVE and Threat References */}
+                    {(finding.cve_references?.length || finding.owasp_agentic_threat || finding.palo_alto_threat) && (
+                      <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-current/10">
+                        {finding.owasp_agentic_threat && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded">
+                            OWASP {finding.owasp_agentic_threat}
+                          </span>
+                        )}
+                        {finding.palo_alto_threat && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+                            Unit42 #{finding.palo_alto_threat}
+                          </span>
+                        )}
+                        {finding.cve_references?.slice(0, 2).map((cve) => (
+                          <span
+                            key={cve}
+                            className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded"
+                          >
+                            {cve}
+                          </span>
+                        ))}
+                        {finding.cve_references && finding.cve_references.length > 2 && (
+                          <span className="text-[10px] opacity-60">+{finding.cve_references.length - 2} more</span>
+                        )}
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>
