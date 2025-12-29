@@ -259,6 +259,7 @@ export default function ScanPage() {
               </p>
               <ul className="mt-2 space-y-1 list-disc list-inside text-amber-700">
                 <li><strong>CLI:</strong> <code className="bg-amber-100 px-1 rounded">inkog scan ./your-project</code></li>
+                <li><strong>API:</strong> Programmatic access for custom integrations</li>
                 <li><strong>CI/CD:</strong> GitHub Actions, GitLab CI integration</li>
               </ul>
             </div>
