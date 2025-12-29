@@ -27,6 +27,7 @@ const governanceCategoryLabels: Record<string, { label: string; icon: "shield" |
   authorization: { label: "Authorization", icon: "shield" },
   audit: { label: "Audit Trail", icon: "shield" },
   privacy: { label: "Privacy", icon: "shield" },
+  governance_mismatch: { label: "AGENTS.md Mismatch", icon: "alert" },
 };
 
 /**
@@ -48,6 +49,7 @@ function isGovernanceFinding(finding: Finding): boolean {
     "missing_authorization",
     "missing_audit_logging",
     "cross_tenant_data_leakage",
+    "governance-mismatch",  // AGENTS.md governance mismatch detection
   ];
 
   return governancePatterns.some((p) => finding.pattern_id?.includes(p));

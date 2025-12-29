@@ -112,6 +112,30 @@ export const PATTERN_LABELS: Record<string, PatternLabel> = {
   },
 
   // Governance Controls (EU AI Act)
+  "governance-mismatch-write_violation": {
+    title: "AGENTS.md Violation: Writes Forbidden",
+    shortDesc: "Code performs writes but AGENTS.md declares read-only access"
+  },
+  "governance-mismatch-delete_violation": {
+    title: "AGENTS.md Violation: Deletes Forbidden",
+    shortDesc: "Code performs deletes but AGENTS.md declares no delete access"
+  },
+  "governance-mismatch-execute_violation": {
+    title: "AGENTS.md Violation: Execution Forbidden",
+    shortDesc: "Code executes commands but AGENTS.md declares no execution allowed"
+  },
+  "governance-mismatch-external_api_violation": {
+    title: "AGENTS.md Violation: External API Forbidden",
+    shortDesc: "Code calls external APIs but AGENTS.md declares no external API access"
+  },
+  "governance-mismatch-network_violation": {
+    title: "AGENTS.md Violation: Network Forbidden",
+    shortDesc: "Code performs network operations but AGENTS.md declares no network access"
+  },
+  "governance-mismatch-file_violation": {
+    title: "AGENTS.md Violation: File Access Forbidden",
+    shortDesc: "Code accesses files but AGENTS.md declares no file system access"
+  },
   "missing_human_oversight": {
     title: "No Human-in-the-Loop",
     shortDesc: "Add HumanApprovalCallbackHandler for high-risk actions"

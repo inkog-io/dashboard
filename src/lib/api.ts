@@ -465,7 +465,7 @@ export interface Finding {
   // Topology linkage
   topology_node_id?: string;  // Explicit link to topology node for precise matching
   // Governance fields (EU AI Act compliance)
-  governance_category?: 'oversight' | 'authorization' | 'audit' | 'privacy';
+  governance_category?: 'oversight' | 'authorization' | 'audit' | 'privacy' | 'governance_mismatch';
   compliance_mapping?: ComplianceMapping;
   // Calibration fields (self-learning confidence)
   calibrated_confidence?: number;
