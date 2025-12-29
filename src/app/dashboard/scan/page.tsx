@@ -16,6 +16,8 @@ import {
   Plus,
   Bot,
   X,
+  AlertTriangle,
+  FileText,
 } from "lucide-react";
 
 import {
@@ -68,6 +70,11 @@ export default function ScanPage() {
   useEffect(() => {
     setScanPolicy(getStoredPolicy());
   }, []);
+
+  // Check if AGENTS.md was uploaded (for governance manifest warning)
+  const hasAgentsMD = useMemo(() => {
+    return files.some(f => f.name.toLowerCase() === 'agents.md');
+  }, [files]);
 
   // Compute type counts from findings using shared utility
   const typeCounts = useMemo(() => {
@@ -241,47 +248,65 @@ export default function ScanPage() {
             </div>
           </div>
 
+          {/* Web Scanner Limitations Notice */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-amber-800">
+              <p className="font-medium">Quick Preview Mode</p>
+              <p>
+                This web scanner is for previewing individual files.
+                For full project analysis with AGENTS.md governance validation:
+              </p>
+              <ul className="mt-2 space-y-1 list-disc list-inside text-amber-700">
+                <li><strong>CLI:</strong> <code className="bg-amber-100 px-1 rounded">inkog scan ./your-project</code></li>
+                <li><strong>CI/CD:</strong> GitHub Actions, GitLab CI integration</li>
+              </ul>
+            </div>
+          </div>
+
           {/* Drop Zone */}
           <div
-        className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-          isDragging
-            ? "border-blue-500 bg-blue-50"
-            : "border-gray-300 hover:border-gray-400"
-        }`}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDragging(true);
-        }}
-        onDragLeave={(e) => {
-          e.preventDefault();
-          setIsDragging(false);
-        }}
-        onDrop={handleDrop}
-      >
-        <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-lg font-medium text-gray-700 mb-2">
-          Drag & drop code files here
-        </p>
-        <p className="text-sm text-gray-500 mb-4">or click to browse</p>
-        <input
-          type="file"
-          multiple
-          accept=".py,.js,.ts,.jsx,.tsx,.go,.java,.rb,.json,.yaml,.yml,.md"
-          onChange={handleFileInput}
-          className="hidden"
-          id="file-input"
-        />
-        <label
-          htmlFor="file-input"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
-        >
-          <FileCode className="h-4 w-4" />
-          Select Files
-        </label>
-        <p className="text-xs text-gray-400 mt-4">
-          Supported: Python, JavaScript, TypeScript, Go, Java, Ruby, JSON, YAML
-        </p>
-      </div>
+            className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+              isDragging
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-300 hover:border-gray-400"
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+            }}
+            onDrop={handleDrop}
+          >
+            <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-lg font-medium text-gray-700 mb-2">
+              Quick Scan Preview
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              Drag & drop files to test Inkog&apos;s detection capabilities
+            </p>
+            <input
+              type="file"
+              multiple
+              accept=".py,.js,.ts,.jsx,.tsx,.go,.java,.rb,.json,.yaml,.yml,.md"
+              onChange={handleFileInput}
+              className="hidden"
+              id="file-input"
+            />
+            <label
+              htmlFor="file-input"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+            >
+              <FileCode className="h-4 w-4" />
+              Select Files
+            </label>
+            <p className="text-xs text-gray-400 mt-4">
+              Supported: Python, JavaScript, TypeScript, Go, Java, Ruby, JSON, YAML
+            </p>
+          </div>
 
       {/* Selected Files */}
       {files.length > 0 && (
@@ -497,17 +522,39 @@ export default function ScanPage() {
             </ErrorBoundary>
           )}
 
+          {/* Missing Governance Manifest Warning */}
+          {!hasAgentsMD && (
+            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-start gap-3">
+              <FileText className="h-5 w-5 text-indigo-500 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-indigo-800">
+                <p className="font-medium">No Governance Manifest Found</p>
+                <p>
+                  Add an <code className="bg-indigo-100 px-1 rounded">AGENTS.md</code> to your project root to enable governance
+                  mismatch detection. This validates your declared capabilities against actual code behavior.
+                </p>
+                <a
+                  href="https://docs.inkog.io/governance/agents-md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-600 underline mt-1 inline-block hover:text-indigo-800"
+                >
+                  Learn about AGENTS.md →
+                </a>
+              </div>
+            </div>
+          )}
+
           {/* CLI Upsell Banner */}
           <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
               <Terminal className="h-5 w-5 text-indigo-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-medium text-gray-900">
-                  Want to run this in CI/CD?
+                  Want full project scanning with governance validation?
                 </p>
                 <p className="text-sm text-gray-600">
-                  Get your API key and integrate with GitHub Actions, GitLab CI,
-                  and more.
+                  The CLI scans entire directories, validates AGENTS.md constraints,
+                  and integrates with CI/CD pipelines.
                 </p>
               </div>
             </div>
@@ -515,7 +562,7 @@ export default function ScanPage() {
               href="/dashboard/api-keys"
               className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors whitespace-nowrap"
             >
-              Get API Key
+              Get CLI Access
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
