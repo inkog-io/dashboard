@@ -258,9 +258,9 @@ export default function ScanPage() {
                 For full project analysis with AGENTS.md governance validation:
               </p>
               <ul className="mt-2 space-y-1 list-disc list-inside text-amber-700">
-                <li><strong>CLI:</strong> <code className="bg-amber-100 px-1 rounded">inkog scan ./your-project</code></li>
-                <li><strong>API:</strong> Programmatic access for custom integrations</li>
-                <li><strong>CI/CD:</strong> GitHub Actions, GitLab CI integration</li>
+                <li><a href="https://docs.inkog.io/cli" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900"><strong>CLI:</strong></a> <code className="bg-amber-100 px-1 rounded">inkog scan ./your-project</code></li>
+                <li><a href="https://docs.inkog.io/api" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900"><strong>API:</strong></a> Programmatic access for custom integrations</li>
+                <li><a href="https://docs.inkog.io/cli/github-action" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900"><strong>CI/CD:</strong></a> GitHub Actions, GitLab CI integration</li>
               </ul>
             </div>
           </div>
