@@ -44,13 +44,13 @@ import GhostNode, { GhostNodeData, MissingControlType } from './topology/GhostNo
 import SuperNode, { SuperNodeData, MergedNodeInfo } from './topology/SuperNode';
 import { TopologyNodeSheet, SelectedNodeData } from './topology/TopologyNodeSheet';
 
-// Risk level colors
+// Risk level colors - professional/technical palette
 const riskColors: Record<string, { bg: string; border: string; text: string }> = {
-  SAFE: { bg: '#dcfce7', border: '#22c55e', text: '#166534' },
-  LOW: { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
-  MEDIUM: { bg: '#fef3c7', border: '#f59e0b', text: '#92400e' },
-  HIGH: { bg: '#fed7aa', border: '#f97316', text: '#9a3412' },
-  CRITICAL: { bg: '#fecaca', border: '#ef4444', text: '#991b1b' },
+  SAFE: { bg: 'rgba(22, 101, 52, 0.15)', border: '#22c55e', text: '#4ade80' },
+  LOW: { bg: 'rgba(30, 64, 175, 0.15)', border: '#3b82f6', text: '#60a5fa' },
+  MEDIUM: { bg: 'rgba(146, 64, 14, 0.15)', border: '#f59e0b', text: '#fbbf24' },
+  HIGH: { bg: 'rgba(154, 52, 18, 0.15)', border: '#f97316', text: '#fb923c' },
+  CRITICAL: { bg: 'rgba(153, 27, 27, 0.15)', border: '#ef4444', text: '#f87171' },
 };
 
 // Node type icons mapping to Lucide components
@@ -682,11 +682,11 @@ function toMermaidString(topology: TopologyMap): string {
   });
 
   const styleMap: Record<string, string> = {
-    CRITICAL: 'fill:#fecaca,stroke:#ef4444,stroke-width:2px',
-    HIGH: 'fill:#fed7aa,stroke:#f97316,stroke-width:2px',
-    MEDIUM: 'fill:#fef3c7,stroke:#f59e0b,stroke-width:2px',
-    LOW: 'fill:#dbeafe,stroke:#3b82f6,stroke-width:2px',
-    SAFE: 'fill:#dcfce7,stroke:#22c55e,stroke-width:2px',
+    CRITICAL: 'fill:#991b1b26,stroke:#ef4444,stroke-width:1.5px',
+    HIGH: 'fill:#9a341226,stroke:#f97316,stroke-width:1.5px',
+    MEDIUM: 'fill:#92400e26,stroke:#f59e0b,stroke-width:1.5px',
+    LOW: 'fill:#1e40af26,stroke:#3b82f6,stroke-width:1.5px',
+    SAFE: 'fill:#16653426,stroke:#22c55e,stroke-width:1.5px',
   };
 
   topology.nodes.forEach((node) => {
@@ -844,7 +844,7 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
       )}
 
       {/* ReactFlow Canvas */}
-      <div className="h-[400px]">
+      <div className="h-[400px] bg-zinc-50 dark:bg-zinc-900/50">
         <ReactFlow
           nodes={nodes}
           edges={edges}

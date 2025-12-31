@@ -109,7 +109,7 @@ export function SecurityMetricCard({
         {loading ? (
           <div className="h-8 w-20 bg-gray-100 dark:bg-gray-700 animate-pulse rounded" />
         ) : (
-          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{value}</p>
+          <p className="text-2xl font-semibold font-mono text-gray-900 dark:text-gray-100">{value}</p>
         )}
         <div className="flex items-center gap-1.5 mt-1">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>

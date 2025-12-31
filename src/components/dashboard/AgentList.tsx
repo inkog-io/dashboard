@@ -226,7 +226,7 @@ export function AgentList({
                   : "opacity-60"
               )}
             >
-              <TableCell className="py-4">
+              <TableCell>
                 <div className="flex items-center gap-3">
                   <div className="flex-shrink-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-2">
                     <Bot className="h-5 w-5 text-gray-600 dark:text-gray-300" />
@@ -257,7 +257,7 @@ export function AgentList({
                 </div>
               </TableCell>
 
-              <TableCell className="py-4">
+              <TableCell>
                 {agent.last_scan_at ? (
                   <span className="text-sm text-gray-600 dark:text-gray-300">
                     {formatDistanceToNow(new Date(agent.last_scan_at), { addSuffix: true })}
@@ -267,17 +267,17 @@ export function AgentList({
                 )}
               </TableCell>
 
-              <TableCell className="py-4 text-center">
+              <TableCell className="text-center">
                 <span className="text-sm font-mono text-gray-600 dark:text-gray-300">
                   #{agent.total_scans}
                 </span>
               </TableCell>
 
-              <TableCell className="py-4 text-center">
+              <TableCell className="text-center">
                 <HealthBadge status={agent.health_status} />
               </TableCell>
 
-              <TableCell className="py-4 text-right">
+              <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
                   {agent.last_scan_id && (
                     <Button
