@@ -52,6 +52,11 @@ export default function ScanPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [scanPolicy, setScanPolicy] = useState<ScanPolicy>("balanced");
   const [agentName, setAgentName] = useState("");
+  const [agentNameAutoDetected, setAgentNameAutoDetected] = useState(false);
+
+  // Scan progress state
+  const [scanPhase, setScanPhase] = useState<string | null>(null);
+  const [scanProgress, setScanProgress] = useState(0);
 
   // Findings panel state
   const [selectedFinding, setSelectedFinding] = useState<Finding | null>(null);
@@ -69,6 +74,36 @@ export default function ScanPage() {
   // Load stored policy preference
   useEffect(() => {
     setScanPolicy(getStoredPolicy());
+  }, []);
+
+  // Scan phases for progress UI
+  const SCAN_PHASES = [
+    { id: 'preparing', label: 'Preparing files...' },
+    { id: 'analyzing', label: 'Analyzing code structure...' },
+    { id: 'detecting', label: 'Detecting vulnerabilities...' },
+    { id: 'governance', label: 'Checking governance compliance...' },
+    { id: 'finalizing', label: 'Generating report...' },
+  ];
+
+  // Auto-detect agent name from first uploaded file
+  useEffect(() => {
+    if (files.length > 0 && !agentName) {
+      const firstName = files[0].name
+        .replace(/\.(py|js|ts|jsx|tsx|go|java|rb|json|yaml|yml|md)$/i, '')
+        .replace(/[_]/g, '-')
+        .replace(/([a-z])([A-Z])/g, '$1-$2')
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+      setAgentName(firstName);
+      setAgentNameAutoDetected(true);
+    }
+  }, [files, agentName]);
+
+  // Handle agent name change (clears auto-detect flag)
+  const handleAgentNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setAgentName(e.target.value);
+    setAgentNameAutoDetected(false);
   }, []);
 
   // Check if AGENTS.md was uploaded (for governance manifest warning)
@@ -190,9 +225,11 @@ export default function ScanPage() {
     setSeverityFilter("ALL");
     setTypeFilter("ALL");
     setSearchQuery("");
+    setAgentName("");
+    setAgentNameAutoDetected(false);
   }, []);
 
-  // Run the scan
+  // Run the scan with progress UI
   const runScan = useCallback(async () => {
     if (!api || files.length === 0) return;
 
@@ -204,12 +241,33 @@ export default function ScanPage() {
     setTypeFilter("ALL");
     setSearchQuery("");
     setFrameworkFilter(null);
+    setScanProgress(0);
+    setScanPhase(SCAN_PHASES[0].id);
 
     try {
-      // Pass scan policy and agent name to backend
-      const scanResult = await api.scan.upload(files, scanPolicy, agentName || undefined);
+      // Start progress animation
+      let phaseIndex = 0;
+      const phaseInterval = setInterval(() => {
+        phaseIndex++;
+        if (phaseIndex < SCAN_PHASES.length) {
+          setScanPhase(SCAN_PHASES[phaseIndex].id);
+          setScanProgress(Math.round((phaseIndex / SCAN_PHASES.length) * 100));
+        }
+      }, 500);
+
+      // Run API call and minimum duration in parallel
+      const [scanResult] = await Promise.all([
+        api.scan.upload(files, scanPolicy, agentName || undefined),
+        new Promise(resolve => setTimeout(resolve, 2700)) // Minimum 2.7s duration
+      ]);
+
+      clearInterval(phaseInterval);
+      setScanProgress(100);
+      setScanPhase(null);
       setResult(scanResult);
     } catch (err) {
+      setScanPhase(null);
+      setScanProgress(0);
       if (err instanceof InkogAPIError) {
         setError(`${err.message} (${err.code})`);
       } else {
@@ -218,7 +276,7 @@ export default function ScanPage() {
     } finally {
       setScanning(false);
     }
-  }, [api, files, scanPolicy, agentName]);
+  }, [api, files, scanPolicy, agentName, SCAN_PHASES]);
 
   return (
     <div className="space-y-8">
@@ -236,156 +294,241 @@ export default function ScanPage() {
       {/* Upload Section - Hidden when results exist */}
       {!result && (
         <>
-          {/* Privacy Notice */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-            <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-blue-800">
-              <p className="font-medium">Privacy Notice</p>
-              <p>
-                Files are processed ephemerally and not stored. For maximum privacy,
-                use the CLI for local-only scanning.
-              </p>
-            </div>
-          </div>
+          {/* Notices - Only show when no files selected */}
+          {files.length === 0 && (
+            <>
+              {/* Privacy Notice */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+                <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium">Privacy Notice</p>
+                  <p>
+                    Files are processed ephemerally and not stored. For maximum privacy,
+                    use the CLI for local-only scanning.
+                  </p>
+                </div>
+              </div>
 
-          {/* Web Scanner Limitations Notice */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-amber-800">
-              <p className="font-medium">Quick Preview Mode</p>
-              <p>
-                This web scanner is for previewing individual files.
-                For full project analysis with AGENTS.md governance validation:
-              </p>
-              <ul className="mt-2 space-y-1 list-disc list-inside text-amber-700">
-                <li><a href="https://docs.inkog.io/cli" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900"><strong>CLI:</strong></a> <code className="bg-amber-100 px-1 rounded">inkog scan ./your-project</code></li>
-                <li><a href="https://docs.inkog.io/api" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900"><strong>API:</strong></a> Programmatic access for custom integrations</li>
-                <li><a href="https://docs.inkog.io/cli/github-action" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900"><strong>CI/CD:</strong></a> GitHub Actions, GitLab CI integration</li>
-              </ul>
-            </div>
-          </div>
+              {/* Web Scanner Limitations Notice */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-medium">Quick Preview Mode</p>
+                  <p>
+                    This web scanner is for previewing individual files.
+                    For full project analysis with AGENTS.md governance validation:
+                  </p>
+                  <ul className="mt-2 space-y-1 list-disc list-inside text-amber-700">
+                    <li><a href="https://docs.inkog.io/cli" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900"><strong>CLI:</strong></a> <code className="bg-amber-100 px-1 rounded">inkog scan ./your-project</code></li>
+                    <li><a href="https://docs.inkog.io/api" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900"><strong>API:</strong></a> Programmatic access for custom integrations</li>
+                    <li><a href="https://docs.inkog.io/cli/github-action" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900"><strong>CI/CD:</strong></a> GitHub Actions, GitLab CI integration</li>
+                  </ul>
+                </div>
+              </div>
 
-          {/* Drop Zone */}
-          <div
-            className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-              isDragging
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-300 hover:border-gray-400"
-            }`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault();
-              setIsDragging(false);
-            }}
-            onDrop={handleDrop}
-          >
-            <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-lg font-medium text-gray-700 mb-2">
-              Quick Scan Preview
-            </p>
-            <p className="text-sm text-gray-500 mb-4">
-              Drag & drop files to test Inkog&apos;s detection capabilities
-            </p>
-            <input
-              type="file"
-              multiple
-              accept=".py,.js,.ts,.jsx,.tsx,.go,.java,.rb,.json,.yaml,.yml,.md"
-              onChange={handleFileInput}
-              className="hidden"
-              id="file-input"
-            />
-            <label
-              htmlFor="file-input"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
-            >
-              <FileCode className="h-4 w-4" />
-              Select Files
-            </label>
-            <p className="text-xs text-gray-400 mt-4">
-              Supported: Python, JavaScript, TypeScript, Go, Java, Ruby, JSON, YAML
-            </p>
-          </div>
+              {/* Full Drop Zone - Only when no files */}
+              <div
+                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                  isDragging
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-300 hover:border-gray-400"
+                }`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                }}
+                onDrop={handleDrop}
+              >
+                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-lg font-medium text-gray-700 mb-2">
+                  Quick Scan Preview
+                </p>
+                <p className="text-sm text-gray-500 mb-4">
+                  Drag & drop files to test Inkog&apos;s detection capabilities
+                </p>
+                <input
+                  type="file"
+                  multiple
+                  accept=".py,.js,.ts,.jsx,.tsx,.go,.java,.rb,.json,.yaml,.yml,.md"
+                  onChange={handleFileInput}
+                  className="hidden"
+                  id="file-input"
+                />
+                <label
+                  htmlFor="file-input"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+                >
+                  <FileCode className="h-4 w-4" />
+                  Select Files
+                </label>
+                <p className="text-xs text-gray-400 mt-4">
+                  Supported: Python, JavaScript, TypeScript, Go, Java, Ruby, JSON, YAML
+                </p>
+              </div>
+            </>
+          )}
 
       {/* Selected Files */}
       {files.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-medium text-gray-900">
-              Selected Files ({files.length})
-            </h3>
-            <button
-              onClick={clearFiles}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              Clear all
-            </button>
-          </div>
-          <ul className="space-y-2 max-h-48 overflow-y-auto">
-            {files.map((file, index) => (
-              <li
-                key={index}
-                className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg"
-              >
-                <div className="flex items-center gap-2">
-                  <FileCode className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-700">{file.name}</span>
-                  <span className="text-xs text-gray-400">
-                    ({(file.size / 1024).toFixed(1)} KB)
-                  </span>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
+          {/* Scanning Progress UI */}
+          {scanning ? (
+            <div className="py-4">
+              <div className="flex items-center gap-3 mb-4">
+                <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                <span className="font-medium text-gray-900 dark:text-gray-100">
+                  Scanning {agentName || 'files'}...
+                </span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-4">
+                <div
+                  className="h-full bg-blue-600 transition-all duration-300 ease-out"
+                  style={{ width: `${scanProgress}%` }}
+                />
+              </div>
+
+              {/* Phase Checklist */}
+              <div className="space-y-2">
+                {SCAN_PHASES.map((phase, idx) => {
+                  const currentIdx = SCAN_PHASES.findIndex(p => p.id === scanPhase);
+                  const isComplete = idx < currentIdx || (idx === currentIdx && scanProgress === 100);
+                  const isCurrent = idx === currentIdx && scanProgress < 100;
+
+                  return (
+                    <div key={phase.id} className="flex items-center gap-2 text-sm">
+                      {isComplete ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      ) : isCurrent ? (
+                        <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                      ) : (
+                        <div className="h-4 w-4 rounded-full border-2 border-gray-300 dark:border-gray-600" />
+                      )}
+                      <span className={isComplete ? "text-gray-500 dark:text-gray-400" : isCurrent ? "text-gray-900 dark:text-gray-100 font-medium" : "text-gray-400 dark:text-gray-500"}>
+                        {phase.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Agent Name - At top, prominent */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  Agent Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., customer-support-bot"
+                  value={agentName}
+                  onChange={handleAgentNameChange}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {agentNameAutoDetected && (
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Auto-detected from filename
+                  </p>
+                )}
+              </div>
+
+              {/* File List */}
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Selected Files ({files.length})
+                  </h3>
+                  <button
+                    onClick={clearFiles}
+                    className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    Clear all
+                  </button>
                 </div>
-                <button
-                  onClick={() => removeFile(index)}
-                  className="text-gray-400 hover:text-red-500"
+                <ul className="space-y-1.5 max-h-32 overflow-y-auto">
+                  {files.map((file, index) => (
+                    <li
+                      key={index}
+                      className="flex items-center justify-between py-1.5 px-2.5 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileCode className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <span className="text-gray-700 dark:text-gray-300 truncate">{file.name}</span>
+                        <span className="text-xs text-gray-400 flex-shrink-0">
+                          ({(file.size / 1024).toFixed(1)} KB)
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => removeFile(index)}
+                        className="text-gray-400 hover:text-red-500 ml-2 flex-shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Add More Files Button */}
+              <div
+                className={`border-2 border-dashed rounded-lg py-2 text-center transition-colors cursor-pointer mb-4 ${
+                  isDragging
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                }`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                }}
+                onDrop={handleDrop}
+              >
+                <input
+                  type="file"
+                  multiple
+                  accept=".py,.js,.ts,.jsx,.tsx,.go,.java,.rb,.json,.yaml,.yml,.md"
+                  onChange={handleFileInput}
+                  className="hidden"
+                  id="file-input-more"
+                />
+                <label
+                  htmlFor="file-input-more"
+                  className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
                 >
-                  &times;
-                </button>
-              </li>
-            ))}
-          </ul>
+                  <Plus className="h-4 w-4" />
+                  Add more files
+                </label>
+              </div>
 
-          {/* Policy Selector */}
-          <div className="mt-4 mb-3">
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-              Scan Policy
-            </label>
-            <PolicySelector value={scanPolicy} onChange={setScanPolicy} />
-          </div>
+              {/* Policy Selector */}
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                  Scan Policy
+                </label>
+                <PolicySelector value={scanPolicy} onChange={setScanPolicy} />
+              </div>
 
-          {/* Agent Name */}
-          <div className="mb-4">
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-              Agent Name
-            </label>
-            <input
-              type="text"
-              placeholder="e.g., customer-support-bot"
-              value={agentName}
-              onChange={(e) => setAgentName(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <p className="text-xs text-gray-400 mt-1">Leave blank to auto-detect from filename</p>
-          </div>
-
-          <button
-            onClick={runScan}
-            disabled={scanning}
-            className="w-full py-3 bg-black dark:bg-white text-white dark:text-black font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {scanning ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Scanning...
-              </>
-            ) : (
-              <>
+              {/* Start Scan Button */}
+              <button
+                onClick={runScan}
+                disabled={scanning}
+                className="w-full py-3 bg-black dark:bg-white text-white dark:text-black font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
                 <Shield className="h-5 w-5" />
                 Start Scan
-              </>
-            )}
-          </button>
+              </button>
+            </>
+          )}
         </div>
       )}
         </>
