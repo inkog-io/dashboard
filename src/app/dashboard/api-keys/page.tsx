@@ -407,7 +407,7 @@ export default function APIKeysPage() {
                 </div>
               </div>
               <p className="mt-2 text-xs text-gray-500">
-                Install CLI: <code className="bg-gray-100 px-1 rounded">brew install inkog-io/inkog/inkog</code>
+                Install CLI: <code className="bg-gray-100 px-1 rounded">go install github.com/inkog-io/inkog/cmd/inkog@latest</code>
               </p>
             </div>
           </div>

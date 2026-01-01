@@ -221,8 +221,8 @@ export function AgentList({
                   <Terminal className="h-3.5 w-3.5" />
                   Install the CLI
                 </p>
-                <code className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 block">
-                  brew install inkog-io/inkog/inkog
+                <code className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 block break-all">
+                  go install github.com/inkog-io/inkog/cmd/inkog@latest
                 </code>
               </div>
             </div>

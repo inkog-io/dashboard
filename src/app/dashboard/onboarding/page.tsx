@@ -359,25 +359,18 @@ export default function OnboardingPage() {
                       <div className="space-y-4">
                         <div>
                           <h4 className="text-sm font-medium text-gray-900 mb-2">1. Install the CLI</h4>
-                          <div className="space-y-3">
-                            <CopyCommand
-                              label="Homebrew (macOS/Linux)"
-                              command="brew install inkog-io/inkog/inkog"
-                              onCopy={() => handleCliCopy("brew", "brew install inkog-io/inkog/inkog")}
-                            />
-                            <CopyCommand
-                              label="Go"
-                              command="go install github.com/inkog-io/inkog/cmd/inkog@latest"
-                              onCopy={() => handleCliCopy("go", "go install github.com/inkog-io/inkog/cmd/inkog@latest")}
-                            />
-                          </div>
+                          <CopyCommand
+                            label="Requires Go 1.21+"
+                            command="go install github.com/inkog-io/inkog/cmd/inkog@latest"
+                            onCopy={() => handleCliCopy("go", "go install github.com/inkog-io/inkog/cmd/inkog@latest")}
+                          />
                         </div>
 
                         <div>
                           <h4 className="text-sm font-medium text-gray-900 mb-2">2. Set your API key</h4>
                           <CopyCommand
                             command={`export INKOG_API_KEY="${generatedKey || "your-api-key"}"`}
-                            onCopy={() => handleCliCopy("brew", `export INKOG_API_KEY="${generatedKey || "your-api-key"}"`)}
+                            onCopy={() => handleCliCopy("go", `export INKOG_API_KEY="${generatedKey || "your-api-key"}"`)}
                           />
                         </div>
 
@@ -385,7 +378,7 @@ export default function OnboardingPage() {
                           <h4 className="text-sm font-medium text-gray-900 mb-2">3. Scan your agent</h4>
                           <CopyCommand
                             command="inkog scan ./my-agent"
-                            onCopy={() => handleCliCopy("brew", "inkog scan ./my-agent")}
+                            onCopy={() => handleCliCopy("go", "inkog scan ./my-agent")}
                           />
                         </div>
                       </div>
