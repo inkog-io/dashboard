@@ -24,8 +24,17 @@ export function OnboardingGate({ children }: OnboardingGateProps) {
   const pathname = usePathname();
   const { hasKeys, loading, error } = useApiKeyStatus();
 
-  // Routes that bypass the gate (onboarding itself, and API keys page for manual setup)
-  const bypassRoutes = ["/dashboard/onboarding", "/dashboard/api-keys"];
+  // Routes that bypass the gate:
+  // - /dashboard/onboarding: The onboarding flow itself
+  // - /dashboard/api-keys: Manual key creation
+  // - /dashboard/scan: Let users try Inkog immediately (fastest time-to-value)
+  // - /dashboard/results: Let users see their scan results
+  const bypassRoutes = [
+    "/dashboard/onboarding",
+    "/dashboard/api-keys",
+    "/dashboard/scan",
+    "/dashboard/results",
+  ];
   const shouldBypass = bypassRoutes.some(route => pathname.startsWith(route));
 
   useEffect(() => {

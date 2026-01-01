@@ -27,6 +27,7 @@ import {
   type ScanResult,
   type InkogAPI,
 } from "@/lib/api";
+import { useApiKeyStatus } from "@/hooks/useApiKeyStatus";
 import {
   getFindingType,
   matchesFindingSearch,
@@ -44,6 +45,7 @@ import { PolicySelector, type ScanPolicy, getStoredPolicy } from "@/components/P
 export default function ScanPage() {
   const { getToken } = useAuth();
   const [api, setApi] = useState<InkogAPI | null>(null);
+  const { hasKeys } = useApiKeyStatus();
 
   const [files, setFiles] = useState<File[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -612,6 +614,30 @@ export default function ScanPage() {
               {result.scan_duration || "0ms"}
             </div>
           </div>
+
+          {/* CLI Setup CTA - Show to users without API keys */}
+          {!hasKeys && (
+            <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-6 text-white">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <Terminal className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Integrate with your workflow</h3>
+                  <p className="text-sm text-gray-300 mb-4">
+                    Set up the CLI to scan on every commit, or add to your CI/CD pipeline for automated security checks.
+                  </p>
+                  <Link
+                    href="/dashboard/onboarding"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+                  >
+                    Set up CLI
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Governance Section */}
           {(result.governance_score !== undefined ||
