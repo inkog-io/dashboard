@@ -11,6 +11,8 @@ import {
   Clock,
   AlertCircle,
   ChevronRight,
+  Upload,
+  Terminal,
 } from "lucide-react";
 
 import {
@@ -305,13 +307,26 @@ export default function HistoryPage() {
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {filters.search || filters.dateFrom || filters.dateTo || filters.severity
                   ? "Try adjusting your filters"
-                  : "Run your first scan with the CLI to see results here."}
+                  : "Run your first scan to see results here."}
               </p>
               {!filters.search && !filters.dateFrom && !filters.dateTo && !filters.severity && (
-                <div className="mt-4">
-                  <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm text-gray-800 dark:text-gray-200">
-                    inkog scan -path ./your-agent
-                  </code>
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-center gap-2">
+                    <Terminal className="h-4 w-4 text-gray-500" />
+                    <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm text-gray-800 dark:text-gray-200">
+                      inkog scan ./your-agent
+                    </code>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <span>or</span>
+                    <Link
+                      href="/dashboard/scan"
+                      className="inline-flex items-center gap-1.5 text-gray-900 dark:text-gray-100 hover:underline font-medium"
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      upload files directly
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>

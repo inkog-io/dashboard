@@ -13,7 +13,11 @@ import {
   AlertCircle,
   HelpCircle,
   Pencil,
+  Key,
+  Terminal,
+  Upload,
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -177,25 +181,79 @@ export function AgentList({
   if (agents.length === 0) {
     return (
       <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
-        <div className="p-12 flex flex-col items-center justify-center text-center">
+        <div className="p-8 flex flex-col items-center justify-center text-center">
           <div className="rounded-full bg-gray-100 dark:bg-gray-700 p-4 mb-4">
             <Bot className="h-8 w-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
             No agents scanned yet
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm">
-            Start by scanning your first AI agent. Use the CLI or upload files to get started.
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-md">
+            Scan your first AI agent to discover security vulnerabilities and behavioral flaws.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={() => router.push("/dashboard/scan")}>
-              Upload Files
-            </Button>
-            <div className="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
-              <code className="text-xs text-gray-600 dark:text-gray-300">
-                inkog scan ./my-agent
-              </code>
+
+          {/* Getting Started Steps */}
+          <div className="w-full max-w-sm text-left space-y-3 mb-6">
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-medium">
+                1
+              </div>
+              <div className="flex-1 min-w-0">
+                <Link
+                  href="/dashboard/api-keys"
+                  className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:underline flex items-center gap-1.5"
+                >
+                  <Key className="h-3.5 w-3.5" />
+                  Generate an API key
+                </Link>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Required for CLI and API authentication
+                </p>
+              </div>
             </div>
+
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-medium">
+                2
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                  <Terminal className="h-3.5 w-3.5" />
+                  Install the CLI
+                </p>
+                <code className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 block">
+                  brew install inkog-io/inkog/inkog
+                </code>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-medium">
+                3
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  Scan your agent
+                </p>
+                <code className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 block">
+                  inkog scan ./my-agent
+                </code>
+              </div>
+            </div>
+          </div>
+
+          {/* Alternative Option */}
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <span>or</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/dashboard/scan")}
+              className="gap-1.5"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              Upload files directly
+            </Button>
           </div>
         </div>
       </div>

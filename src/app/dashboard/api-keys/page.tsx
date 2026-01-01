@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { Plus, Copy, Check, Trash2, Key, AlertCircle, RotateCw } from "lucide-react";
+import { Plus, Copy, Check, Trash2, Key, AlertCircle, RotateCw, Terminal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -119,6 +119,14 @@ export default function APIKeysPage() {
     await navigator.clipboard.writeText(newKey);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Copy command to clipboard
+  const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
+  const handleCopyCommand = async (command: string, id: string) => {
+    await navigator.clipboard.writeText(command);
+    setCopiedCommand(id);
+    setTimeout(() => setCopiedCommand(null), 2000);
   };
 
   // Revoke a key
@@ -331,14 +339,14 @@ export default function APIKeysPage() {
 
       {/* Show Key Dialog */}
       <Dialog open={showKeyDialog} onOpenChange={setShowKeyDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Your New API Key</DialogTitle>
             <DialogDescription>
               Copy this key now. You won&apos;t be able to see it again!
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-4">
             <div className="flex items-center gap-2">
               <code className="flex-1 bg-gray-100 px-3 py-2 rounded text-sm font-mono break-all">
                 {newKey}
@@ -351,10 +359,57 @@ export default function APIKeysPage() {
                 )}
               </Button>
             </div>
-            <p className="mt-3 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded">
+            <p className="text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded">
               Make sure to copy your API key now. For security reasons, we
               can&apos;t show it to you again.
             </p>
+
+            {/* Quick Start Instructions */}
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Terminal className="h-4 w-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-900">Quick Start</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 bg-gray-100 rounded px-3 py-2">
+                  <code className="flex-1 text-xs font-mono text-gray-800">
+                    export INKOG_API_KEY=&quot;{newKey?.slice(0, 20)}...&quot;
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyCommand(`export INKOG_API_KEY="${newKey}"`, "env")}
+                    className="p-1 rounded hover:bg-gray-200 transition-colors"
+                    title="Copy command"
+                  >
+                    {copiedCommand === "env" ? (
+                      <Check className="h-3.5 w-3.5 text-green-600" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 bg-gray-100 rounded px-3 py-2">
+                  <code className="flex-1 text-xs font-mono text-gray-800">
+                    inkog scan ./my-agent
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyCommand("inkog scan ./my-agent", "scan")}
+                    className="p-1 rounded hover:bg-gray-200 transition-colors"
+                    title="Copy command"
+                  >
+                    {copiedCommand === "scan" ? (
+                      <Check className="h-3.5 w-3.5 text-green-600" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                Install CLI: <code className="bg-gray-100 px-1 rounded">brew install inkog-io/inkog/inkog</code>
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button

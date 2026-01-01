@@ -17,35 +17,19 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { useApiKeyStatus } from "@/hooks/useApiKeyStatus";
 
 interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
+  badge?: string;
 }
 
 interface NavGroup {
   title: string;
   items: NavItem[];
 }
-
-const navGroups: NavGroup[] = [
-  {
-    title: "SECURITY",
-    items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/dashboard/scan", label: "Scan", icon: Shield },
-      { href: "/dashboard/history", label: "History", icon: History },
-    ],
-  },
-  {
-    title: "SETTINGS",
-    items: [
-      // Suppressions removed - requires Organizations feature (coming soon)
-      { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
-    ],
-  },
-];
 
 interface SidebarNavProps {
   isCollapsed: boolean;
@@ -75,16 +59,37 @@ function NavItemComponent({
       )}
     >
       <Icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-gray-900")} />
-      {!isCollapsed && <span>{item.label}</span>}
+      {!isCollapsed && (
+        <span className="flex items-center gap-2">
+          {item.label}
+          {item.badge && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800">
+              {item.badge}
+            </span>
+          )}
+        </span>
+      )}
+      {isCollapsed && item.badge && (
+        <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-amber-500" />
+      )}
     </Link>
   );
 
   if (isCollapsed) {
     return (
       <Tooltip delayDuration={0}>
-        <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+        <TooltipTrigger asChild>
+          <div className="relative">{linkContent}</div>
+        </TooltipTrigger>
         <TooltipContent side="right" className="font-medium">
-          {item.label}
+          <span className="flex items-center gap-2">
+            {item.label}
+            {item.badge && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800">
+                {item.badge}
+              </span>
+            )}
+          </span>
         </TooltipContent>
       </Tooltip>
     );
@@ -95,6 +100,7 @@ function NavItemComponent({
 
 export function SidebarNav({ isCollapsed }: SidebarNavProps) {
   const pathname = usePathname();
+  const { hasKeys, loading: loadingKeys } = useApiKeyStatus();
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
@@ -102,6 +108,30 @@ export function SidebarNav({ isCollapsed }: SidebarNavProps) {
     }
     return pathname.startsWith(href);
   };
+
+  // Build nav groups dynamically to include badges
+  const navGroups: NavGroup[] = [
+    {
+      title: "SECURITY",
+      items: [
+        { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/dashboard/scan", label: "Scan", icon: Shield },
+        { href: "/dashboard/history", label: "History", icon: History },
+      ],
+    },
+    {
+      title: "SETTINGS",
+      items: [
+        {
+          href: "/dashboard/api-keys",
+          label: "API Keys",
+          icon: Key,
+          // Show badge only when we know user has no keys (not loading)
+          badge: !loadingKeys && !hasKeys ? "Setup" : undefined,
+        },
+      ],
+    },
+  ];
 
   return (
     <TooltipProvider>
