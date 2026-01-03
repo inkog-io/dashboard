@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useApiKeyStatus } from "@/hooks/useApiKeyStatus";
 
 interface OnboardingGateProps {
   children: React.ReactNode;
 }
+
+const ONBOARDING_COMPLETED_KEY = "hasCompletedOnboarding";
 
 /**
  * Gates access to dashboard until user has at least one API key.
@@ -17,12 +19,19 @@ interface OnboardingGateProps {
  * - The onboarding IS the first experience, not a skippable detour
  *
  * Users without API keys are redirected to /dashboard/onboarding.
- * Once they have a key, they're unblocked.
+ * Once they have a key (or completed onboarding), they're unblocked.
  */
 export function OnboardingGate({ children }: OnboardingGateProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { hasKeys, loading, error } = useApiKeyStatus();
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
+
+  // Check localStorage for onboarding completion (client-side only)
+  useEffect(() => {
+    const completed = localStorage.getItem(ONBOARDING_COMPLETED_KEY) === "true";
+    setHasCompletedOnboarding(completed);
+  }, []);
 
   // Routes that bypass the gate:
   // - /dashboard/onboarding: The onboarding flow itself
@@ -40,19 +49,21 @@ export function OnboardingGate({ children }: OnboardingGateProps) {
   useEffect(() => {
     // Don't redirect if:
     // - Still loading (don't know yet)
+    // - Onboarding completion state not yet loaded from localStorage
     // - On a bypass route (onboarding or api-keys page)
     // - There was an error checking (fail open, don't block legitimate users)
     // - User already has keys
-    if (loading || shouldBypass || error || hasKeys) {
+    // - User has completed onboarding (even without keys)
+    if (loading || hasCompletedOnboarding === null || shouldBypass || error || hasKeys || hasCompletedOnboarding) {
       return;
     }
 
-    // No keys, not on bypass route → redirect to onboarding
+    // No keys, not on bypass route, hasn't completed onboarding → redirect to onboarding
     router.replace("/dashboard/onboarding");
-  }, [hasKeys, loading, error, shouldBypass, router]);
+  }, [hasKeys, loading, error, shouldBypass, hasCompletedOnboarding, router]);
 
   // Show loading state while checking (prevents flash of dashboard)
-  if (loading && !shouldBypass) {
+  if ((loading || hasCompletedOnboarding === null) && !shouldBypass) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">
@@ -63,8 +74,8 @@ export function OnboardingGate({ children }: OnboardingGateProps) {
     );
   }
 
-  // If no keys and not on bypass route, show loading while redirect happens
-  if (!hasKeys && !shouldBypass && !error) {
+  // If no keys, not completed onboarding, and not on bypass route, show loading while redirect happens
+  if (!hasKeys && !hasCompletedOnboarding && !shouldBypass && !error) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">

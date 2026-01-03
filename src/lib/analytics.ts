@@ -12,7 +12,7 @@ import { posthog } from "@/components/PostHogProvider";
 // =============================================================================
 
 /** Scan methods available in onboarding */
-export type ScanMethod = "cli" | "upload" | "github" | "api";
+export type ScanMethod = "cli" | "mcp" | "upload" | "github" | "api";
 
 /** CLI installation methods */
 export type CliInstallMethod = "brew" | "go" | "docker" | "source";

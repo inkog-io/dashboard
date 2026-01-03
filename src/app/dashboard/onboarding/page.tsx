@@ -57,6 +57,12 @@ const SCAN_METHODS = [
     recommended: true,
   },
   {
+    id: "mcp" as ScanMethod,
+    icon: Sparkles,
+    title: "AI Assistant",
+    description: "Scan from Claude, ChatGPT, or Cursor via MCP",
+  },
+  {
     id: "upload" as ScanMethod,
     icon: Upload,
     title: "Upload",
@@ -348,7 +354,7 @@ export default function OnboardingPage() {
             {currentStep === 2 && (
               <>
                 <CardHeader>
-                  <CardTitle>Get Started with {selectedMethod === "cli" ? "CLI" : selectedMethod === "upload" ? "Upload" : selectedMethod === "github" ? "GitHub Actions" : "API"}</CardTitle>
+                  <CardTitle>Get Started with {selectedMethod === "cli" ? "CLI" : selectedMethod === "mcp" ? "AI Assistant" : selectedMethod === "upload" ? "Upload" : selectedMethod === "github" ? "GitHub Actions" : "API"}</CardTitle>
                   <CardDescription>
                     Follow these steps to run your first scan.
                   </CardDescription>
@@ -383,6 +389,43 @@ export default function OnboardingPage() {
                         </div>
                       </div>
                     </>
+                  )}
+
+                  {selectedMethod === "mcp" && (
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-600">
+                        Connect Inkog to your AI assistant for security scanning directly from Claude, ChatGPT, or Cursor.
+                      </p>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">1. Install the MCP server</h4>
+                        <CopyCommand
+                          label="Run with npx (no install required)"
+                          command="npx -y @anthropic/claude-code configure-mcp -s @inkog-io/mcp"
+                          onCopy={() => handleCliCopy("source", "npx -y @anthropic/claude-code configure-mcp -s @inkog-io/mcp")}
+                        />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">2. Set your API key</h4>
+                        <p className="text-sm text-gray-600 mb-2">
+                          Add to your environment or MCP config:
+                        </p>
+                        <CopyCommand
+                          command={`INKOG_API_KEY="${generatedKey || "your-api-key"}"`}
+                          onCopy={() => handleCliCopy("source", `INKOG_API_KEY="${generatedKey || "your-api-key"}"`)}
+                        />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">3. Start scanning</h4>
+                        <p className="text-sm text-gray-600">
+                          Ask your AI assistant: &quot;Scan my agent for security vulnerabilities&quot;
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 mt-4">
+                        <p className="text-xs text-gray-600">
+                          <strong>Supported tools:</strong> inkog_scan, inkog_explain_finding, inkog_verify_governance, inkog_compliance_report, inkog_generate_mlbom
+                        </p>
+                      </div>
+                    </div>
                   )}
 
                   {selectedMethod === "upload" && (
