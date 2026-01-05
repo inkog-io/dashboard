@@ -22,6 +22,7 @@ import {
   Wrench,
   MessageSquare,
   User,
+  Users,
   Lock,
   Clock,
   FileText,
@@ -65,6 +66,7 @@ const nodeIconMap: Record<string, React.ElementType> = {
   AuditLog: FileText,
   Delegation: Link2,
   MemoryAccess: Database,
+  AgentDefinition: Users,
   Default: Package,
 };
 
@@ -80,6 +82,7 @@ const typeLabels: Record<string, string> = {
   AuditLog: 'Audit',
   Delegation: 'Delegation',
   MemoryAccess: 'Memory',
+  AgentDefinition: 'Agent',
 };
 
 // Dangerous function names that need special labeling
