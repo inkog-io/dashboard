@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { UserButton } from "@clerk/nextjs";
 import { ChevronsLeft, ChevronsRight, Command } from "lucide-react";
 import { SidebarNav } from "./SidebarNav";
@@ -41,8 +42,14 @@ export function Sidebar({
           isCollapsed ? "justify-center" : "justify-between"
         )}>
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-primary-foreground font-bold text-sm">I</span>
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <Image
+                src="/favicon.svg"
+                alt="Inkog"
+                width={36}
+                height={36}
+                className="w-9 h-9"
+              />
             </div>
             {!isCollapsed && (
               <span className="font-semibold text-lg text-foreground">Inkog</span>
