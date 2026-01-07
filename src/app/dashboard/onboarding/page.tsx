@@ -50,6 +50,13 @@ const STEPS = [
 
 const SCAN_METHODS = [
   {
+    id: "upload" as ScanMethod,
+    icon: Upload,
+    title: "Upload",
+    description: "Drag & drop files for instant results",
+    quickest: true,
+  },
+  {
     id: "cli" as ScanMethod,
     icon: Terminal,
     title: "CLI",
@@ -59,14 +66,8 @@ const SCAN_METHODS = [
   {
     id: "mcp" as ScanMethod,
     icon: Sparkles,
-    title: "AI Assistant",
-    description: "Scan from Claude, ChatGPT, or Cursor via MCP",
-  },
-  {
-    id: "upload" as ScanMethod,
-    icon: Upload,
-    title: "Upload",
-    description: "Quick testing - drag & drop files in the dashboard",
+    title: "MCP Server",
+    description: "Scan from Claude, ChatGPT, or Cursor",
   },
   {
     id: "github" as ScanMethod,
@@ -98,7 +99,7 @@ export default function OnboardingPage() {
   const [hasExistingKey, setHasExistingKey] = useState(false);
 
   // Step 2: Scan method state
-  const [selectedMethod, setSelectedMethod] = useState<ScanMethod>("cli");
+  const [selectedMethod, setSelectedMethod] = useState<ScanMethod>("upload");
 
   // Initialize API client and check for existing keys
   useEffect(() => {
@@ -342,6 +343,7 @@ export default function OnboardingPage() {
                         title={method.title}
                         description={method.description}
                         recommended={method.recommended}
+                        quickest={method.quickest}
                         selected={selectedMethod === method.id}
                         onClick={() => handleMethodSelect(method.id)}
                       />
@@ -354,7 +356,7 @@ export default function OnboardingPage() {
             {currentStep === 2 && (
               <>
                 <CardHeader>
-                  <CardTitle>Get Started with {selectedMethod === "cli" ? "CLI" : selectedMethod === "mcp" ? "AI Assistant" : selectedMethod === "upload" ? "Upload" : selectedMethod === "github" ? "GitHub Actions" : "API"}</CardTitle>
+                  <CardTitle>Get Started with {selectedMethod === "cli" ? "CLI" : selectedMethod === "mcp" ? "MCP Server" : selectedMethod === "upload" ? "Upload" : selectedMethod === "github" ? "GitHub Actions" : "API"}</CardTitle>
                   <CardDescription>
                     Follow these steps to run your first scan.
                   </CardDescription>

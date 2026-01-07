@@ -8,6 +8,7 @@ interface ScanMethodCardProps {
   title: string;
   description: string;
   recommended?: boolean;
+  quickest?: boolean;
   selected?: boolean;
   onClick?: () => void;
   className?: string;
@@ -18,6 +19,7 @@ export function ScanMethodCard({
   title,
   description,
   recommended = false,
+  quickest = false,
   selected = false,
   onClick,
   className,
@@ -37,6 +39,11 @@ export function ScanMethodCard({
       {recommended && (
         <span className="absolute -top-2 right-3 rounded-full bg-gray-900 px-2 py-0.5 text-xs font-medium text-white">
           Recommended
+        </span>
+      )}
+      {quickest && !recommended && (
+        <span className="absolute -top-2 right-3 rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white">
+          Quickest
         </span>
       )}
 
