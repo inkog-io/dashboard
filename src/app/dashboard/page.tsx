@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { hasCompletedOnboarding } from "@/lib/analytics";
@@ -29,7 +29,6 @@ import { AgentList } from "@/components/dashboard/AgentList";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { getToken } = useAuth();
   const { user, isLoaded } = useUser();
   const [api, setApi] = useState<InkogAPI | null>(null);
@@ -42,27 +41,22 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if user needs onboarding
+  // Check if user needs onboarding (only runs client-side)
   useEffect(() => {
-    // Skip if coming from onboarding (completed=true param)
-    const fromOnboarding = searchParams.get("completed") === "true";
+    // Small delay to ensure localStorage is available and any recent writes have completed
+    const timer = setTimeout(() => {
+      const completed = hasCompletedOnboarding();
 
-    if (fromOnboarding) {
-      setCheckingOnboarding(false);
-      return;
-    }
+      if (!completed) {
+        // New user - redirect to onboarding
+        router.replace("/dashboard/onboarding");
+      } else {
+        setCheckingOnboarding(false);
+      }
+    }, 100);
 
-    // Check localStorage for onboarding completion
-    const completed = hasCompletedOnboarding();
-
-    if (!completed) {
-      // New user - redirect to onboarding
-      router.replace("/dashboard/onboarding");
-      return;
-    }
-
-    setCheckingOnboarding(false);
-  }, [router, searchParams]);
+    return () => clearTimeout(timer);
+  }, [router]);
 
   // Initialize API client
   useEffect(() => {
