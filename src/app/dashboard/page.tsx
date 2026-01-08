@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { hasCompletedOnboarding } from "@/lib/analytics";
+import { hasCompletedOnboarding, resetOnboarding } from "@/lib/analytics";
 import {
   Shield,
   AlertTriangle,
@@ -63,6 +63,19 @@ export default function DashboardPage() {
 
     setCheckingOnboarding(false);
   }, [router, searchParams]);
+
+  // Development: Ctrl+Shift+O to reset onboarding (for testing)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'O') {
+        e.preventDefault();
+        resetOnboarding();
+        router.replace("/dashboard/onboarding");
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [router]);
 
   // Initialize API client
   useEffect(() => {
