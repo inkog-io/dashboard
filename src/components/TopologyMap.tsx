@@ -249,7 +249,9 @@ function layoutRegularNodes(
       };
     });
   } catch (error) {
-    console.error('Dagre layout failed, using grid fallback:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Dagre layout failed, using grid fallback:', error);
+    }
     return simpleGridLayout(nodes, GHOST_ROW_HEIGHT + 30);
   }
 }
@@ -776,8 +778,10 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
 
       img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
     } catch (err) {
-      console.error('PNG export failed:', err);
-      handleSVGExport();
+      if (process.env.NODE_ENV === 'development') {
+        console.error('PNG export failed:', err);
+      }
+      handleSVGExport(); // Fallback to SVG
     }
   }, [handleSVGExport]);
 

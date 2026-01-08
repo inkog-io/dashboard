@@ -198,8 +198,10 @@ export default function ScanResultsPage() {
         }
       }
     } catch (err) {
-      console.error('Export failed:', err);
-      // Could add toast notification here in the future
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Export failed:', err);
+      }
+      // Export failed silently - user will see download didn't start
     } finally {
       setExporting(null);
     }

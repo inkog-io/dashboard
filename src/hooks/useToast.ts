@@ -112,12 +112,14 @@ export function useToast() {
         description: userMessage,
       });
 
-      // Log full error for debugging
-      console.error('[API Error]', {
-        code: err.code,
-        status: err.status,
-        message: err.message,
-      });
+      // Log full error for debugging (development only)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[API Error]', {
+          code: err.code,
+          status: err.status,
+          message: err.message,
+        });
+      }
     } else if (err instanceof TypeError && err.message.includes('fetch')) {
       // Network error
       error({

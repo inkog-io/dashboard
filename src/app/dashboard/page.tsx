@@ -78,7 +78,10 @@ export default function DashboardPage() {
       const response = await api.agents.list();
       setAgents(response.agents || []);
     } catch (err) {
-      console.error("Failed to rename agent:", err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Failed to rename agent:", err);
+      }
+      // Silently fail - user will see the name didn't change
     }
   };
 
@@ -90,7 +93,10 @@ export default function DashboardPage() {
       // Remove from local state
       setAgents((prev) => prev.filter((a) => a.id !== agent.id));
     } catch (err) {
-      console.error("Failed to delete agent:", err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Failed to delete agent:", err);
+      }
+      // Silently fail - agent will remain in list
     }
   };
 

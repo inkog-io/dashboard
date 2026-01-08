@@ -8,7 +8,8 @@ interface OnboardingGateProps {
   children: React.ReactNode;
 }
 
-const ONBOARDING_COMPLETED_KEY = "hasCompletedOnboarding";
+// Must match the key used in analytics.ts
+const ONBOARDING_STORAGE_KEY = "inkog_onboarding_state";
 
 /**
  * Gates access to dashboard until user has at least one API key.
@@ -28,9 +29,20 @@ export function OnboardingGate({ children }: OnboardingGateProps) {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
 
   // Check localStorage for onboarding completion (client-side only)
+  // Reads from the same key used by analytics.ts
   useEffect(() => {
-    const completed = localStorage.getItem(ONBOARDING_COMPLETED_KEY) === "true";
-    setHasCompletedOnboarding(completed);
+    try {
+      const stored = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+      if (stored) {
+        const state = JSON.parse(stored);
+        setHasCompletedOnboarding(state.hasCompletedOnboarding === true);
+      } else {
+        setHasCompletedOnboarding(false);
+      }
+    } catch {
+      // Invalid stored state
+      setHasCompletedOnboarding(false);
+    }
   }, []);
 
   // Routes that bypass the gate:
