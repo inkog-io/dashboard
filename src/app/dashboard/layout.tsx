@@ -1,6 +1,7 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { ActivationGuard } from "@/components/ActivationGuard";
 
 export default async function DashboardLayout({
   children,
@@ -17,7 +18,9 @@ export default async function DashboardLayout({
 
   return (
     <DashboardShell userEmail={userEmail}>
-      {children}
+      <ActivationGuard>
+        {children}
+      </ActivationGuard>
     </DashboardShell>
   );
 }
