@@ -230,15 +230,15 @@ export default function APIKeysPage() {
             <div className="text-center py-8">
               <Key className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-semibold text-gray-900">
-                No API keys
+                No API keys yet
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Get started by generating a new API key.
+              <p className="mt-1 text-sm text-gray-500 max-w-md mx-auto">
+                Create an API key to use Inkog in production with the CLI, MCP Server, GitHub Actions, or the API directly.
               </p>
               <div className="mt-6">
                 <Button onClick={() => setShowCreateDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Generate New Key
+                  Generate API Key
                 </Button>
               </div>
             </div>

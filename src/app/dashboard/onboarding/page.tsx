@@ -15,6 +15,8 @@ import {
   ArrowLeft,
   Sparkles,
   Puzzle,
+  Zap,
+  FlaskConical,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -43,31 +45,33 @@ import {
   saveOnboardingState,
 } from "@/lib/analytics";
 
-const STEPS = [
-  { id: "api_key", label: "API Key" },
-  { id: "scan_method", label: "Choose Method" },
-  { id: "get_started", label: "Get Started" },
-];
+// Dynamic steps based on selected method
+const getSteps = (method: ScanMethod | null) => {
+  if (method === "upload") {
+    // Upload flow: just choose method, then go to scan
+    return [{ id: "scan_method", label: "Choose Method" }];
+  }
+  // Production methods: Choose Method → API Key → Get Started
+  return [
+    { id: "scan_method", label: "Choose Method" },
+    { id: "api_key", label: "API Key" },
+    { id: "get_started", label: "Get Started" },
+  ];
+};
 
-const SCAN_METHODS = [
+// Production methods (require API key)
+const PRODUCTION_METHODS = [
   {
     id: "cli" as ScanMethod,
     icon: Terminal,
     title: "CLI",
     description: "Best for local development and CI/CD pipelines",
-    recommended: true,
   },
   {
     id: "mcp" as ScanMethod,
     icon: Puzzle,
     title: "MCP Server",
     description: "Use Inkog in Claude Desktop or Cursor",
-  },
-  {
-    id: "upload" as ScanMethod,
-    icon: Upload,
-    title: "Upload",
-    description: "Quick testing - drag & drop files in the dashboard",
   },
   {
     id: "github" as ScanMethod,
@@ -92,14 +96,18 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // Step 1: API Key state
+  // Step 1: Scan method state
+  const [selectedMethod, setSelectedMethod] = useState<ScanMethod | null>(null);
+
+  // Step 2: API Key state
   const [keyName, setKeyName] = useState("");
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
   const [keyCopied, setKeyCopied] = useState(false);
   const [hasExistingKey, setHasExistingKey] = useState(false);
+  const [existingKeyValue, setExistingKeyValue] = useState<string | null>(null);
 
-  // Step 2: Scan method state
-  const [selectedMethod, setSelectedMethod] = useState<ScanMethod>("cli");
+  // Get dynamic steps based on selected method
+  const steps = getSteps(selectedMethod);
 
   // Initialize API client and check for existing keys
   useEffect(() => {
@@ -114,6 +122,7 @@ export default function OnboardingPage() {
     client.keys.list().then((response) => {
       if (response.api_keys.length > 0) {
         setHasExistingKey(true);
+        // Store the key name for reference (we can't show the actual key)
       }
     }).catch(() => {
       // Ignore errors - user might not have keys yet
@@ -158,6 +167,21 @@ export default function OnboardingPage() {
     saveOnboardingState({ scanMethodChosen: method });
   };
 
+  // Handle Upload quick action - go directly to scan page
+  const handleUploadSelect = () => {
+    trackScanMethodSelected({
+      method: "upload",
+      step: "scan_method",
+    });
+    trackOnboardingCompleted({
+      duration_seconds: 0,
+      steps_completed: 1,
+      scan_method_chosen: "upload",
+    });
+    saveOnboardingState({ hasCompletedOnboarding: true, scanMethodChosen: "upload" });
+    router.push("/dashboard/scan?completed=true");
+  };
+
   // Track CLI command copies
   const handleCliCopy = useCallback((commandType: CliInstallMethod, command: string) => {
     trackCliCommandCopied({
@@ -170,17 +194,14 @@ export default function OnboardingPage() {
   // Complete onboarding
   const handleComplete = () => {
     trackOnboardingCompleted({
-      duration_seconds: 0, // Will be calculated from state
-      steps_completed: 3,
-      scan_method_chosen: selectedMethod,
+      duration_seconds: 0,
+      steps_completed: steps.length,
+      scan_method_chosen: selectedMethod || "cli",
     });
     saveOnboardingState({ hasCompletedOnboarding: true });
 
     // Navigate based on selected method
     switch (selectedMethod) {
-      case "upload":
-        router.push("/dashboard/scan?completed=true");
-        break;
       case "github":
         window.open("https://docs.inkog.io/ci-cd/github-actions", "_blank");
         router.push("/dashboard?completed=true");
@@ -193,7 +214,7 @@ export default function OnboardingPage() {
   // Skip onboarding
   const handleSkip = () => {
     trackOnboardingSkipped({
-      skipped_at_step: STEPS[currentStep].id as "api_key" | "scan_method" | "first_scan",
+      skipped_at_step: steps[currentStep]?.id as "api_key" | "scan_method" | "first_scan",
       steps_completed: currentStep,
     });
     saveOnboardingState({ hasCompletedOnboarding: true });
@@ -202,7 +223,7 @@ export default function OnboardingPage() {
 
   // Navigate between steps
   const handleNext = () => {
-    if (currentStep < STEPS.length - 1) {
+    if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -215,15 +236,22 @@ export default function OnboardingPage() {
 
   // Check if can proceed to next step
   const canProceed = () => {
-    switch (currentStep) {
-      case 0:
-        return generatedKey !== null || hasExistingKey;
-      case 1:
+    const stepId = steps[currentStep]?.id;
+    switch (stepId) {
+      case "scan_method":
         return selectedMethod !== null;
+      case "api_key":
+        return generatedKey !== null || hasExistingKey;
       default:
         return true;
     }
   };
+
+  // Get the API key to display in instructions
+  const displayApiKey = generatedKey || "your-api-key";
+
+  // Determine current step content
+  const currentStepId = steps[currentStep]?.id;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -246,11 +274,81 @@ export default function OnboardingPage() {
       <main className="flex-1 py-8 px-6">
         <div className="max-w-3xl mx-auto space-y-8">
           {/* Step indicator */}
-          <StepIndicator steps={STEPS} currentStep={currentStep} />
+          <StepIndicator steps={steps} currentStep={currentStep} />
 
           {/* Step content */}
           <Card>
-            {currentStep === 0 && (
+            {/* Step 1: Choose Method */}
+            {currentStepId === "scan_method" && (
+              <>
+                <CardHeader>
+                  <CardTitle>How do you want to scan?</CardTitle>
+                  <CardDescription>
+                    Choose the method that works best for your workflow.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Quick Test Option - Highlighted */}
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-amber-500" />
+                      Quick Test
+                    </h3>
+                    <button
+                      onClick={handleUploadSelect}
+                      className="w-full p-4 rounded-xl border-2 border-amber-200 bg-amber-50 hover:bg-amber-100 hover:border-amber-300 transition-all text-left"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 p-2 bg-amber-100 rounded-lg">
+                          <Upload className="h-5 w-5 text-amber-700" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-gray-900">Upload Files</h4>
+                            <span className="px-2 py-0.5 text-xs font-medium bg-amber-200 text-amber-800 rounded-full">
+                              Try It Now
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Drag & drop files in the browser to see Inkog in action
+                          </p>
+                          <p className="text-xs text-amber-700 mt-2 flex items-center gap-1">
+                            <FlaskConical className="h-3 w-3" />
+                            Demo examples available if you don&apos;t have code ready
+                          </p>
+                        </div>
+                        <ArrowRight className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                      </div>
+                    </button>
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      Best for quick testing. For production use, choose a method below.
+                    </p>
+                  </div>
+
+                  {/* Production Methods */}
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">
+                      Production Integration
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {PRODUCTION_METHODS.map((method) => (
+                        <ScanMethodCard
+                          key={method.id}
+                          icon={method.icon}
+                          title={method.title}
+                          description={method.description}
+                          selected={selectedMethod === method.id}
+                          onClick={() => handleMethodSelect(method.id)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </>
+            )}
+
+            {/* Step 2: API Key (only for production methods) */}
+            {currentStepId === "api_key" && (
               <>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -258,7 +356,7 @@ export default function OnboardingPage() {
                     Generate Your API Key
                   </CardTitle>
                   <CardDescription>
-                    API keys authenticate your scans. Create one to get started.
+                    API keys authenticate your scans. Create one to get started with {selectedMethod === "cli" ? "the CLI" : selectedMethod === "mcp" ? "MCP Server" : selectedMethod === "github" ? "GitHub Actions" : "the API"}.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -326,70 +424,45 @@ export default function OnboardingPage() {
               </>
             )}
 
-            {currentStep === 1 && (
+            {/* Step 3: Get Started (only for production methods) */}
+            {currentStepId === "get_started" && (
               <>
                 <CardHeader>
-                  <CardTitle>How do you want to scan?</CardTitle>
-                  <CardDescription>
-                    Choose the method that works best for your workflow.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {SCAN_METHODS.map((method) => (
-                      <ScanMethodCard
-                        key={method.id}
-                        icon={method.icon}
-                        title={method.title}
-                        description={method.description}
-                        recommended={method.recommended}
-                        selected={selectedMethod === method.id}
-                        onClick={() => handleMethodSelect(method.id)}
-                      />
-                    ))}
-                  </div>
-                </CardContent>
-              </>
-            )}
-
-            {currentStep === 2 && (
-              <>
-                <CardHeader>
-                  <CardTitle>Get Started with {selectedMethod === "cli" ? "CLI" : selectedMethod === "mcp" ? "MCP Server" : selectedMethod === "upload" ? "Upload" : selectedMethod === "github" ? "GitHub Actions" : "API"}</CardTitle>
+                  <CardTitle>
+                    Get Started with {selectedMethod === "cli" ? "CLI" : selectedMethod === "mcp" ? "MCP Server" : selectedMethod === "github" ? "GitHub Actions" : "API"}
+                  </CardTitle>
                   <CardDescription>
                     Follow these steps to run your first scan.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {selectedMethod === "cli" && (
-                    <>
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900 mb-2">1. Install the CLI</h4>
-                          <CopyCommand
-                            label="Requires Go 1.21+"
-                            command="go install github.com/inkog-io/inkog/cmd/inkog@latest"
-                            onCopy={() => handleCliCopy("go", "go install github.com/inkog-io/inkog/cmd/inkog@latest")}
-                          />
-                        </div>
-
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900 mb-2">2. Set your API key</h4>
-                          <CopyCommand
-                            command={`export INKOG_API_KEY="${generatedKey || "your-api-key"}"`}
-                            onCopy={() => handleCliCopy("go", `export INKOG_API_KEY="${generatedKey || "your-api-key"}"`)}
-                          />
-                        </div>
-
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900 mb-2">3. Scan your agent</h4>
-                          <CopyCommand
-                            command="inkog scan ./my-agent"
-                            onCopy={() => handleCliCopy("go", "inkog scan ./my-agent")}
-                          />
-                        </div>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">1. Install the CLI</h4>
+                        <CopyCommand
+                          label="Requires Go 1.21+"
+                          command="go install github.com/inkog-io/inkog/cmd/inkog@latest"
+                          onCopy={() => handleCliCopy("go", "go install github.com/inkog-io/inkog/cmd/inkog@latest")}
+                        />
                       </div>
-                    </>
+
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">2. Set your API key</h4>
+                        <CopyCommand
+                          command={`export INKOG_API_KEY="${displayApiKey}"`}
+                          onCopy={() => handleCliCopy("go", `export INKOG_API_KEY="${displayApiKey}"`)}
+                        />
+                      </div>
+
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">3. Scan your agent</h4>
+                        <CopyCommand
+                          command="inkog scan ./my-agent"
+                          onCopy={() => handleCliCopy("go", "inkog scan ./my-agent")}
+                        />
+                      </div>
+                    </div>
                   )}
 
                   {selectedMethod === "mcp" && (
@@ -403,7 +476,7 @@ export default function OnboardingPage() {
       "command": "npx",
       "args": ["@inkog-io/mcp"],
       "env": {
-        "INKOG_API_KEY": "${generatedKey || "your-api-key"}"
+        "INKOG_API_KEY": "${displayApiKey}"
       }
     }
   }
@@ -431,65 +504,75 @@ export default function OnboardingPage() {
                     </div>
                   )}
 
-                  {selectedMethod === "upload" && (
-                    <div className="space-y-4">
-                      <p className="text-sm text-gray-600">
-                        Upload your agent files directly in the dashboard for quick testing.
-                      </p>
-                      <div className="rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
-                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                        <p className="mt-4 text-sm text-gray-600">
-                          Click &quot;Complete&quot; to go to the scan page where you can upload your files.
-                        </p>
-                      </div>
-                      <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                        Note: Upload is best for quick tests. For production, use the CLI or GitHub Actions.
-                      </p>
-                    </div>
-                  )}
-
                   {selectedMethod === "github" && (
                     <div className="space-y-4">
-                      <p className="text-sm text-gray-600">
-                        Add Inkog to your GitHub Actions workflow to scan on every PR.
-                      </p>
-                      <CopyCommand
-                        label="Add to your workflow YAML"
-                        command={`- uses: inkog-io/inkog@v1
-  with:
-    api-key: \${{ secrets.INKOG_API_KEY }}`}
-                        onCopy={() => handleCliCopy("source", "uses: inkog-io/inkog@v1")}
-                      />
-                      <p className="text-sm text-gray-600">
-                        Add your API key to your repository secrets as <code className="bg-gray-100 px-1 rounded">INKOG_API_KEY</code>.
-                      </p>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">1. Add secret to your repository</h4>
+                        <p className="text-sm text-gray-600 mb-2">
+                          Go to your repo → Settings → Secrets → Actions → New repository secret
+                        </p>
+                        <div className="bg-gray-100 rounded-lg p-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-gray-500">Name:</span>
+                            <code className="text-sm bg-white px-2 py-0.5 rounded border">INKOG_API_KEY</code>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-gray-500">Value:</span>
+                            <code className="text-sm bg-white px-2 py-0.5 rounded border font-mono">{displayApiKey}</code>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">2. Add workflow file</h4>
+                        <CopyCommand
+                          label="Create .github/workflows/inkog.yml"
+                          command={`name: Inkog Security Scan
+on: [push, pull_request]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: inkog-io/action@v1
+        with:
+          api-key: \${{ secrets.INKOG_API_KEY }}`}
+                          onCopy={() => handleCliCopy("source", "uses: inkog-io/action@v1")}
+                        />
+                      </div>
                     </div>
                   )}
 
                   {selectedMethod === "api" && (
                     <div className="space-y-4">
-                      <p className="text-sm text-gray-600">
-                        Integrate Inkog directly into your custom workflows.
-                      </p>
-                      <CopyCommand
-                        label="Example API call"
-                        command={`curl -X POST https://api.inkog.io/api/v1/scan \\
-  -H "X-API-Key: ${generatedKey || "your-api-key"}" \\
-  -F "files=@./my-agent.py"`}
-                        onCopy={() => handleCliCopy("source", "curl -X POST https://api.inkog.io/api/v1/scan")}
-                      />
-                      <p className="text-sm text-gray-600">
-                        See the{" "}
-                        <a
-                          href="https://docs.inkog.io/api"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-gray-900 underline hover:no-underline"
-                        >
-                          API documentation
-                        </a>{" "}
-                        for more details.
-                      </p>
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">1. Make an API request</h4>
+                        <CopyCommand
+                          label="Example cURL request"
+                          command={`curl -X POST https://api.inkog.io/v1/scan \\
+  -H "Authorization: Bearer ${displayApiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"files": [{"path": "agent.py", "content": "..."}]}'`}
+                          onCopy={() => handleCliCopy("source", "curl -X POST https://api.inkog.io/v1/scan")}
+                        />
+                      </div>
+
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">2. View documentation</h4>
+                        <p className="text-sm text-gray-600">
+                          See the{" "}
+                          <a
+                            href="https://docs.inkog.io/api"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-900 underline hover:no-underline"
+                          >
+                            API documentation
+                          </a>{" "}
+                          for all endpoints and options.
+                        </p>
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -509,7 +592,7 @@ export default function OnboardingPage() {
               Back
             </Button>
 
-            {currentStep < STEPS.length - 1 ? (
+            {currentStep < steps.length - 1 ? (
               <Button
                 onClick={handleNext}
                 disabled={!canProceed()}
