@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import { hasCompletedOnboarding } from "@/lib/analytics";
 import {
   Shield,
   AlertTriangle,
@@ -26,9 +28,12 @@ import { SecurityMetricCard, type MetricVariant } from "@/components/dashboard/S
 import { AgentList } from "@/components/dashboard/AgentList";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { getToken } = useAuth();
   const { user, isLoaded } = useUser();
   const [api, setApi] = useState<InkogAPI | null>(null);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentScans, setRecentScans] = useState<Scan[]>([]);
@@ -36,6 +41,28 @@ export default function DashboardPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if user needs onboarding
+  useEffect(() => {
+    // Skip if coming from onboarding (completed=true param)
+    const fromOnboarding = searchParams.get("completed") === "true";
+
+    if (fromOnboarding) {
+      setCheckingOnboarding(false);
+      return;
+    }
+
+    // Check localStorage for onboarding completion
+    const completed = hasCompletedOnboarding();
+
+    if (!completed) {
+      // New user - redirect to onboarding
+      router.replace("/dashboard/onboarding");
+      return;
+    }
+
+    setCheckingOnboarding(false);
+  }, [router, searchParams]);
 
   // Initialize API client
   useEffect(() => {
@@ -150,6 +177,15 @@ export default function DashboardPage() {
   const healthyAgents = agents.filter(a => a.health_status === 'healthy').length;
 
   const firstName = isLoaded && user?.firstName ? user.firstName : "there";
+
+  // Don't render until we've checked onboarding status
+  if (checkingOnboarding) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-900 border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
