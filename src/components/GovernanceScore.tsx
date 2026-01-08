@@ -245,7 +245,7 @@ export function GovernanceScore({
                           <div className="flex items-center gap-2">
                             {article.finding_count > 0 && (
                               <span className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
-                                {article.finding_count} issue{article.finding_count !== 1 ? 's' : ''} →
+                                View →
                               </span>
                             )}
                             <span
@@ -265,8 +265,8 @@ export function GovernanceScore({
                   </div>
                 )}
 
-                {/* Compliance issues - clickable to filter findings */}
-                {!isExpanded && framework.findingCount !== undefined && framework.findingCount > 0 && (
+                {/* View details link - only show for frameworks with issues */}
+                {!isExpanded && framework.status !== 'READY' && framework.status !== 'PASS' && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -275,7 +275,7 @@ export function GovernanceScore({
                     className="w-full px-3 py-2 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
                     <span className="text-xs text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-                      {framework.findingCount} compliance issue{framework.findingCount !== 1 ? 's' : ''} →
+                      View requirements →
                     </span>
                   </button>
                 )}
