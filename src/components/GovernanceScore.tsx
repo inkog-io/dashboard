@@ -265,7 +265,7 @@ export function GovernanceScore({
                   </div>
                 )}
 
-                {/* Finding count when not expanded - clickable to filter */}
+                {/* Compliance issues - clickable to filter findings */}
                 {!isExpanded && framework.findingCount !== undefined && framework.findingCount > 0 && (
                   <button
                     onClick={(e) => {
@@ -275,7 +275,7 @@ export function GovernanceScore({
                     className="w-full px-3 py-2 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
                     <span className="text-xs text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-                      {framework.findingCount} related finding{framework.findingCount !== 1 ? 's' : ''} →
+                      {framework.findingCount} compliance issue{framework.findingCount !== 1 ? 's' : ''} →
                     </span>
                   </button>
                 )}

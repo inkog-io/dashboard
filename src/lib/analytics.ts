@@ -281,23 +281,11 @@ export function skipOnboarding(): void {
 
 /**
  * Check if user has completed onboarding
- * @param userId - Optional Clerk user ID. If provided, verifies state belongs to this user.
+ * Simple check - just looks at the completion flag in localStorage
  */
-export function hasCompletedOnboarding(userId?: string): boolean {
+export function hasCompletedOnboarding(): boolean {
   const state = getOnboardingState();
-
-  // If no completion flag, not completed
-  if (!state.hasCompletedOnboarding) {
-    return false;
-  }
-
-  // If userId provided, verify state belongs to this user
-  // This ensures different users on same device each see onboarding
-  if (userId && state.userId && state.userId !== userId) {
-    return false;
-  }
-
-  return true;
+  return state.hasCompletedOnboarding === true;
 }
 
 /**

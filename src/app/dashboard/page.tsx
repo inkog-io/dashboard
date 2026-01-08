@@ -47,31 +47,24 @@ export default function DashboardPage() {
 
   // Check if user needs onboarding
   useEffect(() => {
-    // Wait for user to load
-    if (!isLoaded) return;
-
     // Check if coming from onboarding (completed=true param)
     const fromOnboarding = searchParams.get("completed") === "true";
 
     if (fromOnboarding) {
+      // User just completed onboarding - show welcome banner
       setShowWelcomeBanner(true);
       setCheckingOnboarding(false);
-      // Clean up URL param without triggering navigation
-      window.history.replaceState({}, "", "/dashboard");
       return;
     }
 
-    // Check localStorage for onboarding completion (pass user ID for per-user state)
-    const completed = hasCompletedOnboarding(user?.id);
-
-    if (!completed) {
-      // New user or different user - redirect to onboarding
+    // Check localStorage for onboarding completion
+    if (!hasCompletedOnboarding()) {
       router.replace("/dashboard/onboarding");
       return;
     }
 
     setCheckingOnboarding(false);
-  }, [router, searchParams, isLoaded, user?.id]);
+  }, [router, searchParams]);
 
   // Development: Ctrl+Shift+O to reset onboarding (for testing)
   useEffect(() => {

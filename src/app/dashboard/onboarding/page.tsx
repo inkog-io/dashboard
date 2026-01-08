@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import {
   Terminal,
   Upload,
@@ -15,8 +15,6 @@ import {
   ArrowLeft,
   Sparkles,
   Puzzle,
-  Zap,
-  FlaskConical,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -241,7 +239,6 @@ jobs:
 export default function OnboardingPage() {
   const router = useRouter();
   const { getToken } = useAuth();
-  const { user } = useUser();
   const toast = useToast();
 
   const [api, setApi] = useState<InkogAPI | null>(null);
@@ -330,7 +327,7 @@ export default function OnboardingPage() {
       steps_completed: 1,
       scan_method_chosen: "upload",
     });
-    saveOnboardingState({ hasCompletedOnboarding: true, scanMethodChosen: "upload", userId: user?.id });
+    saveOnboardingState({ hasCompletedOnboarding: true, scanMethodChosen: "upload" });
     router.push("/dashboard/scan?completed=true");
   };
 
@@ -350,9 +347,7 @@ export default function OnboardingPage() {
       steps_completed: steps.length,
       scan_method_chosen: selectedMethod || "cli",
     });
-    saveOnboardingState({ hasCompletedOnboarding: true, userId: user?.id });
-
-    // Always go to dashboard - users can access docs from there if needed
+    saveOnboardingState({ hasCompletedOnboarding: true });
     router.push("/dashboard?completed=true");
   };
 
@@ -362,7 +357,7 @@ export default function OnboardingPage() {
       skipped_at_step: steps[currentStep]?.id as "api_key" | "scan_method" | "first_scan",
       steps_completed: currentStep,
     });
-    saveOnboardingState({ hasCompletedOnboarding: true, userId: user?.id });
+    saveOnboardingState({ hasCompletedOnboarding: true });
     router.push("/dashboard?completed=true");
   };
 
@@ -427,66 +422,51 @@ export default function OnboardingPage() {
             {currentStepId === "scan_method" && (
               <>
                 <CardHeader>
-                  <CardTitle>How do you want to scan?</CardTitle>
+                  <CardTitle>Choose your integration</CardTitle>
                   <CardDescription>
-                    Choose the method that works best for your workflow.
+                    Select how you want to scan your AI agents.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Quick Test Option - Highlighted */}
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-amber-500" />
-                      Quick Test
-                    </h3>
-                    <button
-                      onClick={handleUploadSelect}
-                      className="w-full p-4 rounded-xl border-2 border-amber-200 bg-amber-50 hover:bg-amber-100 hover:border-amber-300 transition-all text-left"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0 p-2 bg-amber-100 rounded-lg">
-                          <Upload className="h-5 w-5 text-amber-700" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-gray-900">Upload Files</h4>
-                            <span className="px-2 py-0.5 text-xs font-medium bg-amber-200 text-amber-800 rounded-full">
-                              Try It Now
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 mt-1">
-                            Drag & drop files in the browser to see Inkog in action
-                          </p>
-                          <p className="text-xs text-amber-700 mt-2 flex items-center gap-1">
-                            <FlaskConical className="h-3 w-3" />
-                            Demo examples available if you don&apos;t have code ready
-                          </p>
-                        </div>
-                        <ArrowRight className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                <CardContent className="space-y-3">
+                  {/* Upload - Quick option */}
+                  <button
+                    onClick={handleUploadSelect}
+                    className="w-full p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors">
+                        <Upload className="h-5 w-5 text-gray-600" />
                       </div>
-                    </button>
-                    <p className="text-xs text-gray-500 mt-2 text-center">
-                      Best for quick testing. For production use, choose a method below.
-                    </p>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">Upload Files</h4>
+                        <p className="text-sm text-gray-500">Quick test in browser</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                    </div>
+                  </button>
+
+                  {/* Divider */}
+                  <div className="relative py-2">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-100" />
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="bg-white px-3 text-xs text-gray-400">or integrate</span>
+                    </div>
                   </div>
 
-                  {/* Production Methods */}
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-700 mb-3">
-                      Production Integration
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {PRODUCTION_METHODS.map((method) => (
-                        <ScanMethodCard
-                          key={method.id}
-                          icon={method.icon}
-                          title={method.title}
-                          description={method.description}
-                          selected={selectedMethod === method.id}
-                          onClick={() => handleMethodSelect(method.id)}
-                        />
-                      ))}
-                    </div>
+                  {/* Production Methods - Simple grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {PRODUCTION_METHODS.map((method) => (
+                      <ScanMethodCard
+                        key={method.id}
+                        icon={method.icon}
+                        title={method.title}
+                        description={method.description}
+                        selected={selectedMethod === method.id}
+                        onClick={() => handleMethodSelect(method.id)}
+                      />
+                    ))}
                   </div>
                 </CardContent>
               </>

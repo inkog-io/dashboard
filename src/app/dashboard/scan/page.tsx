@@ -10,13 +10,11 @@ import {
   CheckCircle2,
   Loader2,
   Shield,
-  Info,
   Terminal,
   ArrowRight,
   Plus,
   Bot,
   X,
-  AlertTriangle,
   FileText,
 } from "lucide-react";
 
@@ -365,95 +363,54 @@ def recursive_tool(depth=0):
       {/* Upload Section - Hidden when results exist */}
       {!result && (
         <>
-          {/* Notices - Only show when no files selected */}
+          {/* Drop Zone - Only when no files selected */}
           {files.length === 0 && (
-            <>
-              {/* Privacy Notice */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-                <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium">Privacy Notice</p>
-                  <p>
-                    Files are processed ephemerally and not stored. For maximum privacy,
-                    use the CLI for local-only scanning.
-                  </p>
-                </div>
+            <div
+              className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
+                isDragging
+                  ? "border-gray-900 bg-gray-50"
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+              }}
+              onDrop={handleDrop}
+            >
+              <Upload className="h-10 w-10 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-600 mb-4">
+                Drag & drop your agent files here
+              </p>
+              <input
+                type="file"
+                multiple
+                accept=".py,.js,.ts,.jsx,.tsx,.go,.java,.rb,.json,.yaml,.yml,.md"
+                onChange={handleFileInput}
+                className="hidden"
+                id="file-input"
+              />
+              <div className="flex items-center gap-3 justify-center">
+                <label
+                  htmlFor="file-input"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 cursor-pointer transition-colors"
+                >
+                  Select Files
+                </label>
+                <button
+                  onClick={loadDemoExample}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Try Demo
+                </button>
               </div>
-
-              {/* Web Scanner Limitations Notice */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-amber-800">
-                  <p className="font-medium">Quick Preview Mode</p>
-                  <p>
-                    This web scanner is for previewing individual files.
-                    For full project analysis with AGENTS.md governance validation:
-                  </p>
-                  <ul className="mt-2 space-y-1 list-disc list-inside text-amber-700">
-                    <li><a href="https://docs.inkog.io/cli" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900"><strong>CLI:</strong></a> <code className="bg-amber-100 px-1 rounded">inkog scan ./your-project</code></li>
-                    <li><a href="https://docs.inkog.io/api" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900"><strong>API:</strong></a> Programmatic access for custom integrations</li>
-                    <li><a href="https://docs.inkog.io/cli/github-action" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-900"><strong>CI/CD:</strong></a> GitHub Actions, GitLab CI integration</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Full Drop Zone - Only when no files */}
-              <div
-                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-                  isDragging
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-300 hover:border-gray-400"
-                }`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={(e) => {
-                  e.preventDefault();
-                  setIsDragging(false);
-                }}
-                onDrop={handleDrop}
-              >
-                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-lg font-medium text-gray-700 mb-2">
-                  Quick Scan Preview
-                </p>
-                <p className="text-sm text-gray-500 mb-4">
-                  Drag & drop files to test Inkog&apos;s detection capabilities
-                </p>
-                <input
-                  type="file"
-                  multiple
-                  accept=".py,.js,.ts,.jsx,.tsx,.go,.java,.rb,.json,.yaml,.yml,.md"
-                  onChange={handleFileInput}
-                  className="hidden"
-                  id="file-input"
-                />
-                <div className="flex items-center gap-3 justify-center">
-                  <label
-                    htmlFor="file-input"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
-                  >
-                    <FileCode className="h-4 w-4" />
-                    Select Files
-                  </label>
-                  <span className="text-gray-400">or</span>
-                  <button
-                    onClick={loadDemoExample}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors"
-                  >
-                    <Shield className="h-4 w-4" />
-                    Try Demo
-                  </button>
-                </div>
-                <p className="text-xs text-gray-400 mt-4">
-                  Supported: Python, JavaScript, TypeScript, Go, Java, Ruby, JSON, YAML
-                </p>
-                <p className="text-xs text-amber-600 mt-1">
-                  No code ready? Click &quot;Try Demo&quot; to see Inkog in action with example vulnerabilities
-                </p>
-              </div>
-            </>
+              <p className="text-xs text-gray-400 mt-4">
+                Python, JavaScript, TypeScript, Go, Java, Ruby, JSON, YAML
+              </p>
+            </div>
           )}
 
       {/* Selected Files */}
