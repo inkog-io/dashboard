@@ -4,18 +4,17 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { hasCompletedOnboarding, resetOnboarding } from "@/lib/analytics";
 import {
   Shield,
   AlertTriangle,
   CheckCircle,
-  FileCheck,
   ArrowRight,
   AlertCircle,
   Bot,
   Activity,
   Sparkles,
   X,
+  BookOpen,
 } from "lucide-react";
 
 import {
@@ -35,7 +34,7 @@ export default function DashboardPage() {
   const { getToken } = useAuth();
   const { user, isLoaded } = useUser();
   const [api, setApi] = useState<InkogAPI | null>(null);
-  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [checkingActivation, setCheckingActivation] = useState(true);
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentScans, setRecentScans] = useState<Scan[]>([]);
@@ -44,40 +43,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
-
-  // Check if user needs onboarding
-  useEffect(() => {
-    // Check if coming from onboarding (completed=true param)
-    const fromOnboarding = searchParams.get("completed") === "true";
-
-    if (fromOnboarding) {
-      // User just completed onboarding - show welcome banner
-      setShowWelcomeBanner(true);
-      setCheckingOnboarding(false);
-      return;
-    }
-
-    // Check localStorage for onboarding completion
-    if (!hasCompletedOnboarding()) {
-      router.replace("/dashboard/onboarding");
-      return;
-    }
-
-    setCheckingOnboarding(false);
-  }, [router, searchParams]);
-
-  // Development: Ctrl+Shift+O to reset onboarding (for testing)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'O') {
-        e.preventDefault();
-        resetOnboarding();
-        router.replace("/dashboard/onboarding");
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [router]);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   // Initialize API client
   useEffect(() => {
@@ -85,7 +51,7 @@ export default function DashboardPage() {
     setApi(client);
   }, [getToken]);
 
-  // Fetch data on mount
+  // Fetch data and check activation status
   const fetchData = useCallback(async () => {
     if (!api) return;
 
@@ -93,23 +59,49 @@ export default function DashboardPage() {
       setLoading(true);
       setError(null);
 
-      // Fetch stats, history, and agents in parallel
-      const [statsResponse, historyResponse, agentsResponse] = await Promise.all([
+      // Fetch stats, history, agents, and API keys in parallel
+      const [statsResponse, historyResponse, agentsResponse, keysResponse] = await Promise.all([
         api.stats.get(),
         api.history.list({ limit: 5, summary: true }),
         api.agents.list(),
+        api.keys.list(),
       ]);
 
+      const scans = historyResponse.scans || [];
+      const apiKeys = keysResponse.api_keys || [];
+
+      // User is "activated" if they have ANY scans OR API keys
+      const hasActivity = scans.length > 0 || apiKeys.length > 0;
+
+      // Check if coming from onboarding completion
+      const fromOnboarding = searchParams.get("completed") === "true";
+
+      if (!hasActivity && !fromOnboarding) {
+        // New user with no activity - redirect to onboarding
+        router.replace("/dashboard/onboarding");
+        return;
+      }
+
+      // User is activated - show dashboard
+      if (fromOnboarding) {
+        setShowWelcomeBanner(true);
+      }
+
+      // Track if this is a new user (for showing helpful prompts)
+      setIsNewUser(!hasActivity);
+
       setStats(statsResponse.stats);
-      setRecentScans(historyResponse.scans || []);
+      setRecentScans(scans);
       setSummary(historyResponse.summary || null);
       setAgents(agentsResponse.agents || []);
+      setCheckingActivation(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard");
+      setCheckingActivation(false);
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, [api, router, searchParams]);
 
   // Handle agent rename
   const handleRenameAgent = async (agent: Agent, newName: string) => {
@@ -193,8 +185,8 @@ export default function DashboardPage() {
 
   const firstName = isLoaded && user?.firstName ? user.firstName : "there";
 
-  // Don't render until we've checked onboarding status
-  if (checkingOnboarding) {
+  // Don't render until we've checked activation status
+  if (checkingActivation) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-900 border-t-transparent" />
@@ -205,9 +197,18 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Welcome back, {firstName}!</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 mt-1">Welcome back, {firstName}!</p>
+        </div>
+        <Link
+          href="/dashboard/onboarding"
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          <BookOpen className="h-4 w-4" />
+          Setup Guide
+        </Link>
       </div>
 
       {/* Setup Complete Banner */}
