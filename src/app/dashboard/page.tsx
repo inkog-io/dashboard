@@ -14,6 +14,8 @@ import {
   AlertCircle,
   Bot,
   Activity,
+  Sparkles,
+  X,
 } from "lucide-react";
 
 import {
@@ -41,17 +43,21 @@ export default function DashboardPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
 
   // Check if user needs onboarding
   useEffect(() => {
     // Wait for user to load
     if (!isLoaded) return;
 
-    // Skip if coming from onboarding (completed=true param)
+    // Check if coming from onboarding (completed=true param)
     const fromOnboarding = searchParams.get("completed") === "true";
 
     if (fromOnboarding) {
+      setShowWelcomeBanner(true);
       setCheckingOnboarding(false);
+      // Clean up URL param without triggering navigation
+      window.history.replaceState({}, "", "/dashboard");
       return;
     }
 
@@ -210,6 +216,35 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-1">Welcome back, {firstName}!</p>
       </div>
+
+      {/* Setup Complete Banner */}
+      {showWelcomeBanner && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+          <div className="p-2 bg-green-100 rounded-lg">
+            <Sparkles className="h-5 w-5 text-green-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-green-900">Setup complete!</h3>
+            <p className="text-sm text-green-700 mt-0.5">
+              You&apos;re all set. Run your first scan to start monitoring your AI agents for security vulnerabilities.
+            </p>
+            <Link
+              href="/dashboard/scan"
+              className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Shield className="h-4 w-4" />
+              Scan Your First Agent
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <button
+            onClick={() => setShowWelcomeBanner(false)}
+            className="p-1 text-green-400 hover:text-green-600 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      )}
 
       {/* Error Alert */}
       {error && (

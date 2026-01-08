@@ -87,6 +87,84 @@ const PRODUCTION_METHODS = [
   },
 ];
 
+// MCP setup with JSON config copy functionality
+function MCPSetupInstructions({
+  displayApiKey,
+  onCopy,
+}: {
+  displayApiKey: string;
+  onCopy: (type: CliInstallMethod, command: string) => void;
+}) {
+  const [configCopied, setConfigCopied] = useState(false);
+
+  const mcpConfig = `{
+  "mcpServers": {
+    "inkog": {
+      "command": "npx",
+      "args": ["@inkog-io/mcp"],
+      "env": {
+        "INKOG_API_KEY": "${displayApiKey}"
+      }
+    }
+  }
+}`;
+
+  const handleCopyConfig = async () => {
+    await navigator.clipboard.writeText(mcpConfig);
+    setConfigCopied(true);
+    onCopy("source", "MCP config JSON");
+    setTimeout(() => setConfigCopied(false), 2000);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h4 className="text-sm font-medium text-gray-900 mb-2">1. Add to Claude Desktop config</h4>
+        <div className="relative">
+          <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+            <pre className="text-sm text-gray-100">{mcpConfig}</pre>
+          </div>
+          <button
+            onClick={handleCopyConfig}
+            className="absolute top-2 right-2 p-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-colors"
+            title="Copy config"
+          >
+            {configCopied ? (
+              <Check className="h-4 w-4 text-green-400" />
+            ) : (
+              <Copy className="h-4 w-4 text-gray-400" />
+            )}
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-gray-500">
+          Config location: ~/Library/Application Support/Claude/claude_desktop_config.json
+        </p>
+        <p className="mt-1 text-xs text-gray-500">
+          For Cursor: ~/.cursor/mcp.json
+        </p>
+      </div>
+
+      <div>
+        <h4 className="text-sm font-medium text-gray-900 mb-2">2. Restart your editor</h4>
+        <p className="text-sm text-gray-600">
+          Quit and reopen Claude Desktop or Cursor to load the Inkog MCP server.
+        </p>
+      </div>
+
+      <div>
+        <h4 className="text-sm font-medium text-gray-900 mb-2">3. Ask Claude to scan</h4>
+        <CopyCommand
+          command="Scan my agent code for security vulnerabilities"
+          onCopy={() => onCopy("source", "Scan my agent code")}
+        />
+        <p className="mt-2 text-xs text-gray-500">
+          Claude will use Inkog tools to analyze your code and report findings.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // GitHub setup with API key copy functionality
 function GitHubSetupInstructions({
   displayApiKey,
@@ -533,42 +611,10 @@ export default function OnboardingPage() {
                   )}
 
                   {selectedMethod === "mcp" && (
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">1. Add to Claude Desktop config</h4>
-                        <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
-                          <pre className="text-sm text-gray-100">{`{
-  "mcpServers": {
-    "inkog": {
-      "command": "npx",
-      "args": ["@inkog-io/mcp"],
-      "env": {
-        "INKOG_API_KEY": "${displayApiKey}"
-      }
-    }
-  }
-}`}</pre>
-                        </div>
-                        <p className="mt-2 text-xs text-gray-500">
-                          Config location: ~/Library/Application Support/Claude/claude_desktop_config.json
-                        </p>
-                      </div>
-
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">2. Restart Claude Desktop</h4>
-                        <p className="text-sm text-gray-600">
-                          Quit and reopen Claude Desktop to load the Inkog MCP server.
-                        </p>
-                      </div>
-
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">3. Ask Claude to scan</h4>
-                        <CopyCommand
-                          command="Scan my agent code for security vulnerabilities"
-                          onCopy={() => handleCliCopy("source", "Scan my agent code")}
-                        />
-                      </div>
-                    </div>
+                    <MCPSetupInstructions
+                      displayApiKey={displayApiKey}
+                      onCopy={handleCliCopy}
+                    />
                   )}
 
                   {selectedMethod === "github" && (
