@@ -130,6 +130,8 @@ export interface OnboardingState {
   apiKeyGenerated: boolean;
   scanMethodChosen: ScanMethod | null;
   hasCompletedOnboarding: boolean;
+  /** Clerk user ID - ensures onboarding state is per-user */
+  userId?: string;
 }
 
 const DEFAULT_ONBOARDING_STATE: OnboardingState = {
@@ -139,6 +141,7 @@ const DEFAULT_ONBOARDING_STATE: OnboardingState = {
   apiKeyGenerated: false,
   scanMethodChosen: null,
   hasCompletedOnboarding: false,
+  userId: undefined,
 };
 
 /**
@@ -278,10 +281,23 @@ export function skipOnboarding(): void {
 
 /**
  * Check if user has completed onboarding
+ * @param userId - Optional Clerk user ID. If provided, verifies state belongs to this user.
  */
-export function hasCompletedOnboarding(): boolean {
+export function hasCompletedOnboarding(userId?: string): boolean {
   const state = getOnboardingState();
-  return state.hasCompletedOnboarding;
+
+  // If no completion flag, not completed
+  if (!state.hasCompletedOnboarding) {
+    return false;
+  }
+
+  // If userId provided, verify state belongs to this user
+  // This ensures different users on same device each see onboarding
+  if (userId && state.userId && state.userId !== userId) {
+    return false;
+  }
+
+  return true;
 }
 
 /**

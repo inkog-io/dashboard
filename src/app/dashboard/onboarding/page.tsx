@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import {
   Terminal,
   Upload,
@@ -87,9 +87,83 @@ const PRODUCTION_METHODS = [
   },
 ];
 
+// GitHub setup with API key copy functionality
+function GitHubSetupInstructions({
+  displayApiKey,
+  onCopy,
+}: {
+  displayApiKey: string;
+  onCopy: (type: CliInstallMethod, command: string) => void;
+}) {
+  const [keyCopied, setKeyCopied] = useState(false);
+
+  const handleCopyApiKey = async () => {
+    await navigator.clipboard.writeText(displayApiKey);
+    setKeyCopied(true);
+    setTimeout(() => setKeyCopied(false), 2000);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h4 className="text-sm font-medium text-gray-900 mb-2">1. Add secret to your repository</h4>
+        <p className="text-sm text-gray-600 mb-2">
+          Go to your repo → Settings → Secrets and variables → Actions → New repository secret
+        </p>
+        <div className="bg-gray-100 rounded-lg p-3 space-y-3">
+          <div>
+            <span className="text-xs font-medium text-gray-500 block mb-1">Name:</span>
+            <code className="text-sm bg-white px-2 py-1 rounded border block">INKOG_API_KEY</code>
+          </div>
+          <div>
+            <span className="text-xs font-medium text-gray-500 block mb-1">Value (click to copy):</span>
+            <button
+              onClick={handleCopyApiKey}
+              className="w-full flex items-center justify-between bg-white px-2 py-1 rounded border hover:bg-gray-50 transition-colors text-left"
+            >
+              <code className="text-sm font-mono truncate">{displayApiKey}</code>
+              {keyCopied ? (
+                <Check className="h-4 w-4 text-green-600 flex-shrink-0 ml-2" />
+              ) : (
+                <Copy className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
+              )}
+            </button>
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-gray-500">
+          This secret keeps your API key secure - it won&apos;t appear in logs or workflow files.
+        </p>
+      </div>
+
+      <div>
+        <h4 className="text-sm font-medium text-gray-900 mb-2">2. Add workflow file</h4>
+        <CopyCommand
+          label="Create .github/workflows/inkog.yml"
+          command={`name: Inkog Security Scan
+on: [push, pull_request]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: inkog-io/action@v1
+        with:
+          api-key: \${{ secrets.INKOG_API_KEY }}`}
+          onCopy={() => onCopy("source", "uses: inkog-io/action@v1")}
+        />
+        <p className="mt-2 text-xs text-gray-500">
+          The workflow will automatically scan your code on every push and pull request.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const { getToken } = useAuth();
+  const { user } = useUser();
   const toast = useToast();
 
   const [api, setApi] = useState<InkogAPI | null>(null);
@@ -178,7 +252,7 @@ export default function OnboardingPage() {
       steps_completed: 1,
       scan_method_chosen: "upload",
     });
-    saveOnboardingState({ hasCompletedOnboarding: true, scanMethodChosen: "upload" });
+    saveOnboardingState({ hasCompletedOnboarding: true, scanMethodChosen: "upload", userId: user?.id });
     router.push("/dashboard/scan?completed=true");
   };
 
@@ -198,17 +272,10 @@ export default function OnboardingPage() {
       steps_completed: steps.length,
       scan_method_chosen: selectedMethod || "cli",
     });
-    saveOnboardingState({ hasCompletedOnboarding: true });
+    saveOnboardingState({ hasCompletedOnboarding: true, userId: user?.id });
 
-    // Navigate based on selected method
-    switch (selectedMethod) {
-      case "github":
-        window.open("https://docs.inkog.io/ci-cd/github-actions", "_blank");
-        router.push("/dashboard?completed=true");
-        break;
-      default:
-        router.push("/dashboard?completed=true");
-    }
+    // Always go to dashboard - users can access docs from there if needed
+    router.push("/dashboard?completed=true");
   };
 
   // Skip onboarding
@@ -217,7 +284,7 @@ export default function OnboardingPage() {
       skipped_at_step: steps[currentStep]?.id as "api_key" | "scan_method" | "first_scan",
       steps_completed: currentStep,
     });
-    saveOnboardingState({ hasCompletedOnboarding: true });
+    saveOnboardingState({ hasCompletedOnboarding: true, userId: user?.id });
     router.push("/dashboard?completed=true");
   };
 
@@ -505,43 +572,10 @@ export default function OnboardingPage() {
                   )}
 
                   {selectedMethod === "github" && (
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">1. Add secret to your repository</h4>
-                        <p className="text-sm text-gray-600 mb-2">
-                          Go to your repo → Settings → Secrets → Actions → New repository secret
-                        </p>
-                        <div className="bg-gray-100 rounded-lg p-3 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-500">Name:</span>
-                            <code className="text-sm bg-white px-2 py-0.5 rounded border">INKOG_API_KEY</code>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-500">Value:</span>
-                            <code className="text-sm bg-white px-2 py-0.5 rounded border font-mono">{displayApiKey}</code>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">2. Add workflow file</h4>
-                        <CopyCommand
-                          label="Create .github/workflows/inkog.yml"
-                          command={`name: Inkog Security Scan
-on: [push, pull_request]
-
-jobs:
-  scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: inkog-io/action@v1
-        with:
-          api-key: \${{ secrets.INKOG_API_KEY }}`}
-                          onCopy={() => handleCliCopy("source", "uses: inkog-io/action@v1")}
-                        />
-                      </div>
-                    </div>
+                    <GitHubSetupInstructions
+                      displayApiKey={displayApiKey}
+                      onCopy={handleCliCopy}
+                    />
                   )}
 
                   {selectedMethod === "api" && (

@@ -231,6 +231,75 @@ export default function ScanPage() {
     setAgentNameAutoDetected(false);
   }, []);
 
+  // Demo examples for users to try
+  const loadDemoExample = useCallback(() => {
+    const demoCode = `# Demo AI Agent - Vulnerable Example
+# This example contains intentional security issues for demonstration
+
+import os
+import openai
+from langchain.agents import Tool, AgentExecutor
+
+# VULNERABILITY: Hardcoded API credentials
+OPENAI_API_KEY = "sk-proj-abc123xyz789secret"
+DATABASE_PASSWORD = "admin123"
+
+class CustomerSupportAgent:
+    def __init__(self):
+        # VULNERABILITY: Hardcoded credentials in code
+        openai.api_key = OPENAI_API_KEY
+        self.db_password = DATABASE_PASSWORD
+
+    def process_user_input(self, user_message: str):
+        # VULNERABILITY: Direct prompt injection risk
+        # User input is directly concatenated into the prompt
+        prompt = f"""You are a helpful assistant.
+
+User request: {user_message}
+
+Please help the user with their request."""
+
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content
+
+    def execute_query(self, query: str):
+        # VULNERABILITY: SQL injection via LLM output
+        # LLM-generated queries executed without validation
+        import sqlite3
+        conn = sqlite3.connect('customers.db')
+        cursor = conn.cursor()
+        cursor.execute(query)  # Unvalidated LLM output
+        return cursor.fetchall()
+
+    def run_dynamic_code(self, code_string: str):
+        # VULNERABILITY: Unvalidated exec/eval
+        exec(code_string)  # Arbitrary code execution
+
+# VULNERABILITY: No rate limiting on API calls
+def handle_request(request):
+    agent = CustomerSupportAgent()
+    return agent.process_user_input(request)
+
+# VULNERABILITY: Recursive tool calling without depth limits
+def recursive_tool(depth=0):
+    if should_continue():
+        return recursive_tool(depth + 1)  # No max depth
+`;
+
+    // Create a File object from the demo code
+    const blob = new Blob([demoCode], { type: 'text/plain' });
+    const demoFile = new File([blob], 'demo-vulnerable-agent.py', { type: 'text/plain' });
+
+    setFiles([demoFile]);
+    setAgentName('demo-vulnerable-agent');
+    setAgentNameAutoDetected(true);
+    setError(null);
+    setResult(null);
+  }, []);
+
   // Run the scan with progress UI
   const runScan = useCallback(async () => {
     if (!api || files.length === 0) return;
@@ -360,15 +429,28 @@ export default function ScanPage() {
                   className="hidden"
                   id="file-input"
                 />
-                <label
-                  htmlFor="file-input"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
-                >
-                  <FileCode className="h-4 w-4" />
-                  Select Files
-                </label>
+                <div className="flex items-center gap-3 justify-center">
+                  <label
+                    htmlFor="file-input"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  >
+                    <FileCode className="h-4 w-4" />
+                    Select Files
+                  </label>
+                  <span className="text-gray-400">or</span>
+                  <button
+                    onClick={loadDemoExample}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors"
+                  >
+                    <Shield className="h-4 w-4" />
+                    Try Demo
+                  </button>
+                </div>
                 <p className="text-xs text-gray-400 mt-4">
                   Supported: Python, JavaScript, TypeScript, Go, Java, Ruby, JSON, YAML
+                </p>
+                <p className="text-xs text-amber-600 mt-1">
+                  No code ready? Click &quot;Try Demo&quot; to see Inkog in action with example vulnerabilities
                 </p>
               </div>
             </>
