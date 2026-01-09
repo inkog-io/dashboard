@@ -4,7 +4,6 @@ import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
 import { CommandPalette, useCommandPalette } from "./CommandPalette";
 import { OfflineBanner } from "@/components/OfflineBanner";
-import { OnboardingGate } from "./OnboardingGate";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import { cn } from "@/lib/utils";
@@ -36,7 +35,7 @@ export function DashboardShell({ children, userEmail }: DashboardShellProps) {
       {/* Main Content */}
       <main
         className={cn(
-          "min-h-screen bg-gray-50 transition-all duration-300",
+          "min-h-screen bg-muted transition-all duration-300",
           // Desktop: offset by sidebar width
           isCollapsed ? "lg:pl-16" : "lg:pl-60",
           // Mobile: offset by top header
@@ -44,9 +43,7 @@ export function DashboardShell({ children, userEmail }: DashboardShellProps) {
         )}
       >
         <div className="p-6 lg:p-8">
-          <OnboardingGate>
-            {children}
-          </OnboardingGate>
+          {children}
         </div>
       </main>
 

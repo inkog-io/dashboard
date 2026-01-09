@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { Menu, LayoutDashboard, Shield, Key, History } from "lucide-react";
+import { Menu, LayoutDashboard, Shield, Key, History, BookOpen } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -25,6 +25,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/scan", label: "Scan", icon: Shield },
   { href: "/dashboard/history", label: "History", icon: History },
   { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
+  { href: "/dashboard/onboarding", label: "Setup Guide", icon: BookOpen },
 ];
 
 interface MobileNavProps {
@@ -43,7 +44,7 @@ export function MobileNav({ userEmail }: MobileNavProps) {
   };
 
   return (
-    <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-40 flex items-center justify-between px-4">
+    <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-background border-b border-border z-40 flex items-center justify-between px-4">
       {/* Logo */}
       <Link href="/dashboard" className="flex items-center gap-2">
         <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
@@ -57,12 +58,12 @@ export function MobileNav({ userEmail }: MobileNavProps) {
 
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <Menu className="h-5 w-5 text-gray-600" />
+            <button className="p-2 hover:bg-muted rounded-lg transition-colors">
+              <Menu className="h-5 w-5 text-muted-foreground" />
             </button>
           </SheetTrigger>
           <SheetContent side="right" className="w-72 p-0">
-            <SheetHeader className="p-4 border-b border-gray-100">
+            <SheetHeader className="p-4 border-b border-border">
               <SheetTitle className="text-left">Navigation</SheetTitle>
             </SheetHeader>
 
@@ -79,8 +80,8 @@ export function MobileNav({ userEmail }: MobileNavProps) {
                     className={cn(
                       "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors",
                       active
-                        ? "bg-gray-100 text-gray-900"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
                     <Icon className="h-5 w-5" />
@@ -91,8 +92,8 @@ export function MobileNav({ userEmail }: MobileNavProps) {
             </nav>
 
             {userEmail && (
-              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100 bg-gray-50">
-                <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-muted">
+                <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
               </div>
             )}
           </SheetContent>

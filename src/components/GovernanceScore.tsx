@@ -136,8 +136,8 @@ export function GovernanceScore({
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg shadow dark:shadow-gray-800 p-6">
-      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+    <div className="bg-card rounded-lg shadow p-6 border border-border">
+      <h3 className="text-lg font-semibold mb-4 text-foreground">
         Governance Score
       </h3>
 
@@ -152,7 +152,7 @@ export function GovernanceScore({
               r="40"
               fill="none"
               stroke="currentColor"
-              className="text-gray-200 dark:text-gray-700"
+              className="text-muted"
               strokeWidth="10"
             />
             {/* Progress circle */}
@@ -185,19 +185,19 @@ export function GovernanceScore({
             return (
               <div
                 key={framework.id}
-                className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                className="border border-border rounded-lg overflow-hidden"
               >
                 {/* Framework Header */}
                 <button
                   onClick={() => hasDetails && toggleFramework(framework.id)}
                   className={`w-full flex items-center justify-between p-3 text-left transition-colors
-                    ${hasDetails ? 'hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer' : 'cursor-default'}
-                    bg-gray-50 dark:bg-gray-800/50`}
+                    ${hasDetails ? 'hover:bg-muted cursor-pointer' : 'cursor-default'}
+                    bg-muted/50`}
                   disabled={!hasDetails}
                 >
                   <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <Icon className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">
                       {framework.name}
                     </span>
                   </div>
@@ -209,9 +209,9 @@ export function GovernanceScore({
                     </span>
                     {hasDetails && (
                       isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
                       ) : (
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
                       )
                     )}
                   </div>
@@ -219,7 +219,7 @@ export function GovernanceScore({
 
                 {/* Expanded Articles (any framework with article details) */}
                 {isExpanded && framework.articles && framework.articles.length > 0 && (
-                  <div className="p-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+                  <div className="p-3 bg-background border-t border-border">
                     <div className="space-y-2">
                       {framework.articles.map((article) => (
                         <button
@@ -228,23 +228,23 @@ export function GovernanceScore({
                           disabled={article.finding_count === 0}
                           className={`w-full flex items-center justify-between text-sm p-2 rounded-md transition-colors ${
                             article.finding_count > 0
-                              ? 'hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer'
+                              ? 'hover:bg-muted cursor-pointer'
                               : 'cursor-default'
                           }`}
                         >
                           <div className="text-left">
-                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                            <span className="font-medium text-foreground">
                               {article.article}
                             </span>
                             {article.description && (
-                              <span className="text-gray-500 dark:text-gray-500 ml-2">
+                              <span className="text-muted-foreground ml-2">
                                 - {article.description}
                               </span>
                             )}
                           </div>
                           <div className="flex items-center gap-2">
                             {article.finding_count > 0 && (
-                              <span className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                              <span className="text-xs text-primary hover:underline">
                                 View →
                               </span>
                             )}
@@ -258,7 +258,7 @@ export function GovernanceScore({
                       ))}
                     </div>
                     {framework.deadline && (
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+                      <p className="text-xs text-muted-foreground mt-3 pt-2 border-t border-border">
                         Compliance deadline: {framework.deadline}
                       </p>
                     )}
@@ -272,9 +272,9 @@ export function GovernanceScore({
                       e.stopPropagation();
                       onFrameworkClick?.(framework.id);
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="w-full px-3 py-2 bg-background border-t border-border text-left hover:bg-muted transition-colors"
                   >
-                    <span className="text-xs text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                    <span className="text-xs text-muted-foreground hover:text-foreground">
                       View requirements →
                     </span>
                   </button>

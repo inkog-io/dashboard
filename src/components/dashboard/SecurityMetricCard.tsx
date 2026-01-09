@@ -25,36 +25,36 @@ interface SecurityMetricCardProps {
 
 const variantStyles: Record<MetricVariant, { bg: string; iconBg: string; iconColor: string }> = {
   default: {
-    bg: "bg-white",
-    iconBg: "bg-gray-100",
-    iconColor: "text-gray-600",
+    bg: "bg-card",
+    iconBg: "bg-muted",
+    iconColor: "text-muted-foreground",
   },
   success: {
-    bg: "bg-white",
-    iconBg: "bg-green-100",
-    iconColor: "text-green-600",
+    bg: "bg-card",
+    iconBg: "bg-green-100 dark:bg-green-900/30",
+    iconColor: "text-green-600 dark:text-green-400",
   },
   warning: {
-    bg: "bg-white",
-    iconBg: "bg-amber-100",
-    iconColor: "text-amber-600",
+    bg: "bg-card",
+    iconBg: "bg-amber-100 dark:bg-amber-900/30",
+    iconColor: "text-amber-600 dark:text-amber-400",
   },
   danger: {
-    bg: "bg-white",
-    iconBg: "bg-red-100",
-    iconColor: "text-red-600",
+    bg: "bg-card",
+    iconBg: "bg-red-100 dark:bg-red-900/30",
+    iconColor: "text-red-600 dark:text-red-400",
   },
   info: {
-    bg: "bg-white",
-    iconBg: "bg-blue-100",
-    iconColor: "text-blue-600",
+    bg: "bg-card",
+    iconBg: "bg-blue-100 dark:bg-blue-900/30",
+    iconColor: "text-blue-600 dark:text-blue-400",
   },
 };
 
 const badgeStyles: Record<"success" | "warning" | "danger", string> = {
-  success: "bg-green-100 text-green-700 border-green-200",
-  warning: "bg-amber-100 text-amber-700 border-amber-200",
-  danger: "bg-red-100 text-red-700 border-red-200",
+  success: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800",
+  warning: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800",
+  danger: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800",
 };
 
 export function SecurityMetricCard({
@@ -72,15 +72,13 @@ export function SecurityMetricCard({
 
   return (
     <div className={cn(
-      "rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm transition-shadow hover:shadow-md",
-      styles.bg,
-      "dark:bg-gray-800"
+      "rounded-xl border border-border p-5 shadow-sm transition-shadow hover:shadow-md",
+      styles.bg
     )}>
       <div className="flex items-start justify-between">
         <div className={cn(
           "p-2.5 rounded-lg",
-          styles.iconBg,
-          "dark:bg-opacity-20"
+          styles.iconBg
         )}>
           <Icon className={cn("h-5 w-5", styles.iconColor)} />
         </div>
@@ -107,24 +105,24 @@ export function SecurityMetricCard({
 
       <div className="mt-4">
         {loading ? (
-          <div className="h-8 w-20 bg-gray-100 dark:bg-gray-700 animate-pulse rounded" />
+          <div className="h-8 w-20 bg-muted animate-pulse rounded" />
         ) : (
-          <p className="text-2xl font-semibold font-mono text-gray-900 dark:text-gray-100">{value}</p>
+          <p className="text-2xl font-semibold font-mono text-foreground">{value}</p>
         )}
         <div className="flex items-center gap-1.5 mt-1">
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
           {tooltip && (
             <div className="relative group">
-              <Info className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500 cursor-help" />
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 w-56 z-50 pointer-events-none">
+              <Info className="h-3.5 w-3.5 text-muted-foreground/50 hover:text-muted-foreground cursor-help" />
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border border-border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 w-56 z-50 pointer-events-none">
                 {tooltip}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-popover" />
               </div>
             </div>
           )}
         </div>
         {subtitle && (
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{subtitle}</p>
+          <p className="text-xs text-muted-foreground/80 mt-0.5">{subtitle}</p>
         )}
       </div>
     </div>

@@ -42,22 +42,22 @@ interface AgentListProps {
 const healthConfig: Record<string, { icon: typeof CheckCircle2; color: string; label: string }> = {
   healthy: {
     icon: CheckCircle2,
-    color: "text-green-600 bg-green-50",
+    color: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30",
     label: "Healthy",
   },
   warning: {
     icon: AlertTriangle,
-    color: "text-amber-600 bg-amber-50",
+    color: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30",
     label: "Warning",
   },
   critical: {
     icon: AlertCircle,
-    color: "text-red-600 bg-red-50",
+    color: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30",
     label: "Critical",
   },
   unknown: {
     icon: HelpCircle,
-    color: "text-gray-500 bg-gray-50",
+    color: "text-muted-foreground bg-muted",
     label: "Unknown",
   },
 };
@@ -81,14 +81,14 @@ function HealthBadge({ status }: { status: string }) {
 
 function PolicyBadge({ policy }: { policy: string }) {
   const policyLabels: Record<string, { label: string; color: string }> = {
-    comprehensive: { label: "Comprehensive", color: "bg-purple-50 text-purple-700" },
-    balanced: { label: "Balanced", color: "bg-blue-50 text-blue-700" },
-    "low-noise": { label: "Low Noise", color: "bg-gray-50 text-gray-700" },
-    governance: { label: "Governance", color: "bg-indigo-50 text-indigo-700" },
-    "eu-ai-act": { label: "EU AI Act", color: "bg-green-50 text-green-700" },
+    comprehensive: { label: "Comprehensive", color: "bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400" },
+    balanced: { label: "Balanced", color: "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" },
+    "low-noise": { label: "Low Noise", color: "bg-muted text-muted-foreground" },
+    governance: { label: "Governance", color: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400" },
+    "eu-ai-act": { label: "EU AI Act", color: "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400" },
   };
 
-  const config = policyLabels[policy] || { label: policy, color: "bg-gray-50 text-gray-600" };
+  const config = policyLabels[policy] || { label: policy, color: "bg-muted text-muted-foreground" };
 
   return (
     <span className={cn("px-2 py-0.5 rounded text-xs font-medium", config.color)}>
@@ -169,9 +169,9 @@ export function AgentList({
 
   if (loading) {
     return (
-      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
-        <div className="p-8 flex flex-col items-center justify-center text-gray-500">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mb-4" />
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="p-8 flex flex-col items-center justify-center text-muted-foreground">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-muted-foreground mb-4" />
           <p>Loading agents...</p>
         </div>
       </div>
@@ -180,62 +180,62 @@ export function AgentList({
 
   if (agents.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="p-8 flex flex-col items-center justify-center text-center">
-          <div className="rounded-full bg-gray-100 dark:bg-gray-700 p-4 mb-4">
-            <Bot className="h-8 w-8 text-gray-400" />
+          <div className="rounded-full bg-muted p-4 mb-4">
+            <Bot className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+          <h3 className="text-lg font-medium text-foreground mb-2">
             No agents scanned yet
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-md">
+          <p className="text-sm text-muted-foreground mb-6 max-w-md">
             Scan your first AI agent to discover security vulnerabilities and behavioral flaws.
           </p>
 
           {/* Getting Started Steps */}
           <div className="w-full max-w-sm text-left space-y-3 mb-6">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-medium">
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-medium">
                 1
               </div>
               <div className="flex-1 min-w-0">
                 <Link
                   href="/dashboard/api-keys"
-                  className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:underline flex items-center gap-1.5"
+                  className="text-sm font-medium text-foreground hover:underline flex items-center gap-1.5"
                 >
                   <Key className="h-3.5 w-3.5" />
                   Generate an API key
                 </Link>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Required for CLI and API authentication
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-medium">
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-muted-foreground/20 text-muted-foreground flex items-center justify-center text-xs font-medium">
                 2
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
                   <Terminal className="h-3.5 w-3.5" />
                   Install the CLI
                 </p>
-                <code className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 block break-all">
+                <code className="text-xs text-muted-foreground mt-0.5 block break-all">
                   go install github.com/inkog-io/inkog/cmd/inkog@latest
                 </code>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-medium">
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-muted-foreground/20 text-muted-foreground flex items-center justify-center text-xs font-medium">
                 3
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <p className="text-sm font-medium text-foreground">
                   Scan your agent
                 </p>
-                <code className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 block">
+                <code className="text-xs text-muted-foreground mt-0.5 block">
                   inkog scan ./my-agent
                 </code>
               </div>
@@ -243,7 +243,7 @@ export function AgentList({
           </div>
 
           {/* Alternative Option */}
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>or</span>
             <Button
               variant="outline"
@@ -261,10 +261,10 @@ export function AgentList({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gray-50 dark:bg-gray-900/50">
+          <TableRow className="bg-muted/50">
             <TableHead className="font-semibold">Agent</TableHead>
             <TableHead className="font-semibold">Last Scan</TableHead>
             <TableHead className="font-semibold text-center">Scan #</TableHead>
@@ -280,14 +280,14 @@ export function AgentList({
               className={cn(
                 "cursor-pointer transition-colors",
                 agent.last_scan_id
-                  ? "hover:bg-gray-50 dark:hover:bg-gray-900/50"
+                  ? "hover:bg-muted/50"
                   : "opacity-60"
               )}
             >
               <TableCell>
                 <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 rounded-lg bg-gray-100 dark:bg-gray-700 p-2">
-                    <Bot className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                  <div className="flex-shrink-0 rounded-lg bg-muted p-2">
+                    <Bot className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div>
                     {editingId === agent.id ? (
@@ -302,12 +302,12 @@ export function AgentList({
                         disabled={savingId === agent.id}
                       />
                     ) : (
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
+                      <p className="font-medium text-foreground">
                         {agent.name}
                       </p>
                     )}
                     {agent.path && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">
+                      <p className="text-xs text-muted-foreground truncate max-w-xs">
                         {agent.path}
                       </p>
                     )}
@@ -317,16 +317,16 @@ export function AgentList({
 
               <TableCell>
                 {agent.last_scan_at ? (
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                  <span className="text-sm text-muted-foreground">
                     {formatDistanceToNow(new Date(agent.last_scan_at), { addSuffix: true })}
                   </span>
                 ) : (
-                  <span className="text-sm text-gray-400">Never</span>
+                  <span className="text-sm text-muted-foreground/60">Never</span>
                 )}
               </TableCell>
 
               <TableCell className="text-center">
-                <span className="text-sm font-mono text-gray-600 dark:text-gray-300">
+                <span className="text-sm font-mono text-muted-foreground">
                   #{agent.total_scans}
                 </span>
               </TableCell>
@@ -359,8 +359,8 @@ export function AgentList({
                     className={cn(
                       "h-8 px-2",
                       confirmDeleteId === agent.id
-                        ? "text-red-600 hover:text-red-700 hover:bg-red-50"
-                        : "text-gray-500 hover:text-gray-700"
+                        ? "text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
+                        : "text-muted-foreground hover:text-foreground"
                     )}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />

@@ -7,6 +7,7 @@ import {
   Shield,
   Key,
   History,
+  BookOpen,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -51,14 +52,14 @@ function NavItemComponent({
       href={item.href}
       className={cn(
         "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
-        "hover:bg-gray-100",
+        "hover:bg-muted",
         isActive
-          ? "bg-gray-100 text-gray-900 border-l-2 border-gray-900 -ml-[2px] pl-[14px]"
-          : "text-gray-600",
+          ? "bg-muted text-foreground border-l-2 border-foreground -ml-[2px] pl-[14px]"
+          : "text-muted-foreground",
         isCollapsed && "justify-center px-2"
       )}
     >
-      <Icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-gray-900")} />
+      <Icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-foreground")} />
       {!isCollapsed && (
         <span className="flex items-center gap-2">
           {item.label}
@@ -131,6 +132,12 @@ export function SidebarNav({ isCollapsed }: SidebarNavProps) {
         },
       ],
     },
+    {
+      title: "HELP",
+      items: [
+        { href: "/dashboard/onboarding", label: "Setup Guide", icon: BookOpen },
+      ],
+    },
   ];
 
   return (
@@ -140,7 +147,7 @@ export function SidebarNav({ isCollapsed }: SidebarNavProps) {
           <div key={group.title}>
             {groupIndex > 0 && <Separator className="mb-4" />}
             {!isCollapsed && (
-              <h3 className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {group.title}
               </h3>
             )}

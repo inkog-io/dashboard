@@ -168,12 +168,12 @@ export default function DashboardPage() {
       {/* Welcome Section */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back, {firstName}!</p>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Welcome back, {firstName}!</p>
         </div>
         <Link
           href="/dashboard/onboarding"
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <BookOpen className="h-4 w-4" />
           Setup Guide
@@ -262,12 +262,12 @@ export default function DashboardPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-gray-400" />
-            <h2 className="font-semibold text-gray-900 dark:text-gray-100">Your Agents</h2>
+            <Bot className="h-5 w-5 text-muted-foreground" />
+            <h2 className="font-semibold text-foreground">Your Agents</h2>
           </div>
           <Link
             href="/dashboard/scan"
-            className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 flex items-center gap-1"
+            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
             <Shield className="h-4 w-4" />
             Scan New Agent
@@ -285,35 +285,35 @@ export default function DashboardPage() {
       {/* Summary Stats (if available) */}
       {summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+          <div className="bg-muted rounded-lg p-4 text-center">
+            <p className="text-2xl font-semibold text-foreground">
               {summary.total_scans}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">
               Total Scans
             </p>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+          <div className="bg-muted rounded-lg p-4 text-center">
+            <p className="text-2xl font-semibold text-foreground">
               {summary.total_files_scanned.toLocaleString()}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">
               Files Analyzed
             </p>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+          <div className="bg-muted rounded-lg p-4 text-center">
+            <p className="text-2xl font-semibold text-foreground">
               {summary.total_findings}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">
               Issues Found
             </p>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+          <div className="bg-muted rounded-lg p-4 text-center">
+            <p className="text-2xl font-semibold text-foreground">
               {Math.round(summary.average_risk_score)}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">
               Avg Risk Score
             </p>
           </div>
