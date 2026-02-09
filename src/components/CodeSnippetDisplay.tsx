@@ -33,26 +33,39 @@ export function CodeSnippetDisplay({ code, file, highlightLine }: CodeSnippetDis
   const language = getLanguage(file);
 
   // Parse the code snippet to extract line numbers
-  // Expected format: "  68 | line content\n  69 | line content"
+  // Expected format: "  68│  line content\n  69│→ line content"
+  // The → marker indicates the finding line (stripped from display, used for highlighting)
   const lines = code.split("\n");
-  const parsedLines: { lineNumber: number | null; content: string }[] = [];
+  const parsedLines: { lineNumber: number | null; content: string; isMarked: boolean }[] = [];
 
   for (const line of lines) {
-    // Try to extract line number from format like "  68 │" or "  68 |"
-    const match = line.match(/^\s*(\d+)\s*[│|]\s?(.*)$/);
+    // Try to extract line number from format like "  68│" or "  68|"
+    // The → arrow after │ marks the finding line
+    const match = line.match(/^\s*(\d+)\s*[│|](→?)\s?(.*)$/);
     if (match) {
+      const isMarked = match[2] === "→";
+      let content = match[3];
+      // If this is a marked line, add a leading space to match normal line indentation
+      if (isMarked && content.length > 0) {
+        content = " " + content;
+      }
       parsedLines.push({
         lineNumber: parseInt(match[1], 10),
-        content: match[2],
+        content,
+        isMarked,
       });
     } else {
       // No line number format, use raw content
       parsedLines.push({
         lineNumber: null,
         content: line,
+        isMarked: false,
       });
     }
   }
+
+  // Auto-detect highlight line from → marker if not provided via prop
+  const effectiveHighlightLine = highlightLine ?? parsedLines.find((l) => l.isMarked)?.lineNumber;
 
   // Determine if we have line numbers in the snippet
   const hasLineNumbers = parsedLines.some((l) => l.lineNumber !== null);
@@ -92,7 +105,7 @@ export function CodeSnippetDisplay({ code, file, highlightLine }: CodeSnippetDis
         {/* Line numbers column */}
         <div className="absolute left-0 top-0 bottom-0 w-12 bg-gray-100 border-r border-gray-200 flex flex-col py-4 text-right pr-3 select-none">
           {parsedLines.map((line, idx) => {
-            const isHighlighted = highlightLine && line.lineNumber === highlightLine;
+            const isHighlighted = effectiveHighlightLine && line.lineNumber === effectiveHighlightLine;
             return (
               <span
                 key={idx}
@@ -109,7 +122,7 @@ export function CodeSnippetDisplay({ code, file, highlightLine }: CodeSnippetDis
         {/* Code content */}
         <div className="pl-14">
           {parsedLines.map((line, idx) => {
-            const isHighlighted = highlightLine && line.lineNumber === highlightLine;
+            const isHighlighted = effectiveHighlightLine && line.lineNumber === effectiveHighlightLine;
             return (
               <div
                 key={idx}
