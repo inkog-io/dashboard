@@ -487,6 +487,7 @@ export interface BackendScanResult {
   // Metadata
   contract_version: string;
   server_version: string;
+  agent_name?: string;
 
   // Statistics
   risk_score: number;
@@ -667,6 +668,7 @@ export interface SARIFReport {
 export interface ScanResult {
   success: boolean;
   error?: string;
+  agent_name?: string;
 
   // Statistics
   files_scanned: number;
@@ -712,6 +714,7 @@ function transformScanResponse(response: BackendScanResponse): ScanResult {
   return {
     success: response.success ?? false,
     error: response.error,
+    agent_name: result.agent_name,
 
     // Statistics with defensive defaults
     files_scanned: result.files_scanned ?? 0,

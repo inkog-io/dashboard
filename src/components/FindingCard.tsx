@@ -62,12 +62,17 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
   // Get developer-friendly title from pattern labels
   const { title } = getPatternLabel(finding.pattern_id);
 
-  // Get the most relevant compliance tag
-  const complianceTag =
-    finding.cwe ||
-    finding.compliance_mapping?.eu_ai_act_articles?.[0] ||
-    finding.compliance_mapping?.owasp_items?.[0] ||
-    null;
+  // Get individual CWE IDs (finding.cwe may contain comma-separated values like "CWE-15, CWE-526")
+  const cweIds = finding.cwe
+    ? finding.cwe.split(/,\s*/).filter(id => id.startsWith("CWE-"))
+    : [];
+
+  // Get the most relevant non-CWE compliance tag (CWEs rendered separately as links)
+  const complianceTag = cweIds.length === 0
+    ? (finding.compliance_mapping?.eu_ai_act_articles?.[0] ||
+       finding.compliance_mapping?.owasp_items?.[0] ||
+       null)
+    : null;
 
   // Get governance category label if applicable
   const governanceLabel = finding.governance_category
@@ -146,22 +151,27 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
                 {governanceLabel}
               </span>
             )}
+            {cweIds.length > 0 && cweIds.slice(0, 2).map((cwe) => (
+              <a
+                key={cwe}
+                href={`https://cwe.mitre.org/data/definitions/${cwe.replace("CWE-", "")}.html`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-violet-600 dark:text-violet-400 hover:underline"
+              >
+                {cwe}
+              </a>
+            ))}
+            {cweIds.length > 2 && (
+              <span className="text-violet-600 dark:text-violet-400 font-medium">
+                +{cweIds.length - 2}
+              </span>
+            )}
             {complianceTag && (
-              complianceTag.startsWith("CWE-") ? (
-                <a
-                  href={`https://cwe.mitre.org/data/definitions/${complianceTag.replace("CWE-", "")}.html`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-violet-600 dark:text-violet-400 hover:underline"
-                >
-                  {complianceTag}
-                </a>
-              ) : (
-                <span className="text-gray-500 dark:text-gray-400">
-                  {complianceTag}
-                </span>
-              )
+              <span className="text-gray-500 dark:text-gray-400">
+                {complianceTag}
+              </span>
             )}
             {!isGovernance && finding.risk_tier && tierLabels[finding.risk_tier] && (
               <span className="text-gray-500 dark:text-gray-400">

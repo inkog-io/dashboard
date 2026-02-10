@@ -334,6 +334,10 @@ def recursive_tool(depth=0):
       setScanProgress(100);
       setScanPhase(null);
       setResult(scanResult);
+      // Use backend-resolved agent name if available
+      if (scanResult.agent_name && scanResult.agent_name !== "unnamed-agent") {
+        setAgentName(scanResult.agent_name);
+      }
     } catch (err) {
       setScanPhase(null);
       setScanProgress(0);

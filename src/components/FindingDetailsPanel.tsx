@@ -74,10 +74,14 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
   // Collect compliance items
   const complianceItems: { label: string; value: string; href?: string }[] = [];
   if (finding.cwe) {
-    complianceItems.push({
-      label: "CWE",
-      value: finding.cwe,
-      href: `https://cwe.mitre.org/data/definitions/${finding.cwe.replace("CWE-", "")}.html`,
+    // Split comma-separated CWEs (e.g. "CWE-15, CWE-526") into individual links
+    const cweIds = finding.cwe.split(/,\s*/).filter(id => id.startsWith("CWE-"));
+    cweIds.forEach((cwe) => {
+      complianceItems.push({
+        label: "CWE",
+        value: cwe,
+        href: `https://cwe.mitre.org/data/definitions/${cwe.replace("CWE-", "")}.html`,
+      });
     });
   }
   if (finding.owasp_category) {
