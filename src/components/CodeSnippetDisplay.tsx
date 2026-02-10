@@ -70,10 +70,15 @@ export function CodeSnippetDisplay({ code, file, highlightLine }: CodeSnippetDis
   // Determine if we have line numbers in the snippet
   const hasLineNumbers = parsedLines.some((l) => l.lineNumber !== null);
 
+  // Compute dynamic widths based on line number magnitude
+  const maxLineNum = Math.max(...parsedLines.map(l => l.lineNumber ?? 0));
+  const lineNumWidth = maxLineNum >= 1000 ? 'w-16' : maxLineNum >= 100 ? 'w-14' : 'w-12';
+  const codePadding = maxLineNum >= 1000 ? 'pl-[4.5rem]' : maxLineNum >= 100 ? 'pl-16' : 'pl-14';
+
   // If no line numbers in snippet, just use raw code
   if (!hasLineNumbers) {
     return (
-      <div className="rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+      <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
         <SyntaxHighlighter
           language={language}
           style={oneLight}
@@ -100,17 +105,17 @@ export function CodeSnippetDisplay({ code, file, highlightLine }: CodeSnippetDis
   const cleanCode = parsedLines.map((l) => l.content).join("\n");
 
   return (
-    <div className="rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+    <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
       <div className="relative">
         {/* Line numbers column */}
-        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gray-100 border-r border-gray-200 flex flex-col py-4 text-right pr-3 select-none">
+        <div className={`absolute left-0 top-0 bottom-0 ${lineNumWidth} bg-gray-100 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col py-4 text-right pr-3 select-none`}>
           {parsedLines.map((line, idx) => {
             const isHighlighted = effectiveHighlightLine && line.lineNumber === effectiveHighlightLine;
             return (
               <span
                 key={idx}
                 className={`text-xs leading-6 font-mono ${
-                  isHighlighted ? "text-red-600 font-semibold" : "text-gray-400"
+                  isHighlighted ? "text-red-600 dark:text-red-400 font-semibold" : "text-gray-400"
                 }`}
               >
                 {line.lineNumber ?? ""}
@@ -120,7 +125,7 @@ export function CodeSnippetDisplay({ code, file, highlightLine }: CodeSnippetDis
         </div>
 
         {/* Code content */}
-        <div className="pl-14">
+        <div className={codePadding}>
           {parsedLines.map((line, idx) => {
             const isHighlighted = effectiveHighlightLine && line.lineNumber === effectiveHighlightLine;
             return (
@@ -128,7 +133,7 @@ export function CodeSnippetDisplay({ code, file, highlightLine }: CodeSnippetDis
                 key={idx}
                 className={`${
                   isHighlighted
-                    ? "bg-red-50 border-l-2 border-red-400 -ml-2 pl-2"
+                    ? "bg-red-50 dark:bg-red-900/30 border-l-2 border-red-400 dark:border-red-500 -ml-2 pl-2"
                     : ""
                 }`}
               >

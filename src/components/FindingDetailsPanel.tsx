@@ -26,8 +26,8 @@ const tierDescriptions: Record<string, { label: string; description: string }> =
     description: "Exploitable issue with proven taint flow from user input",
   },
   risk_pattern: {
-    label: "Risk Pattern",
-    description: "Structural issue that could become exploitable",
+    label: "Security Risk",
+    description: "Structural weakness that could become exploitable under certain conditions",
   },
   hardening: {
     label: "Best Practice",

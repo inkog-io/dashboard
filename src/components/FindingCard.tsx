@@ -18,7 +18,7 @@ const severityColors: Record<string, { bg: string; text: string; border: string 
 
 const tierLabels: Record<string, string> = {
   vulnerability: "Vulnerability",
-  risk_pattern: "Risk Pattern",
+  risk_pattern: "Security Risk",
   hardening: "Best Practice",
 };
 
@@ -77,13 +77,19 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left px-5 py-4 flex items-center justify-between gap-4 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors duration-150 focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-800 group"
+      className={`w-full text-left px-5 py-4 flex items-center justify-between gap-4 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors duration-150 focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-800 group border-l-2 ${
+        isGovernance ? "border-l-violet-500" :
+        finding.severity === "CRITICAL" ? "border-l-red-500" :
+        finding.severity === "HIGH" ? "border-l-orange-500" :
+        finding.severity === "MEDIUM" ? "border-l-amber-500" :
+        "border-l-blue-500"
+      }`}
     >
       <div className="flex items-start gap-4 min-w-0 flex-1">
         {/* Type Icon - Governance vs Vulnerability */}
         <div className="flex-shrink-0 mt-0.5">
           {isGovernance ? (
-            <Shield className="w-4 h-4 text-indigo-500" />
+            <Shield className="w-4 h-4 text-violet-500" />
           ) : (
             <AlertTriangle className="w-4 h-4 text-amber-500" />
           )}
@@ -105,7 +111,7 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
             </h3>
             {/* Finding Type Badge */}
             {isGovernance ? (
-              <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded border border-indigo-200 dark:border-indigo-800">
+              <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 rounded border border-violet-200 dark:border-violet-800">
                 Governance
               </span>
             ) : (
@@ -136,17 +142,29 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
               </span>
             )}
             {governanceLabel && (
-              <span className="text-indigo-500 font-medium">
+              <span className="text-violet-600 dark:text-violet-400 font-medium">
                 {governanceLabel}
               </span>
             )}
             {complianceTag && (
-              <span className="text-gray-400">
-                {complianceTag}
-              </span>
+              complianceTag.startsWith("CWE-") ? (
+                <a
+                  href={`https://cwe.mitre.org/data/definitions/${complianceTag.replace("CWE-", "")}.html`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-violet-600 dark:text-violet-400 hover:underline"
+                >
+                  {complianceTag}
+                </a>
+              ) : (
+                <span className="text-gray-500 dark:text-gray-400">
+                  {complianceTag}
+                </span>
+              )
             )}
             {!isGovernance && finding.risk_tier && tierLabels[finding.risk_tier] && (
-              <span className="text-gray-400">
+              <span className="text-gray-500 dark:text-gray-400">
                 {tierLabels[finding.risk_tier]}
               </span>
             )}
@@ -175,7 +193,7 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
                 </span>
               ))}
               {finding.cve_references && finding.cve_references.length > 2 && (
-                <span className="text-[10px] text-gray-400">+{finding.cve_references.length - 2}</span>
+                <span className="text-[10px] text-violet-600 dark:text-violet-400 font-medium">+{finding.cve_references.length - 2}</span>
               )}
             </div>
           )}

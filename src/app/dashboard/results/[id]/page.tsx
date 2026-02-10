@@ -293,9 +293,11 @@ export default function ScanResultsPage() {
           <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
           <div>
             <div className="flex items-center gap-2">
-              <Bot className="h-5 w-5 text-gray-400" />
+              <div className="p-1.5 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
+                <Bot className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+              </div>
               <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {scan.agent_name || "Scan Results"}
+                {scan.agent_name && scan.agent_name !== "unnamed-agent" && scan.agent_name !== "unnamed" ? scan.agent_name : "Scan Results"}
               </h1>
               <span className="text-sm text-gray-500 dark:text-gray-400 font-mono">
                 #{scan.scan_number}
@@ -386,13 +388,28 @@ export default function ScanResultsPage() {
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">High</p>
           </div>
-          <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+          <div className="text-center p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
+            <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">
               {scan.governance_score}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Gov Score</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Compliance</p>
           </div>
         </div>
+        {scan.framework_mapping && Object.keys(scan.framework_mapping).length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2 justify-center">
+            {Object.entries(scan.framework_mapping).map(([name, fw]) => (
+              <span key={name} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
+                fw.status === 'PASS'
+                  ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
+                  : fw.status === 'PARTIAL'
+                  ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                  : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
+              }`}>
+                {name}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
           Scanned {scan.lines_of_code.toLocaleString()} lines of code in {scan.duration_ms}ms
           {scan.scan_policy && (

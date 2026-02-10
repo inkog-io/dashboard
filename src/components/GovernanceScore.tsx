@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Shield, FileText, Award, AlertTriangle } from 'lucide-react';
 
 type ReadinessStatus = 'READY' | 'PARTIAL' | 'NOT_READY' | 'PASS' | 'FAIL';
@@ -43,6 +43,17 @@ export function GovernanceScore({
   onArticleClick,
 }: GovernanceScoreProps) {
   const [expandedFrameworks, setExpandedFrameworks] = useState<Set<string>>(new Set());
+
+  // Auto-expand EU AI Act when it has failing articles
+  useEffect(() => {
+    if (articleMapping && Object.values(articleMapping).some(a => a.status === 'FAIL')) {
+      setExpandedFrameworks(prev => {
+        const next = new Set(Array.from(prev));
+        next.add('eu-ai-act');
+        return next;
+      });
+    }
+  }, [articleMapping]);
 
   const statusColors: Record<string, string> = {
     'READY': 'text-green-600 dark:text-green-400',
