@@ -1268,6 +1268,44 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
       stats: (orgId: string) =>
         request<{ stats: SuppressionStats }>(`/v1/orgs/${orgId}/suppressions/stats`),
     },
+
+    /**
+     * GitHub App Installations
+     */
+    github: {
+      /**
+       * Link a GitHub App installation to the current user
+       */
+      linkInstallation: (installationId: number) =>
+        request<{
+          success: boolean;
+          installation: {
+            id: number;
+            account: string;
+            account_type: string;
+            repos: string[];
+          };
+          backfilled_scans: number;
+        }>('/v1/github/installations/link', {
+          method: 'POST',
+          body: JSON.stringify({ installation_id: installationId }),
+        }),
+
+      /**
+       * List all GitHub installations linked to the current user
+       */
+      listInstallations: () =>
+        request<{
+          success: boolean;
+          installations: Array<{
+            id: number;
+            account: string;
+            account_type: string;
+            repos: string[];
+            created_at: string;
+          }>;
+        }>('/v1/github/installations'),
+    },
   };
 }
 
