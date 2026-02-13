@@ -38,6 +38,7 @@ export function ActivationGuard({ children }: ActivationGuardProps) {
         "/dashboard/scan",
         "/dashboard/api-keys",
         "/dashboard/results", // Allow viewing results
+        "/dashboard/integrations", // Settings page - always accessible
       ];
 
       const shouldBypass = bypassRoutes.some(route => pathname.startsWith(route));
@@ -56,12 +57,16 @@ export function ActivationGuard({ children }: ActivationGuardProps) {
       try {
         const api = createAPIClient(getToken);
 
-        // Single API call - check for any scans
-        const response = await api.history.list({ limit: 1 });
-        const hasScans = (response.scans?.length ?? 0) > 0;
+        // Check for any scans or GitHub installations
+        const [historyRes, installRes] = await Promise.all([
+          api.history.list({ limit: 1 }),
+          api.github.listInstallations().catch(() => ({ installations: [] })),
+        ]);
+        const hasScans = (historyRes.scans?.length ?? 0) > 0;
+        const hasInstallations = (installRes.installations?.length ?? 0) > 0;
 
-        if (!hasScans) {
-          // New user with no scans - redirect to onboarding
+        if (!hasScans && !hasInstallations) {
+          // New user with no scans and no installations - redirect to onboarding
           router.replace("/dashboard/onboarding");
           return;
         }
