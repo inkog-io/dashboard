@@ -827,14 +827,15 @@ function getBackoffDelay(attempt: number): number {
 async function fetchWithRetry(
   url: string,
   options: RequestInit,
-  retries: number = RETRY_CONFIG.maxRetries
+  retries: number = RETRY_CONFIG.maxRetries,
+  timeoutMs: number = RETRY_CONFIG.timeoutMs
 ): Promise<Response> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), RETRY_CONFIG.timeoutMs);
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const response = await fetch(url, {
         ...options,
@@ -886,7 +887,8 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
    */
   async function request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    requestTimeoutMs?: number
   ): Promise<T> {
     const token = await getToken();
 
@@ -901,7 +903,7 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
         'Authorization': `Bearer ${token}`,
         ...options.headers,
       },
-    });
+    }, RETRY_CONFIG.maxRetries, requestTimeoutMs || RETRY_CONFIG.timeoutMs);
 
     const data = await response.json();
 
@@ -1315,6 +1317,27 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
             }>;
           }>;
         }>('/v1/github/installations'),
+
+      /**
+       * Trigger an on-demand scan of a connected GitHub repository.
+       * Uses a 180s timeout since repo clone + scan can take up to 170s.
+       */
+      triggerScan: (params: {
+        installation_id: number;
+        repo_full_name: string;
+      }) =>
+        request<{
+          success: boolean;
+          scan_id: string;
+          findings_count: number;
+          critical_count: number;
+          high_count: number;
+          medium_count: number;
+          status: 'passing' | 'warning' | 'failing';
+        }>('/v1/github/trigger-scan', {
+          method: 'POST',
+          body: JSON.stringify(params),
+        }, 180_000),
     },
   };
 }
