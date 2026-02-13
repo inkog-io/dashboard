@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
-import { formatDistanceToNow, format } from "date-fns";
+import { format } from "date-fns";
+import { compactTimeAgo } from "@/lib/utils";
 import {
   ArrowLeft,
   AlertCircle,
@@ -310,7 +311,7 @@ export default function ScanResultsPage() {
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {formatDistanceToNow(new Date(scan.created_at), { addSuffix: true })}
+                {compactTimeAgo(new Date(scan.created_at))}
               </span>
             </div>
           </div>

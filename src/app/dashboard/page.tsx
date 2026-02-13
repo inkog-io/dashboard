@@ -161,7 +161,19 @@ export default function DashboardPage() {
   const warningAgents = agents.filter(a => a.health_status === 'warning').length;
   const healthyAgents = agents.filter(a => a.health_status === 'healthy').length;
 
-  const firstName = isLoaded && user?.firstName ? user.firstName : "there";
+  // Use first name if available and meaningful, otherwise fall back to email prefix
+  const firstName = (() => {
+    if (!isLoaded) return "there";
+    if (user?.firstName && user.firstName.length > 1) return user.firstName;
+    // Fall back to email prefix (part before @)
+    const email = user?.primaryEmailAddress?.emailAddress;
+    if (email) {
+      const prefix = email.split("@")[0];
+      // Capitalize first letter
+      return prefix.charAt(0).toUpperCase() + prefix.slice(1);
+    }
+    return "there";
+  })();
 
   return (
     <div className="space-y-8">

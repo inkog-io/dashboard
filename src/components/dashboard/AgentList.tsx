@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatDistanceToNow } from "date-fns";
+import { compactTimeAgo } from "@/lib/utils";
 import {
   Bot,
   Eye,
@@ -318,7 +318,7 @@ export function AgentList({
               <TableCell>
                 {agent.last_scan_at ? (
                   <span className="text-sm text-muted-foreground">
-                    {formatDistanceToNow(new Date(agent.last_scan_at), { addSuffix: true })}
+                    {compactTimeAgo(new Date(agent.last_scan_at))}
                   </span>
                 ) : (
                   <span className="text-sm text-muted-foreground/60">Never</span>

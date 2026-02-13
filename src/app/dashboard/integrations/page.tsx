@@ -43,23 +43,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { SecurityMetricCard } from "@/components/dashboard/SecurityMetricCard";
 import { createAPIClient } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, compactTimeAgo } from "@/lib/utils";
 
 const GITHUB_APP_INSTALL_URL =
   "https://github.com/apps/inkog-scanner/installations/new";
-
-/** Compact relative time for stat cards: "Just now", "5m ago", "3h ago", "2d ago" */
-function compactTimeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return "Just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return `${Math.floor(days / 30)}mo ago`;
-}
 
 // ─── Scan Progress Stages ───────────────────────────────────────────────────
 
@@ -470,10 +457,7 @@ function InstallationCard({
                         <TableCell>
                           {repo.last_scan_at ? (
                             <span className="text-sm text-muted-foreground">
-                              {formatDistanceToNow(
-                                new Date(repo.last_scan_at),
-                                { addSuffix: true }
-                              )}
+                              {compactTimeAgo(new Date(repo.last_scan_at))}
                             </span>
                           ) : (
                             <span className="text-sm text-muted-foreground">
