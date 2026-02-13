@@ -8,6 +8,7 @@ import {
   Key,
   History,
   BookOpen,
+  Github,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -19,6 +20,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useApiKeyStatus } from "@/hooks/useApiKeyStatus";
+import { useGitHubInstallationStatus } from "@/hooks/useGitHubInstallationStatus";
 
 interface NavItem {
   href: string;
@@ -102,6 +104,7 @@ function NavItemComponent({
 export function SidebarNav({ isCollapsed }: SidebarNavProps) {
   const pathname = usePathname();
   const { hasKeys, loading: loadingKeys } = useApiKeyStatus();
+  const { hasInstallations, loading: loadingInstallations } = useGitHubInstallationStatus();
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
@@ -129,6 +132,12 @@ export function SidebarNav({ isCollapsed }: SidebarNavProps) {
           icon: Key,
           // Show badge only when we know user has no keys (not loading)
           badge: !loadingKeys && !hasKeys ? "Setup" : undefined,
+        },
+        {
+          href: "/dashboard/integrations",
+          label: "Integrations",
+          icon: Github,
+          badge: !loadingInstallations && !hasInstallations ? "Setup" : undefined,
         },
       ],
     },

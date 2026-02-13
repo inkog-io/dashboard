@@ -1292,7 +1292,7 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
         }),
 
       /**
-       * List all GitHub installations linked to the current user
+       * List all GitHub installations linked to the current user (with per-repo scan stats)
        */
       listInstallations: () =>
         request<{
@@ -1301,8 +1301,18 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
             id: number;
             account: string;
             account_type: string;
-            repos: string[];
             created_at: string;
+            total_scans: number;
+            repos: Array<{
+              name: string;
+              scan_count: number;
+              last_scan_at: string | null;
+              last_scan_id: string | null;
+              findings_count: number;
+              critical_count: number;
+              high_count: number;
+              status: 'passing' | 'warning' | 'failing' | 'pending';
+            }>;
           }>;
         }>('/v1/github/installations'),
     },
