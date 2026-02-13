@@ -107,7 +107,12 @@ export function SecurityMetricCard({
         {loading ? (
           <div className="h-8 w-20 bg-muted animate-pulse rounded" />
         ) : (
-          <p className="text-2xl font-semibold font-mono text-foreground">{value}</p>
+          <p className={cn(
+            "font-semibold text-foreground",
+            String(value).length > 10
+              ? "text-base"
+              : "text-2xl font-mono"
+          )}>{value}</p>
         )}
         <div className="flex items-center gap-1.5 mt-1">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>

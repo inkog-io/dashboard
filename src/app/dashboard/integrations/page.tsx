@@ -48,6 +48,19 @@ import { cn } from "@/lib/utils";
 const GITHUB_APP_INSTALL_URL =
   "https://github.com/apps/inkog-scanner/installations/new";
 
+/** Compact relative time for stat cards: "Just now", "5m ago", "3h ago", "2d ago" */
+function compactTimeAgo(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return "Just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
+
 // ─── Scan Progress Stages ───────────────────────────────────────────────────
 
 const SCAN_STAGES = [
@@ -535,6 +548,7 @@ function InstallationCard({
 
 export default function IntegrationsPage() {
   const { getToken } = useAuth();
+  const router = useRouter();
   const [api, setApi] = useState<ReturnType<typeof createAPIClient> | null>(
     null
   );
@@ -607,22 +621,18 @@ export default function IntegrationsPage() {
       });
 
       try {
-        await api.github.triggerScan({
+        const result = await api.github.triggerScan({
           installation_id: installationId,
           repo_full_name: repoName,
         });
 
-        // Flash green on completion
-        setCompletedRepos((prev) => new Set(prev).add(repoName));
-        setTimeout(() => {
-          setCompletedRepos((prev) => {
-            const next = new Set(prev);
-            next.delete(repoName);
-            return next;
-          });
-        }, 4000);
+        // Navigate to results page so user sees the full scan output
+        if (result.scan_id) {
+          router.push(`/dashboard/results/${result.scan_id}`);
+          return;
+        }
 
-        // Refresh data to show new results
+        // Fallback: refresh data if no scan_id (shouldn't happen)
         await fetchInstallations(true);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Scan failed";
@@ -647,7 +657,7 @@ export default function IntegrationsPage() {
         });
       }
     },
-    [api, fetchInstallations, scanningRepos]
+    [api, fetchInstallations, scanningRepos, router]
   );
 
   // Compute summary stats
@@ -683,9 +693,7 @@ export default function IntegrationsPage() {
       .map((r) => new Date(r.last_scan_at!).getTime());
     const lastActivity =
       scanDates.length > 0
-        ? formatDistanceToNow(new Date(Math.max(...scanDates)), {
-            addSuffix: true,
-          })
+        ? compactTimeAgo(new Date(Math.max(...scanDates)))
         : "Never";
 
     return { totalRepos, totalScans, posture, lastActivity };

@@ -130,14 +130,14 @@ export function SidebarNav({ isCollapsed }: SidebarNavProps) {
           href: "/dashboard/api-keys",
           label: "API Keys",
           icon: Key,
-          // Show badge only when we know user has no keys (not loading)
-          badge: !loadingKeys && !hasKeys ? "Setup" : undefined,
+          // Only show Setup badge when user has no keys AND no GitHub installations
+          badge: !loadingKeys && !hasKeys && !loadingInstallations && !hasInstallations ? "Setup" : undefined,
         },
         {
           href: "/dashboard/integrations",
           label: "Integrations",
           icon: Github,
-          badge: !loadingInstallations && !hasInstallations ? "Setup" : undefined,
+          badge: !loadingInstallations && !hasInstallations && !loadingKeys && !hasKeys ? "Setup" : undefined,
         },
       ],
     },
