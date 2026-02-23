@@ -708,7 +708,7 @@ function toEUAIActReadiness(value: string | undefined): EUAIActReadiness {
 /**
  * Transforms backend response to frontend format with defensive defaults
  */
-function transformScanResponse(response: BackendScanResponse): ScanResult {
+export function transformScanResponse(response: BackendScanResponse): ScanResult {
   const result = response.scan_result || {} as Partial<BackendScanResult>;
 
   return {

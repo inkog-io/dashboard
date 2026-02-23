@@ -24,11 +24,19 @@ function PostHogIdentify() {
 
   useEffect(() => {
     if (isLoaded && user) {
+      // Capture anonymous ID before identify for session stitching
+      const anonId = posthog.get_distinct_id();
+
       // Identify the user in PostHog
       posthog.identify(user.id, {
         email: user.emailAddresses[0]?.emailAddress,
         name: user.fullName || `${user.firstName || ""} ${user.lastName || ""}`.trim(),
       });
+
+      // Stitch anonymous session to authenticated user
+      if (anonId && anonId !== user.id) {
+        posthog.alias(user.id, anonId);
+      }
     }
   }, [isLoaded, user]);
 
