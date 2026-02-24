@@ -241,6 +241,174 @@ async function downloadAndExtractRepo(
   });
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MIN_CONFIDENCE = 0.5;
+const MAX_REMEDIATION_STEPS = 3;
+
+/** Result type for the reusable scan pipeline */
+export type ScanPipelineResult =
+  | { ok: true; report_id: string; repo_name: string; scan_result: ReturnType<typeof transformScanResponse>; cached: boolean; scanned_at: string }
+  | { ok: false; error: string; code: string; status: number };
+
+/**
+ * Core scan pipeline — reusable by both the POST handler and the cron job.
+ * Validates the repo, downloads tarball, scans via backend, persists to Postgres.
+ */
+export async function executeScanPipeline(
+  repoUrl: string,
+  ipAddress: string | null
+): Promise<ScanPipelineResult> {
+  const match = repoUrl.match(REPO_URL_REGEX);
+  if (!match) {
+    return { ok: false, error: "Invalid GitHub repository URL", code: "invalid_url", status: 400 };
+  }
+
+  const owner = match[1];
+  const repo = match[2];
+  const repoName = `${owner}/${repo}`;
+
+  // Check cache
+  const cached = await findRecentScanByRepo(repoName);
+  if (cached) {
+    return {
+      ok: true,
+      report_id: cached.id,
+      repo_name: cached.repo_name,
+      scan_result: cached.scan_result as ReturnType<typeof transformScanResponse>,
+      cached: true,
+      scanned_at: cached.created_at,
+    };
+  }
+
+  // Fetch repo metadata (validates existence + gets default branch)
+  const repoMeta = await fetchRepoMetadata(owner, repo);
+  if (!repoMeta) {
+    return { ok: false, error: "Repository not found or private. Only public GitHub repositories are supported.", code: "clone_failed", status: 400 };
+  }
+
+  // Download repo tarball using explicit default branch
+  let files: { path: string; content: Buffer }[];
+  try {
+    files = await downloadAndExtractRepo(owner, repo, repoMeta.default_branch) as { path: string; content: Buffer }[];
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "clone_failed";
+    if (msg === "clone_failed") {
+      return { ok: false, error: "Repository not found or is private.", code: "clone_failed", status: 404 };
+    }
+    throw err;
+  }
+
+  files = prioritizeFiles(files);
+
+  if (files.length === 0) {
+    return { ok: false, error: "No scannable files found in repository.", code: "scan_failed", status: 400 };
+  }
+
+  // Build FormData for backend scan
+  const formData = new FormData();
+  formData.append("request", JSON.stringify({
+    contract_version: "v1",
+    cli_version: "dashboard-plg-1.0.0",
+    secrets_version: "",
+    local_secrets_found: 0,
+    redacted_file_count: 0,
+    scan_policy: "comprehensive",
+    agent_name: repoName,
+  }));
+
+  for (const file of files) {
+    formData.append("files", new Blob([new Uint8Array(file.content)]), file.path);
+  }
+
+  // Send to backend
+  const scanController = new AbortController();
+  const scanTimeout = setTimeout(() => scanController.abort(), 180_000);
+
+  let scanResponse: Response;
+  try {
+    scanResponse = await fetch(`${API_BASE_URL}/api/v1/scan`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${INKOG_API_KEY}` },
+      body: formData,
+      signal: scanController.signal,
+    });
+  } finally {
+    clearTimeout(scanTimeout);
+  }
+
+  if (!scanResponse.ok) {
+    const errorText = await scanResponse.text().catch(() => "Unknown error");
+    console.error("Backend scan failed:", scanResponse.status, errorText);
+    const isTimeout = scanResponse.status === 504 || scanResponse.status === 408;
+    return {
+      ok: false,
+      error: isTimeout
+        ? "This repository is too large to scan in the browser. Use the CLI for large repos."
+        : "Scan failed. Please try again.",
+      code: isTimeout ? "repo_too_large" : "scan_failed",
+      status: 502,
+    };
+  }
+
+  const backendData = (await scanResponse.json()) as BackendScanResponse;
+  const scanResult = transformScanResponse(backendData);
+
+  // Attach repo metadata
+  scanResult.repo_info = {
+    stargazers_count: repoMeta.stargazers_count,
+    default_branch: repoMeta.default_branch,
+    description: repoMeta.description,
+    language: repoMeta.language,
+  };
+
+  // Quality filters: drop low-confidence noise, trim remediation steps
+  polishFindings(scanResult);
+
+  // Persist to Postgres
+  const { id: reportId } = await insertAnonymousScan(
+    repoUrl,
+    repoName,
+    scanResult,
+    ipAddress
+  );
+
+  return {
+    ok: true,
+    report_id: reportId,
+    repo_name: repoName,
+    scan_result: scanResult,
+    cached: false,
+    scanned_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Filter low-confidence findings and trim remediation steps for PLG quality.
+ * Mutates scanResult in place.
+ */
+function polishFindings(scanResult: ReturnType<typeof transformScanResponse>) {
+  if (!Array.isArray(scanResult.findings)) return;
+
+  // Drop findings below confidence threshold
+  scanResult.findings = scanResult.findings.filter(
+    (f) => (f.confidence ?? 1) >= MIN_CONFIDENCE
+  );
+
+  // Trim remediation steps to top N
+  for (const f of scanResult.findings) {
+    if (f.remediation_steps && f.remediation_steps.length > MAX_REMEDIATION_STEPS) {
+      f.remediation_steps = f.remediation_steps.slice(0, MAX_REMEDIATION_STEPS);
+    }
+  }
+
+  // Recompute counts after filtering
+  scanResult.findings_count = scanResult.findings.length;
+  scanResult.critical_count = scanResult.findings.filter((f) => f.severity === "CRITICAL").length;
+  scanResult.high_count = scanResult.findings.filter((f) => f.severity === "HIGH").length;
+  scanResult.medium_count = scanResult.findings.filter((f) => f.severity === "MEDIUM").length;
+  scanResult.low_count = scanResult.findings.filter((f) => f.severity === "LOW").length;
+}
+
 /**
  * POST /api/scan-public
  *
@@ -265,21 +433,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate URL
     const match = repo_url.match(REPO_URL_REGEX);
     if (!match) {
       return NextResponse.json(
-        {
-          error: "Invalid GitHub repository URL. Use format: https://github.com/owner/repo",
-          code: "invalid_url",
-        },
+        { error: "Invalid GitHub repository URL. Use format: https://github.com/owner/repo", code: "invalid_url" },
         { status: 400 }
       );
     }
-
-    const owner = match[1];
-    const repo = match[2];
-    const repoName = `${owner}/${repo}`;
 
     // Rate limit by IP
     const ip = getClientIP(req);
@@ -287,148 +447,27 @@ export async function POST(req: NextRequest) {
       const recentCount = await countRecentScans(ip);
       if (recentCount >= RATE_LIMIT) {
         return NextResponse.json(
-          {
-            error: "Rate limit exceeded. Please try again later.",
-            code: "rate_limited",
-            retry_after: 3600,
-          },
+          { error: "Rate limit exceeded. Please try again later.", code: "rate_limited", retry_after: 3600 },
           { status: 429 }
         );
       }
     }
 
-    // Check cache
-    const cached = await findRecentScanByRepo(repoName);
-    if (cached) {
-      return NextResponse.json({
-        report_id: cached.id,
-        repo_name: cached.repo_name,
-        scan_result: cached.scan_result,
-        cached: true,
-        scanned_at: cached.created_at,
-      });
-    }
+    const result = await executeScanPipeline(repo_url, ip !== "unknown" ? ip : null);
 
-    // Fetch repo metadata (validates existence + gets default branch)
-    const repoMeta = await fetchRepoMetadata(owner, repo);
-    if (!repoMeta) {
+    if (!result.ok) {
       return NextResponse.json(
-        {
-          error: "Repository not found or private. Only public GitHub repositories are supported.",
-          code: "clone_failed",
-        },
-        { status: 400 }
+        { error: result.error, code: result.code },
+        { status: result.status }
       );
     }
-
-    // Download repo tarball using explicit default branch to prevent redirect 404s
-    let files: { path: string; content: Buffer }[];
-    try {
-      files = await downloadAndExtractRepo(owner, repo, repoMeta.default_branch) as { path: string; content: Buffer }[];
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "clone_failed";
-      if (msg === "clone_failed") {
-        return NextResponse.json(
-          {
-            error: "Repository not found or is private. Only public GitHub repositories are supported.",
-            code: "clone_failed",
-          },
-          { status: 404 }
-        );
-      }
-      throw err;
-    }
-
-    // Prioritize source code files over docs/config
-    files = prioritizeFiles(files);
-
-    if (files.length === 0) {
-      return NextResponse.json(
-        {
-          error: "No scannable files found in repository.",
-          code: "scan_failed",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Build FormData for backend scan
-    const formData = new FormData();
-    const requestMetadata = {
-      contract_version: "v1",
-      cli_version: "dashboard-plg-1.0.0",
-      secrets_version: "",
-      local_secrets_found: 0,
-      redacted_file_count: 0,
-      scan_policy: "comprehensive",
-      agent_name: repoName,
-    };
-    formData.append("request", JSON.stringify(requestMetadata));
-
-    for (const file of files) {
-      const blob = new Blob([new Uint8Array(file.content)]);
-      formData.append("files", blob, file.path);
-    }
-
-    // Send to backend
-    const scanController = new AbortController();
-    const scanTimeout = setTimeout(() => scanController.abort(), 180_000);
-
-    let scanResponse: Response;
-    try {
-      scanResponse = await fetch(`${API_BASE_URL}/api/v1/scan`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${INKOG_API_KEY}`,
-        },
-        body: formData,
-        signal: scanController.signal,
-      });
-    } finally {
-      clearTimeout(scanTimeout);
-    }
-
-    if (!scanResponse.ok) {
-      const errorText = await scanResponse.text().catch(() => "Unknown error");
-      console.error("Backend scan failed:", scanResponse.status, errorText);
-      const isTimeout = scanResponse.status === 504 || scanResponse.status === 408;
-      return NextResponse.json(
-        {
-          error: isTimeout
-            ? "This repository is too large to scan in the browser. Use the CLI for large repos."
-            : "Scan failed. Please try again.",
-          code: isTimeout ? "repo_too_large" : "scan_failed",
-        },
-        { status: 502 }
-      );
-    }
-
-    const backendData =
-      (await scanResponse.json()) as BackendScanResponse;
-    const scanResult = transformScanResponse(backendData);
-
-    // Attach repo metadata to scan result
-    scanResult.repo_info = {
-      stargazers_count: repoMeta.stargazers_count,
-      default_branch: repoMeta.default_branch,
-      description: repoMeta.description,
-      language: repoMeta.language,
-    };
-
-    // Persist to Postgres
-    const { id: reportId } = await insertAnonymousScan(
-      repo_url,
-      repoName,
-      scanResult,
-      ip !== "unknown" ? ip : null
-    );
 
     return NextResponse.json({
-      report_id: reportId,
-      repo_name: repoName,
-      scan_result: scanResult,
-      cached: false,
-      scanned_at: new Date().toISOString(),
+      report_id: result.report_id,
+      repo_name: result.repo_name,
+      scan_result: result.scan_result,
+      cached: result.cached,
+      scanned_at: result.scanned_at,
     });
   } catch (err) {
     console.error("Public scan error:", err);
@@ -466,6 +505,13 @@ export async function GET(req: NextRequest) {
     if (!reportId) {
       return NextResponse.json(
         { error: "Missing report_id parameter", code: "invalid_url" },
+        { status: 400 }
+      );
+    }
+
+    if (!UUID_REGEX.test(reportId)) {
+      return NextResponse.json(
+        { error: "Invalid report ID format", code: "invalid_url" },
         { status: 400 }
       );
     }

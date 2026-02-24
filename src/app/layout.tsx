@@ -13,6 +13,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://app.inkog.io"),
   title: "Inkog Dashboard - Ship Safe Agents",
   description: "Scan. Ship. Comply. Detect vulnerabilities and governance gaps in AI agents before deployment.",
   icons: {
