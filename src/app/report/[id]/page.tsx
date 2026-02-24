@@ -23,7 +23,6 @@ import { CodeSnippetDisplay } from "@/components/CodeSnippetDisplay";
 import { GovernanceScore } from "@/components/GovernanceScore";
 import { SecurityMetricCard } from "@/components/dashboard/SecurityMetricCard";
 import { Button } from "@/components/ui/button";
-import type { Strength } from "@/lib/api";
 import {
   trackReportViewed,
   trackPaywallAuthClicked,
