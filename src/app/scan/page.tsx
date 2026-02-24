@@ -15,7 +15,7 @@ import type { PublicScanResponse, PublicScanError } from "@/lib/scan-public-type
 
 const EXAMPLE_REPOS = [
   "https://github.com/OpenBMB/ChatDev",
-  "https://github.com/crewAIInc/crewAI-examples",
+  "https://github.com/geekan/MetaGPT",
 ];
 
 export default function PublicScanPage() {

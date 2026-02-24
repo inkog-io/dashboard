@@ -33,17 +33,29 @@ import {
 } from "@/lib/analytics-public";
 import type { ScanResult, Finding } from "@/lib/api";
 
+/** Summary-only finding returned by the server for unauthenticated users */
+interface GatedFindingSummary {
+  id: string;
+  severity: string;
+  pattern_id: string;
+  finding_type?: string;
+  confidence?: number;
+  governance_category?: string;
+}
+
+interface ReportScanResult extends ScanResult {
+  /** Present only for unauthenticated users — gated findings with detail stripped */
+  gated_findings?: GatedFindingSummary[];
+}
+
 interface ReportData {
   report_id: string;
   repo_name: string;
   repo_url: string;
-  scan_result: ScanResult;
+  scan_result: ReportScanResult;
   scanned_at: string;
   claimed: boolean;
 }
-
-/** Number of findings shown with full detail (code + remediation) before paywall */
-const UNGATED_COUNT = 3;
 
 export default function PublicReportPage() {
   const params = useParams();
@@ -179,21 +191,25 @@ export default function PublicReportPage() {
   }
 
   const { scan_result: result } = report;
-  const sortedFindings = [...(result.findings || [])].sort((a, b) => {
+
+  // Server returns findings pre-sorted and pre-split:
+  // - result.findings: full-detail findings (all for authenticated, top N for anonymous)
+  // - result.gated_findings: summary-only findings (only for anonymous users)
+  const fullFindings = [...(result.findings || [])].sort((a, b) => {
     const severityOrder: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
     const sevDiff = (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4);
     if (sevDiff !== 0) return sevDiff;
     return (b.confidence ?? 0) - (a.confidence ?? 0);
   });
 
-  // Split findings: show top N ungated, rest behind paywall
-  const ungatedFindings = sortedFindings.slice(0, UNGATED_COUNT);
-  const gatedFindings = sortedFindings.slice(UNGATED_COUNT);
-  const hasFindings = sortedFindings.length > 0;
+  const gatedSummaries: GatedFindingSummary[] = result.gated_findings || [];
+  const hasGatedFindings = gatedSummaries.length > 0;
+  const totalFindingsCount = result.findings_count;
+  const hasFindings = totalFindingsCount > 0;
 
   // Build severity breakdown of gated findings for paywall copy
   const gatedSeverityCounts: Record<string, number> = {};
-  for (const f of gatedFindings) {
+  for (const f of gatedSummaries) {
     gatedSeverityCounts[f.severity] = (gatedSeverityCounts[f.severity] || 0) + 1;
   }
   const severityBreakdown = ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
@@ -297,14 +313,14 @@ export default function PublicReportPage() {
           </div>
         )}
 
-        {/* Ungated findings — always fully visible with code + remediation */}
-        {ungatedFindings.length > 0 && (
+        {/* Full-detail findings (always visible) */}
+        {fullFindings.length > 0 && (
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-foreground mb-4">
-              {gatedFindings.length > 0 ? "Top Findings" : "Findings"}
+              {hasGatedFindings ? "Top Findings" : "Findings"}
             </h2>
             <div className="space-y-4">
-              {ungatedFindings.map((finding) => {
+              {fullFindings.map((finding) => {
                 const remediation = getRemediationGuide(finding.pattern_id);
                 return (
                   <div
@@ -389,153 +405,107 @@ export default function PublicReportPage() {
           </div>
         )}
 
-        {/* Gated findings — behind auth */}
-        {gatedFindings.length > 0 && (
+        {/* Gated findings — server-side gated, no detail data in the DOM */}
+        {hasGatedFindings && (
           <div className="mb-8">
-            <h2 className="text-lg font-semibold text-foreground mb-4">
-              All Findings ({sortedFindings.length})
-            </h2>
+            <div className="bg-card rounded-xl border border-border overflow-hidden">
+              {/* Summary list — text only, no FindingCard components */}
+              <div className="px-5 py-4 border-b border-border">
+                <h2 className="text-lg font-semibold text-foreground">
+                  {gatedSummaries.length} more{" "}
+                  {gatedSummaries.length === 1 ? "finding" : "findings"}{" "}
+                  detected
+                </h2>
+                {severityBreakdown && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                    Including {severityBreakdown}
+                  </p>
+                )}
+              </div>
 
-            {isSignedIn ? (
-              /* Unblurred — full access */
-              <div className="space-y-4">
-                {gatedFindings.map((finding) => {
-                  const remediation = getRemediationGuide(finding.pattern_id);
+              {/* Minimal text rows — severity + title only, no exploitable data */}
+              <div className="divide-y divide-border">
+                {gatedSummaries.map((item) => {
+                  const { title } = getPatternLabel(item.pattern_id);
+                  const sevColors: Record<string, string> = {
+                    CRITICAL: "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800",
+                    HIGH: "bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800",
+                    MEDIUM: "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800",
+                    LOW: "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800",
+                  };
                   return (
                     <div
-                      key={finding.id}
-                      className="bg-card rounded-xl border border-border overflow-hidden"
+                      key={item.id}
+                      className="flex items-center gap-3 px-5 py-3"
                     >
-                      <FindingCard
-                        finding={finding}
-                        onClick={() => {
-                          setSelectedFinding(finding);
-                          setDetailsOpen(true);
-                        }}
-                      />
-                      <div className="px-4 sm:px-6 pb-6 border-t border-border">
-                        <div className="mt-4">
-                          <p className="text-sm text-muted-foreground">
-                            {finding.message}
-                          </p>
-                        </div>
-                        {finding.code_snippet && (
-                          <div className="mt-4 overflow-x-auto">
-                            <h3 className="text-sm font-medium text-foreground mb-2">
-                              Code
-                            </h3>
-                            <CodeSnippetDisplay
-                              code={finding.code_snippet}
-                              file={finding.file}
-                              highlightLine={finding.line}
-                            />
-                          </div>
-                        )}
-                        {remediation && (
-                          <div className="mt-4">
-                            <h3 className="text-sm font-medium text-foreground mb-2">
-                              How to Fix
-                            </h3>
-                            <div className="bg-muted rounded-lg p-4 text-sm text-muted-foreground">
-                              <p className="font-medium text-foreground mb-2">
-                                {remediation.title}
-                              </p>
-                              <ul className="list-disc list-inside space-y-1">
-                                {remediation.steps.map((step, i) => (
-                                  <li key={i}>{step}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      <span
+                        className={`flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded border ${sevColors[item.severity] || sevColors.LOW}`}
+                      >
+                        {item.severity}
+                      </span>
+                      <span className="text-sm text-muted-foreground truncate">
+                        {title}
+                      </span>
+                      <Lock className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0 ml-auto" />
                     </div>
                   );
                 })}
               </div>
-            ) : (
-              /* Blurred paywall */
-              <div className="relative">
-                {/* Show finding cards (title + severity visible, detail blurred) */}
-                <div className="select-none pointer-events-none bg-card rounded-xl border border-border divide-y divide-border overflow-hidden">
-                  {gatedFindings.slice(0, 5).map((finding) => (
-                    <FindingCard
-                      key={finding.id}
-                      finding={finding}
-                      onClick={() => {}}
-                    />
-                  ))}
-                </div>
 
-                {/* Blur overlay with conversion CTA */}
-                <div className="absolute inset-0 z-10 backdrop-blur-md bg-background/60 rounded-xl flex items-center justify-center">
-                  <div className="text-center max-w-sm px-6">
-                    <div className="w-12 h-12 rounded-xl bg-brand/10 flex items-center justify-center mx-auto mb-4">
-                      <Lock className="w-6 h-6 text-brand" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-1">
-                      {gatedFindings.length} more{" "}
-                      {gatedFindings.length === 1 ? "finding" : "findings"}{" "}
-                      detected
-                    </h3>
-                    {severityBreakdown && (
-                      <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">
-                        Including {severityBreakdown}
-                      </p>
-                    )}
-                    <p className="text-sm text-muted-foreground mb-5">
-                      Sign up for free to see full remediation guides, code
-                      snippets, and compliance mapping.
-                    </p>
+              {/* Conversion CTA */}
+              <div className="px-5 py-6 bg-muted/30 border-t border-border">
+                <div className="text-center max-w-sm mx-auto">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Sign up for free to see code snippets, remediation guides,
+                    and compliance mapping for all findings.
+                  </p>
 
-                    {/* Benefit chips */}
-                    <div className="flex flex-wrap justify-center gap-2 mb-5">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-muted rounded-full text-muted-foreground">
-                        <Key className="w-3 h-3" /> CLI & API access
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-muted rounded-full text-muted-foreground">
-                        <GitBranch className="w-3 h-3" /> GitHub auto-scan
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-muted rounded-full text-muted-foreground">
-                        <Settings2 className="w-3 h-3" /> Custom policies
-                      </span>
-                    </div>
+                  <div className="flex flex-wrap justify-center gap-2 mb-4">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-muted rounded-full text-muted-foreground">
+                      <Key className="w-3 h-3" /> CLI & API access
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-muted rounded-full text-muted-foreground">
+                      <GitBranch className="w-3 h-3" /> GitHub auto-scan
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-muted rounded-full text-muted-foreground">
+                      <Settings2 className="w-3 h-3" /> Custom policies
+                    </span>
+                  </div>
 
-                    <div className="flex flex-col gap-2">
-                      <Button
-                        onClick={() => {
-                          trackPaywallAuthClicked({
-                            report_id: reportId,
-                            findings_hidden: gatedFindings.length,
-                            auth_method: "sign_up",
-                          });
-                          router.push(
-                            `/sign-up?redirect_url=${encodeURIComponent(`/report/${reportId}`)}`
-                          );
-                        }}
-                      >
-                        Get Started Free
-                      </Button>
-                      <button
-                        onClick={() => {
-                          trackPaywallAuthClicked({
-                            report_id: reportId,
-                            findings_hidden: gatedFindings.length,
-                            auth_method: "sign_in",
-                          });
-                          router.push(
-                            `/sign-in?redirect_url=${encodeURIComponent(`/report/${reportId}`)}`
-                          );
-                        }}
-                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        Already have an account? Sign in
-                      </button>
-                    </div>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      onClick={() => {
+                        trackPaywallAuthClicked({
+                          report_id: reportId,
+                          findings_hidden: gatedSummaries.length,
+                          auth_method: "sign_up",
+                        });
+                        router.push(
+                          `/sign-up?redirect_url=${encodeURIComponent(`/report/${reportId}`)}`
+                        );
+                      }}
+                    >
+                      Get Started Free
+                    </Button>
+                    <button
+                      onClick={() => {
+                        trackPaywallAuthClicked({
+                          report_id: reportId,
+                          findings_hidden: gatedSummaries.length,
+                          auth_method: "sign_in",
+                        });
+                        router.push(
+                          `/sign-in?redirect_url=${encodeURIComponent(`/report/${reportId}`)}`
+                        );
+                      }}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Already have an account? Sign in
+                    </button>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
 

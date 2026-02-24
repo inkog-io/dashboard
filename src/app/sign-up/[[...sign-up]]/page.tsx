@@ -6,7 +6,7 @@ export default function SignUpPage({
   searchParams: { redirect_url?: string };
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <SignUp
         forceRedirectUrl={searchParams.redirect_url || "/dashboard/scan"}
         appearance={{

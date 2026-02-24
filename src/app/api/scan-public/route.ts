@@ -3,6 +3,7 @@ import { createGunzip } from "node:zlib";
 import { pipeline } from "node:stream/promises";
 import { Readable, PassThrough } from "node:stream";
 import { extract, type Headers } from "tar-stream";
+import { auth } from "@clerk/nextjs/server";
 import {
   insertAnonymousScan,
   getAnonymousScanById,
@@ -384,10 +385,26 @@ export async function POST(req: NextRequest) {
   }
 }
 
+/** Number of findings returned with full detail to unauthenticated users */
+const UNGATED_FINDING_COUNT = 3;
+
+const SEVERITY_ORDER: Record<string, number> = {
+  CRITICAL: 0,
+  HIGH: 1,
+  MEDIUM: 2,
+  LOW: 3,
+};
+
 /**
  * GET /api/scan-public?report_id=<uuid>
  *
  * Retrieve a previously generated scan report.
+ *
+ * Authenticated users (valid Clerk session) receive all findings with full
+ * detail. Unauthenticated users receive the top N findings with full detail
+ * and the remaining findings as summary-only objects (severity, pattern_id,
+ * finding_type, confidence — no file path, code snippet, message, or
+ * compliance mapping). This prevents client-side paywall bypass via DevTools.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -407,11 +424,56 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Check Clerk auth — returns userId if signed in, null otherwise
+    const { userId } = auth();
+    const isAuthenticated = !!userId;
+
     // Defensive: handle double-serialized JSONB from older inserts
     const scanResult =
       typeof row.scan_result === "string"
         ? JSON.parse(row.scan_result)
         : row.scan_result;
+
+    // Server-side finding gating for unauthenticated users
+    if (!isAuthenticated && Array.isArray(scanResult.findings)) {
+      // Sort by severity (CRITICAL first), then confidence desc
+      const sorted = [...scanResult.findings].sort(
+        (a: { severity: string; confidence?: number }, b: { severity: string; confidence?: number }) => {
+          const sevDiff =
+            (SEVERITY_ORDER[a.severity] ?? 4) -
+            (SEVERITY_ORDER[b.severity] ?? 4);
+          if (sevDiff !== 0) return sevDiff;
+          return (b.confidence ?? 0) - (a.confidence ?? 0);
+        }
+      );
+
+      // Full detail for top N findings
+      const ungated = sorted.slice(0, UNGATED_FINDING_COUNT);
+
+      // Summary-only for the rest — strip all sensitive detail
+      const gated = sorted.slice(UNGATED_FINDING_COUNT).map(
+        (f: {
+          id: string;
+          severity: string;
+          pattern_id: string;
+          finding_type?: string;
+          confidence?: number;
+          governance_category?: string;
+        }) => ({
+          id: f.id,
+          severity: f.severity,
+          pattern_id: f.pattern_id,
+          finding_type: f.finding_type,
+          confidence: f.confidence,
+          governance_category: f.governance_category,
+          // All detail fields explicitly omitted:
+          // file, line, message, code_snippet, compliance_mapping, remediation, etc.
+        })
+      );
+
+      scanResult.findings = ungated;
+      scanResult.gated_findings = gated;
+    }
 
     return NextResponse.json({
       report_id: row.id,

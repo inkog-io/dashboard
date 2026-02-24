@@ -6,7 +6,7 @@ export default function SignInPage({
   searchParams: { redirect_url?: string };
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <SignIn
         fallbackRedirectUrl={searchParams.redirect_url || "/dashboard"}
         appearance={{
