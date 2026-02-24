@@ -15,7 +15,6 @@ import {
   GitBranch,
   Settings2,
   ArrowRight,
-  Search,
 } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { FindingCard } from "@/components/FindingCard";
@@ -275,7 +274,7 @@ export default function PublicReportPage() {
         </div>
 
         {/* Summary metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-2">
           <SecurityMetricCard
             title="Total Findings"
             value={result.findings_count}
@@ -313,6 +312,13 @@ export default function PublicReportPage() {
             }
           />
         </div>
+        <p className="text-[11px] text-muted-foreground/70 mb-8 px-0.5">
+          <strong>Risk Score</strong>: Weighted severity of vulnerabilities found (0 = no risk, 100 = critical).{" "}
+          <strong>Governance</strong>: Coverage of human oversight, authorization, and audit controls per{" "}
+          <a href="https://docs.inkog.io/core-concepts/scoring" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">
+            EU AI Act & OWASP
+          </a>.
+        </p>
 
         {/* Zero findings — success state */}
         {!hasFindings && (
@@ -597,29 +603,43 @@ export default function PublicReportPage() {
             <GovernanceScore
               score={result.governance_score}
               readiness={result.eu_ai_act_readiness}
-              articleMapping={result.article_mapping}
-              frameworkMapping={result.framework_mapping}
+              articleMapping={isSignedIn ? result.article_mapping : undefined}
+              frameworkMapping={isSignedIn ? result.framework_mapping : undefined}
             />
+            {!isSignedIn && (
+              <div className="mt-3 px-4 py-3 bg-muted/50 rounded-lg border border-border text-center">
+                <p className="text-sm text-muted-foreground">
+                  <Lock className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+                  Sign in to view full article mapping and framework compliance details.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
         {/* Scan your own repo CTA */}
         <div className="mt-4 mb-8 bg-card rounded-xl border border-border p-6 sm:p-8 text-center">
           <div className="max-w-lg mx-auto">
-            <Search className="w-6 h-6 text-brand mx-auto mb-3" />
+            <GitBranch className="w-6 h-6 text-brand mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              Scan your own repository
+              Scan your own repositories
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Run the same security analysis on your AI agent code. Public repos
-              are free, no account required.
+              Install the Inkog GitHub App to automatically scan every push.
+              Get security reports on pull requests.
             </p>
             <Button
               variant="outline"
-              onClick={() => router.push("/scan")}
+              asChild
             >
-              Start a scan
-              <ArrowRight className="w-4 h-4 ml-1.5" />
+              <a
+                href="https://github.com/apps/inkog-scanner/installations/new"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Install GitHub App
+                <ArrowRight className="w-4 h-4 ml-1.5" />
+              </a>
             </Button>
           </div>
         </div>

@@ -479,7 +479,7 @@ export async function POST(req: NextRequest) {
 }
 
 /** Number of findings returned with full detail to unauthenticated users */
-const UNGATED_FINDING_COUNT = 3;
+const UNGATED_FINDING_COUNT = 1;
 
 const SEVERITY_ORDER: Record<string, number> = {
   CRITICAL: 0,
@@ -547,7 +547,13 @@ export async function GET(req: NextRequest) {
       scanResult.findings_count = scanResult.findings.length;
     }
 
-    // Server-side finding gating for unauthenticated users
+    // Server-side gating for unauthenticated users
+    if (!isAuthenticated) {
+      // Strip governance detail — keep score and readiness, hide article/framework mapping
+      delete scanResult.article_mapping;
+      delete scanResult.framework_mapping;
+    }
+
     if (!isAuthenticated && Array.isArray(scanResult.findings)) {
       // Sort by severity (CRITICAL first), then confidence desc
       const sorted = [...scanResult.findings].sort(
