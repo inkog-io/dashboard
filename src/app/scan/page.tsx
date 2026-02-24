@@ -146,8 +146,8 @@ export default function PublicScanPage() {
               <p className="mb-2">Try an example:</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {[
+                  "https://github.com/OpenBMB/ChatDev",
                   "https://github.com/crewAIInc/crewAI-examples",
-                  "https://github.com/phidatahq/phidata",
                 ].map((url) => (
                   <button
                     key={url}
