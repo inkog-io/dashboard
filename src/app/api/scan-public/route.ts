@@ -98,15 +98,49 @@ function isBinaryBuffer(buf: Buffer): boolean {
   return false;
 }
 
+interface RepoMetadata {
+  default_branch: string;
+  stargazers_count: number;
+  description: string | null;
+  language: string | null;
+}
+
+/**
+ * Fetch repository metadata from GitHub REST API.
+ * Returns metadata or null if the repo doesn't exist / is private.
+ */
+async function fetchRepoMetadata(
+  owner: string,
+  repo: string
+): Promise<RepoMetadata | null> {
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "User-Agent": "inkog-plg-scanner/1.0",
+    },
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return {
+    default_branch: data.default_branch ?? "main",
+    stargazers_count: data.stargazers_count ?? 0,
+    description: data.description ?? null,
+    language: data.language ?? null,
+  };
+}
+
 /**
  * Download and extract a GitHub repo tarball entirely in memory.
  * Uses GitHub's tarball API (no git binary needed).
  */
 async function downloadAndExtractRepo(
   owner: string,
-  repo: string
+  repo: string,
+  branch?: string
 ): Promise<{ path: string; content: Buffer }[]> {
-  const tarballUrl = `https://api.github.com/repos/${owner}/${repo}/tarball`;
+  const tarballUrl = branch
+    ? `https://api.github.com/repos/${owner}/${repo}/tarball/${branch}`
+    : `https://api.github.com/repos/${owner}/${repo}/tarball`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60_000);
@@ -275,10 +309,22 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Download repo tarball
+    // Fetch repo metadata (validates existence + gets default branch)
+    const repoMeta = await fetchRepoMetadata(owner, repo);
+    if (!repoMeta) {
+      return NextResponse.json(
+        {
+          error: "Repository not found or private. Only public GitHub repositories are supported.",
+          code: "clone_failed",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Download repo tarball using explicit default branch to prevent redirect 404s
     let files: { path: string; content: Buffer }[];
     try {
-      files = await downloadAndExtractRepo(owner, repo) as { path: string; content: Buffer }[];
+      files = await downloadAndExtractRepo(owner, repo, repoMeta.default_branch) as { path: string; content: Buffer }[];
     } catch (err) {
       const msg = err instanceof Error ? err.message : "clone_failed";
       if (msg === "clone_failed") {
@@ -360,6 +406,14 @@ export async function POST(req: NextRequest) {
     const backendData =
       (await scanResponse.json()) as BackendScanResponse;
     const scanResult = transformScanResponse(backendData);
+
+    // Attach repo metadata to scan result
+    scanResult.repo_info = {
+      stargazers_count: repoMeta.stargazers_count,
+      default_branch: repoMeta.default_branch,
+      description: repoMeta.description,
+      language: repoMeta.language,
+    };
 
     // Persist to Postgres
     const { id: reportId } = await insertAnonymousScan(

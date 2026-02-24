@@ -701,6 +701,14 @@ export interface ScanResult {
 
   // Agent topology visualization
   topology_map?: TopologyMap;
+
+  // Repository metadata (PLG scans only)
+  repo_info?: {
+    stargazers_count: number;
+    default_branch: string;
+    description: string | null;
+    language: string | null;
+  };
 }
 
 /**
