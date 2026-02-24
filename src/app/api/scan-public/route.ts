@@ -534,6 +534,19 @@ export async function GET(req: NextRequest) {
         ? JSON.parse(row.scan_result)
         : row.scan_result;
 
+    // Quality filters: drop low-confidence noise, trim remediation steps
+    if (Array.isArray(scanResult.findings)) {
+      scanResult.findings = scanResult.findings.filter(
+        (f: { confidence?: number }) => (f.confidence ?? 1) >= MIN_CONFIDENCE
+      );
+      for (const f of scanResult.findings) {
+        if (f.remediation_steps && f.remediation_steps.length > MAX_REMEDIATION_STEPS) {
+          f.remediation_steps = f.remediation_steps.slice(0, MAX_REMEDIATION_STEPS);
+        }
+      }
+      scanResult.findings_count = scanResult.findings.length;
+    }
+
     // Server-side finding gating for unauthenticated users
     if (!isAuthenticated && Array.isArray(scanResult.findings)) {
       // Sort by severity (CRITICAL first), then confidence desc
