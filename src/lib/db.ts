@@ -33,7 +33,7 @@ async function ensureSchema() {
       scan_result JSONB NOT NULL,
       ip_address TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW(),
-      expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '48 hours',
+      expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '30 days',
       claimed_by_user_id TEXT,
       claimed_at TIMESTAMPTZ,
       access_count INT DEFAULT 0,
