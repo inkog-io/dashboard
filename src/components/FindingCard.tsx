@@ -2,7 +2,6 @@
 
 import { ChevronRight, Shield, AlertTriangle } from "lucide-react";
 import type { Finding } from "@/lib/api";
-import { getPatternLabel } from "@/lib/patternLabels";
 
 interface FindingCardProps {
   finding: Finding;
@@ -59,8 +58,9 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
   const colors = severityColors[finding.severity] || severityColors.LOW;
   const isGovernance = isGovernanceFinding(finding);
 
-  // Get developer-friendly title from pattern labels
-  const { title } = getPatternLabel(finding.pattern_id);
+  // Use backend-provided display_title, fall back to title-cased pattern_id
+  const title = finding.display_title
+    || finding.pattern_id.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
   // Get individual CWE IDs (finding.cwe may contain comma-separated values like "CWE-15, CWE-526")
   const cweIds = finding.cwe

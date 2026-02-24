@@ -4,8 +4,6 @@ import { useEffect, useRef } from "react";
 import { X, MapPin, Shield, ExternalLink, AlertTriangle, CheckCircle } from "lucide-react";
 import type { Finding } from "@/lib/api";
 import { CodeSnippetDisplay } from "./CodeSnippetDisplay";
-import { getRemediationGuide } from "@/lib/remediationGuides";
-import { getPatternLabel } from "@/lib/patternLabels";
 
 interface FindingDetailsPanelProps {
   finding: Finding | null;
@@ -65,11 +63,10 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
   const colors = severityColors[finding.severity] || severityColors.LOW;
   const tier = tierDescriptions[finding.risk_tier] || tierDescriptions.risk_pattern;
 
-  // Get developer-friendly title from pattern labels
-  const { title, shortDesc } = getPatternLabel(finding.pattern_id);
-
-  // Get remediation guide
-  const remediation = getRemediationGuide(finding.pattern_id);
+  // Use backend-provided display fields, fall back to pattern_id
+  const title = finding.display_title
+    || finding.pattern_id.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  const shortDesc = finding.short_description;
 
   // Collect compliance items
   const complianceItems: { label: string; value: string; href?: string }[] = [];
@@ -147,9 +144,14 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
           <div className="px-6 py-6 space-y-8">
             {/* Title and Message */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 {title}
               </h2>
+              {shortDesc && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                  {shortDesc}
+                </p>
+              )}
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                 {finding.message}
               </p>
@@ -221,27 +223,51 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
               </div>
             </div>
 
+            {/* Explanation Trace */}
+            {finding.explanation_trace && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  Analysis Trace
+                </h3>
+                <pre className="text-xs bg-gray-950 text-green-400 p-4 rounded-lg overflow-x-auto font-mono leading-relaxed border border-gray-800">
+                  {finding.explanation_trace}
+                </pre>
+              </div>
+            )}
+
             {/* Remediation */}
-            {remediation && (
+            {(finding.remediation_steps?.length || finding.remediation_code) && (
               <div>
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                   <Shield className="w-4 h-4" />
                   How to Fix
+                  {finding.fix_difficulty && (
+                    <span className={`ml-auto px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+                      finding.fix_difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                      finding.fix_difficulty === 'moderate' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                      'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                    }`}>
+                      {finding.fix_difficulty}
+                    </span>
+                  )}
                 </h3>
                 <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900 rounded-lg p-4">
-                  <ul className="space-y-2">
-                    {remediation.steps.map((step, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                        <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                        <span>{step}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {remediation.codeExample && (
-                    <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-900">
+                  {finding.remediation_steps && finding.remediation_steps.length > 0 && (
+                    <ul className="space-y-2">
+                      {finding.remediation_steps.map((step, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                          <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                          <span>{step}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {finding.remediation_code && (
+                    <div className={`${finding.remediation_steps?.length ? 'mt-4 pt-4 border-t border-green-200 dark:border-green-900' : ''}`}>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Example fix:</p>
                       <pre className="text-xs bg-white/50 dark:bg-gray-900/50 p-3 rounded border border-green-200 dark:border-green-900 overflow-x-auto font-mono text-gray-800 dark:text-gray-200">
-                        {remediation.codeExample}
+                        {finding.remediation_code}
                       </pre>
                     </div>
                   )}

@@ -463,6 +463,13 @@ export interface Finding {
   input_tainted: boolean;
   taint_source: string;
   code_snippet?: string;
+  // Backend-provided display fields (fat API payload)
+  display_title?: string;
+  short_description?: string;
+  remediation_steps?: string[];
+  remediation_code?: string;
+  explanation_trace?: string;
+  fix_difficulty?: 'easy' | 'moderate' | 'complex';
   // Topology linkage
   topology_node_id?: string;  // Explicit link to topology node for precise matching
   // Governance fields (EU AI Act compliance)
@@ -499,6 +506,7 @@ export interface BackendScanResult {
 
   // Results
   findings: Finding[];
+  strengths?: Strength[];
 
   // Scan Details
   scan_duration: string;
@@ -683,6 +691,7 @@ export interface ScanResult {
 
   // Results
   findings: Finding[];
+  strengths: Strength[];
 
   // Governance fields
   governance_score: number;
@@ -729,6 +738,7 @@ export function transformScanResponse(response: BackendScanResponse): ScanResult
 
     // Results
     findings: result.findings ?? [],
+    strengths: result.strengths ?? [],
 
     // Governance
     governance_score: result.governance_score ?? 0,

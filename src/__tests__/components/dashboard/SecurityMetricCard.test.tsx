@@ -69,8 +69,8 @@ describe('SecurityMetricCard', () => {
         />
       );
 
-      // Check icon background has gray styling
-      const iconContainer = container.querySelector('.bg-gray-100');
+      // Check icon background has muted styling (default variant uses bg-muted)
+      const iconContainer = container.querySelector('.bg-muted');
       expect(iconContainer).toBeInTheDocument();
     });
 

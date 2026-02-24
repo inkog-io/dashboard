@@ -16,7 +16,6 @@ import {
   Clock,
 } from 'lucide-react';
 import { DiffResult, DiffFinding, DiffSummary } from '@/lib/api';
-import { getPatternLabel } from '@/lib/patternLabels';
 
 interface ScanDiffViewProps {
   diff: DiffResult;
@@ -197,7 +196,7 @@ function DiffFindingRow({
         <DiffStatusBadge status={status} />
         <SeverityBadge severity={finding.severity} />
         <span className="font-medium text-gray-900 dark:text-gray-100 truncate flex-1">
-          {getPatternLabel(finding.pattern_id).title}
+          {finding.pattern_id.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
         </span>
         <span className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
           <FileCode className="h-4 w-4" />

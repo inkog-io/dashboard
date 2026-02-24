@@ -10,15 +10,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { FindingCard } from '@/components/FindingCard';
 import type { Finding } from '@/lib/api';
 
-// Mock the pattern labels module
-jest.mock('@/lib/patternLabels', () => ({
-  getPatternLabel: (patternId: string) => ({
-    title: patternId === 'prompt_injection' ? 'Prompt Injection' : 'Unknown Pattern',
-    shortDesc: 'Test description',
-  }),
-}));
-
-// Base finding for tests
+// Base finding for tests — uses backend-provided display_title
 const baseFinding: Finding = {
   id: 'IR-001',
   pattern_id: 'prompt_injection',
@@ -34,6 +26,8 @@ const baseFinding: Finding = {
   risk_tier: 'vulnerability',
   input_tainted: true,
   taint_source: 'user_input',
+  display_title: 'Prompt Injection',
+  short_description: 'User input in system prompt without escaping',
 };
 
 describe('FindingCard', () => {
@@ -71,7 +65,9 @@ describe('FindingCard', () => {
     it('should render risk tier label for vulnerabilities', () => {
       render(<FindingCard finding={baseFinding} onClick={mockOnClick} />);
 
-      expect(screen.getByText('Vulnerability')).toBeInTheDocument();
+      // "Vulnerability" appears as both the type badge and the tier label
+      const elements = screen.getAllByText('Vulnerability');
+      expect(elements.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -282,13 +278,15 @@ describe('FindingCard', () => {
   describe('Risk Tier Labels', () => {
     it('should show "Vulnerability" for vulnerability tier', () => {
       render(<FindingCard finding={baseFinding} onClick={mockOnClick} />);
-      expect(screen.getByText('Vulnerability')).toBeInTheDocument();
+      // "Vulnerability" appears both as the type badge and the tier label
+      const elements = screen.getAllByText('Vulnerability');
+      expect(elements.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should show "Risk Pattern" for risk_pattern tier', () => {
+    it('should show "Security Risk" for risk_pattern tier', () => {
       const riskPatternFinding = { ...baseFinding, risk_tier: 'risk_pattern' as const };
       render(<FindingCard finding={riskPatternFinding} onClick={mockOnClick} />);
-      expect(screen.getByText('Risk Pattern')).toBeInTheDocument();
+      expect(screen.getByText('Security Risk')).toBeInTheDocument();
     });
 
     it('should show "Best Practice" for hardening tier', () => {

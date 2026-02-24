@@ -24,8 +24,7 @@ import { CodeSnippetDisplay } from "@/components/CodeSnippetDisplay";
 import { GovernanceScore } from "@/components/GovernanceScore";
 import { SecurityMetricCard } from "@/components/dashboard/SecurityMetricCard";
 import { Button } from "@/components/ui/button";
-import { getPatternLabel } from "@/lib/patternLabels";
-import { getRemediationGuide } from "@/lib/remediationGuides";
+import type { Strength } from "@/lib/api";
 import {
   trackReportViewed,
   trackPaywallAuthClicked,
@@ -41,6 +40,8 @@ interface GatedFindingSummary {
   finding_type?: string;
   confidence?: number;
   governance_category?: string;
+  display_title?: string;
+  fix_difficulty?: 'easy' | 'moderate' | 'complex';
 }
 
 interface ReportScanResult extends ScanResult {
@@ -217,6 +218,22 @@ export default function PublicReportPage() {
     .map((s) => `${gatedSeverityCounts[s]} ${s.charAt(0) + s.slice(1).toLowerCase()}`)
     .join(", ");
 
+  // Build fix difficulty counts for dynamic CTA
+  const fixDifficultyCounts: Record<string, number> = {};
+  for (const f of gatedSummaries) {
+    if (f.fix_difficulty) {
+      fixDifficultyCounts[f.fix_difficulty] = (fixDifficultyCounts[f.fix_difficulty] || 0) + 1;
+    }
+  }
+  // Pick the most compelling difficulty to highlight (easy first, then moderate)
+  const fixCtaPart = fixDifficultyCounts.easy
+    ? `and apply ${fixDifficultyCounts.easy} easy ${fixDifficultyCounts.easy === 1 ? "fix" : "fixes"}`
+    : fixDifficultyCounts.moderate
+      ? `and apply ${fixDifficultyCounts.moderate} moderate ${fixDifficultyCounts.moderate === 1 ? "fix" : "fixes"}`
+      : fixDifficultyCounts.complex
+        ? `and apply ${fixDifficultyCounts.complex} ${fixDifficultyCounts.complex === 1 ? "fix" : "fixes"}`
+        : null;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <PublicHeader />
@@ -313,6 +330,35 @@ export default function PublicReportPage() {
           </div>
         )}
 
+        {/* Security Strengths — positive signals build trust before vulnerabilities */}
+        {result.strengths && result.strengths.length > 0 && (
+          <div className="mb-8">
+            <div className="rounded-xl border border-green-200 dark:border-green-900 bg-green-50/50 dark:bg-green-950/30 overflow-hidden">
+              <div className="px-5 py-3 border-b border-green-200 dark:border-green-900">
+                <h2 className="text-sm font-semibold text-green-800 dark:text-green-300 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  Security Strengths
+                </h2>
+              </div>
+              <div className="divide-y divide-green-200 dark:divide-green-900">
+                {result.strengths.map((strength) => (
+                  <div key={strength.id} className="px-5 py-3 flex items-start gap-3">
+                    <Shield className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-green-900 dark:text-green-200">
+                        {strength.title}
+                      </p>
+                      <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
+                        {strength.message}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Full-detail findings (always visible) */}
         {fullFindings.length > 0 && (
           <div className="mb-8">
@@ -320,9 +366,7 @@ export default function PublicReportPage() {
               {hasGatedFindings ? "Top Findings" : "Findings"}
             </h2>
             <div className="space-y-4">
-              {fullFindings.map((finding) => {
-                const remediation = getRemediationGuide(finding.pattern_id);
-                return (
+              {fullFindings.map((finding) => (
                   <div
                     key={finding.id}
                     className="bg-card rounded-xl border border-border overflow-hidden"
@@ -336,11 +380,28 @@ export default function PublicReportPage() {
                     />
                     {/* Expanded detail */}
                     <div className="px-4 sm:px-6 pb-6 border-t border-border">
-                      <div className="mt-4">
+                      {finding.short_description && (
+                        <p className="mt-4 text-sm text-muted-foreground">
+                          {finding.short_description}
+                        </p>
+                      )}
+                      <div className="mt-3">
                         <p className="text-sm text-muted-foreground">
                           {finding.message}
                         </p>
                       </div>
+
+                      {/* Explanation trace — terminal-style */}
+                      {finding.explanation_trace && (
+                        <div className="mt-4 overflow-x-auto">
+                          <h3 className="text-sm font-medium text-foreground mb-2">
+                            Analysis Trace
+                          </h3>
+                          <pre className="text-xs bg-gray-950 text-green-400 p-4 rounded-lg overflow-x-auto font-mono leading-relaxed border border-gray-800">
+                            {finding.explanation_trace}
+                          </pre>
+                        </div>
+                      )}
 
                       {finding.code_snippet && (
                         <div className="mt-4 overflow-x-auto">
@@ -355,20 +416,37 @@ export default function PublicReportPage() {
                         </div>
                       )}
 
-                      {remediation && (
+                      {/* Remediation — backend-provided */}
+                      {(finding.remediation_steps?.length || finding.remediation_code) && (
                         <div className="mt-4">
-                          <h3 className="text-sm font-medium text-foreground mb-2">
+                          <h3 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
                             How to Fix
+                            {finding.fix_difficulty && (
+                              <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+                                finding.fix_difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                                finding.fix_difficulty === 'moderate' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                                'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                              }`}>
+                                {finding.fix_difficulty}
+                              </span>
+                            )}
                           </h3>
                           <div className="bg-muted rounded-lg p-4 text-sm text-muted-foreground">
-                            <p className="font-medium text-foreground mb-2">
-                              {remediation.title}
-                            </p>
-                            <ul className="list-disc list-inside space-y-1">
-                              {remediation.steps.map((step, i) => (
-                                <li key={i}>{step}</li>
-                              ))}
-                            </ul>
+                            {finding.remediation_steps && finding.remediation_steps.length > 0 && (
+                              <ul className="list-disc list-inside space-y-1">
+                                {finding.remediation_steps.map((step, i) => (
+                                  <li key={i}>{step}</li>
+                                ))}
+                              </ul>
+                            )}
+                            {finding.remediation_code && (
+                              <div className={`${finding.remediation_steps?.length ? 'mt-3 pt-3 border-t border-border' : ''}`}>
+                                <CodeSnippetDisplay
+                                  code={finding.remediation_code}
+                                  file="fix"
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -399,8 +477,7 @@ export default function PublicReportPage() {
                       )}
                     </div>
                   </div>
-                );
-              })}
+                ))}
             </div>
           </div>
         )}
@@ -426,7 +503,8 @@ export default function PublicReportPage() {
               {/* Minimal text rows — severity + title only, no exploitable data */}
               <div className="divide-y divide-border">
                 {gatedSummaries.map((item) => {
-                  const { title } = getPatternLabel(item.pattern_id);
+                  const title = item.display_title
+                    || item.pattern_id.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
                   const sevColors: Record<string, string> = {
                     CRITICAL: "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800",
                     HIGH: "bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800",
@@ -456,8 +534,9 @@ export default function PublicReportPage() {
               <div className="px-5 py-6 bg-muted/30 border-t border-border">
                 <div className="text-center max-w-sm mx-auto">
                   <p className="text-sm text-muted-foreground mb-4">
-                    Sign up for free to see code snippets, remediation guides,
-                    and compliance mapping for all findings.
+                    Sign in to view {gatedSummaries.length} remaining{" "}
+                    {gatedSummaries.length === 1 ? "vulnerability" : "vulnerabilities"}
+                    {fixCtaPart ? ` ${fixCtaPart}` : ""}.
                   </p>
 
                   <div className="flex flex-wrap justify-center gap-2 mb-4">

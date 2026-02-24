@@ -459,6 +459,8 @@ export async function GET(req: NextRequest) {
           finding_type?: string;
           confidence?: number;
           governance_category?: string;
+          display_title?: string;
+          fix_difficulty?: string;
         }) => ({
           id: f.id,
           severity: f.severity,
@@ -466,6 +468,8 @@ export async function GET(req: NextRequest) {
           finding_type: f.finding_type,
           confidence: f.confidence,
           governance_category: f.governance_category,
+          display_title: f.display_title,
+          fix_difficulty: f.fix_difficulty,
           // All detail fields explicitly omitted:
           // file, line, message, code_snippet, compliance_mapping, remediation, etc.
         })
