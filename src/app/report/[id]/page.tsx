@@ -11,6 +11,9 @@ import {
   Link2,
   CheckCircle,
   Lock,
+  Key,
+  GitBranch,
+  Settings2,
 } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { FindingCard } from "@/components/FindingCard";
@@ -410,7 +413,7 @@ export default function PublicReportPage() {
 
                 {/* Blur overlay */}
                 <div className="absolute inset-0 z-10 backdrop-blur-md bg-background/60 rounded-xl flex items-center justify-center">
-                  <div className="text-center max-w-sm px-6">
+                  <div className="text-center max-w-md px-6">
                     <div className="w-12 h-12 rounded-xl bg-brand/10 flex items-center justify-center mx-auto mb-4">
                       <Lock className="w-6 h-6 text-brand" />
                     </div>
@@ -421,10 +424,23 @@ export default function PublicReportPage() {
                         : "vulnerabilities"}{" "}
                       found
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-6">
-                      Sign in with GitHub to view all findings, copy remediation
-                      code, and save reports to your dashboard.
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Create a free account to unlock the full report.
                     </p>
+
+                    {/* Benefit chips */}
+                    <div className="flex flex-wrap justify-center gap-2 mb-6">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-muted rounded-full text-muted-foreground">
+                        <Key className="w-3 h-3" /> API keys & CLI access
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-muted rounded-full text-muted-foreground">
+                        <GitBranch className="w-3 h-3" /> GitHub auto-scanning
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-muted rounded-full text-muted-foreground">
+                        <Settings2 className="w-3 h-3" /> Custom scan policies
+                      </span>
+                    </div>
+
                     <div className="flex flex-col gap-2">
                       <Button
                         onClick={() => {
@@ -438,7 +454,7 @@ export default function PublicReportPage() {
                           );
                         }}
                       >
-                        Create Free Account
+                        Get Started Free
                       </Button>
                       <Button
                         variant="outline"
@@ -453,7 +469,7 @@ export default function PublicReportPage() {
                           );
                         }}
                       >
-                        Sign In
+                        Already have an account? Sign In
                       </Button>
                     </div>
                   </div>

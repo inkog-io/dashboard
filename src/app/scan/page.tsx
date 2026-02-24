@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Shield } from "lucide-react";
+import { Key, BarChart3, Settings2, GitBranch } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { TerminalProgressUI } from "@/components/TerminalProgressUI";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import {
   trackAnonymousScanStarted,
   trackAnonymousScanCompleted,
@@ -49,6 +50,14 @@ export default function PublicScanPage() {
           );
         } else if (err.code === "invalid_url") {
           setError(err.error);
+        } else if (err.code === "repo_too_large") {
+          setError(
+            "This repository is too large for browser scanning. Create a free account to scan via CLI with no size limits."
+          );
+        } else if (res.status === 502) {
+          setError(
+            "Scan timed out — the repository may be too large. Try a smaller repo, or use the CLI for unlimited scanning."
+          );
         } else {
           setError("Scan failed. Please try again.");
         }
@@ -87,7 +96,13 @@ export default function PublicScanPage() {
             {/* Hero */}
             <div className="mb-8">
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand/10 mb-6">
-                <Shield className="w-7 h-7 text-brand" />
+                <Image
+                  src="/favicon.svg"
+                  alt="Inkog"
+                  width={32}
+                  height={32}
+                  className="w-8 h-8"
+                />
               </div>
               <h1 className="text-3xl font-bold text-foreground mb-3">
                 Scan your AI agent for vulnerabilities
@@ -131,8 +146,8 @@ export default function PublicScanPage() {
               <p className="mb-2">Try an example:</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {[
-                  "https://github.com/langchain-ai/langgraph",
-                  "https://github.com/crewAIInc/crewAI",
+                  "https://github.com/crewAIInc/crewAI-examples",
+                  "https://github.com/phidatahq/phidata",
                 ].map((url) => (
                   <button
                     key={url}
@@ -142,6 +157,43 @@ export default function PublicScanPage() {
                     {url.replace("https://github.com/", "")}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Account benefits */}
+            <div className="mt-12 pt-8 border-t border-border">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
+                Create a free account to unlock
+              </p>
+              <div className="grid grid-cols-2 gap-3 text-left">
+                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-muted/50">
+                  <Key className="w-4 h-4 text-brand mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">API Keys & CLI</p>
+                    <p className="text-xs text-muted-foreground">Scan private repos with no size limits</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-muted/50">
+                  <BarChart3 className="w-4 h-4 text-brand mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Full Reports</p>
+                    <p className="text-xs text-muted-foreground">Governance scores, compliance mapping, topology</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-muted/50">
+                  <Settings2 className="w-4 h-4 text-brand mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Scan Policies</p>
+                    <p className="text-xs text-muted-foreground">EU AI Act, governance, low-noise & more</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-muted/50">
+                  <GitBranch className="w-4 h-4 text-brand mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">GitHub Integration</p>
+                    <p className="text-xs text-muted-foreground">Auto-scan on every push, PR comments</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

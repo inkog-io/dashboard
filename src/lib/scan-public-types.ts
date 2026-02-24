@@ -19,6 +19,7 @@ export interface PublicScanError {
     | "rate_limited"
     | "clone_failed"
     | "scan_failed"
+    | "repo_too_large"
     | "not_found";
   retry_after?: number;
 }

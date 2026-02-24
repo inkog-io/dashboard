@@ -344,8 +344,14 @@ export async function POST(req: NextRequest) {
     if (!scanResponse.ok) {
       const errorText = await scanResponse.text().catch(() => "Unknown error");
       console.error("Backend scan failed:", scanResponse.status, errorText);
+      const isTimeout = scanResponse.status === 504 || scanResponse.status === 408;
       return NextResponse.json(
-        { error: "Scan failed. Please try again.", code: "scan_failed" },
+        {
+          error: isTimeout
+            ? "This repository is too large to scan in the browser. Use the CLI for large repos."
+            : "Scan failed. Please try again.",
+          code: isTimeout ? "repo_too_large" : "scan_failed",
+        },
         { status: 502 }
       );
     }
