@@ -1,19 +1,30 @@
-import postgres, { type JSONValue } from "postgres";
+import postgres, { type JSONValue, type Sql } from "postgres";
 
-const databaseUrl = process.env.DATABASE_URL!;
-const useSSL = !databaseUrl.includes("sslmode=disable");
+// Lazy-initialize: don't crash at import time if DATABASE_URL is missing (build phase)
+let _sql: Sql | null = null;
 
-const sql = postgres(databaseUrl, {
-  max: 5,
-  idle_timeout: 20,
-  connect_timeout: 10,
-  ssl: useSSL ? { rejectUnauthorized: false } : false,
-});
+function getSql(): Sql {
+  if (!_sql) {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      throw new Error("DATABASE_URL environment variable is not set");
+    }
+    const useSSL = !databaseUrl.includes("sslmode=disable");
+    _sql = postgres(databaseUrl, {
+      max: 5,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: useSSL ? { rejectUnauthorized: false } : false,
+    });
+  }
+  return _sql;
+}
 
 // Auto-create table (idempotent)
 let initialized = false;
 async function ensureSchema() {
   if (initialized) return;
+  const sql = getSql();
   await sql`
     CREATE TABLE IF NOT EXISTS anonymous_scans (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -47,6 +58,7 @@ export async function insertAnonymousScan(
   ipAddress: string | null
 ): Promise<{ id: string }> {
   await ensureSchema();
+  const sql = getSql();
   const [row] = await sql`
     INSERT INTO anonymous_scans (repo_url, repo_name, scan_result, ip_address)
     VALUES (${repoUrl}, ${repoName}, ${sql.json(scanResult as JSONValue)}, ${ipAddress})
@@ -57,6 +69,7 @@ export async function insertAnonymousScan(
 
 export async function getAnonymousScanById(id: string) {
   await ensureSchema();
+  const sql = getSql();
   const [row] = await sql`
     SELECT id, repo_url, repo_name, scan_result, created_at, claimed_by_user_id
     FROM anonymous_scans
@@ -75,6 +88,7 @@ export async function getAnonymousScanById(id: string) {
 
 export async function findRecentScanByRepo(repoName: string) {
   await ensureSchema();
+  const sql = getSql();
   const [row] = await sql`
     SELECT id, repo_url, repo_name, scan_result, created_at
     FROM anonymous_scans
@@ -89,6 +103,7 @@ export async function findRecentScanByRepo(repoName: string) {
 
 export async function claimScan(id: string, userId: string) {
   await ensureSchema();
+  const sql = getSql();
   await sql`
     UPDATE anonymous_scans
     SET claimed_by_user_id = ${userId}, claimed_at = NOW()
@@ -98,6 +113,7 @@ export async function claimScan(id: string, userId: string) {
 
 export async function countRecentScans(ipAddress: string): Promise<number> {
   await ensureSchema();
+  const sql = getSql();
   const [row] = await sql`
     SELECT COUNT(*)::int AS count
     FROM anonymous_scans
@@ -107,4 +123,4 @@ export async function countRecentScans(ipAddress: string): Promise<number> {
   return row.count;
 }
 
-export default sql;
+export default getSql;
