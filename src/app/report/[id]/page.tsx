@@ -237,6 +237,64 @@ export default function PublicReportPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <PublicHeader />
 
+      {/* Contextual value banner — below header, above content */}
+      {!loading && report && !isSignedIn && hasGatedFindings && (
+        <div className="w-full border-b border-border bg-muted/40">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">
+                Viewing preview
+              </span>
+              {" — "}
+              {gatedSummaries.length} {gatedSummaries.length === 1 ? "finding" : "findings"}, governance details, and remediation code locked.
+            </p>
+            <Button
+              size="sm"
+              className="h-8 shrink-0"
+              onClick={() => {
+                trackPaywallAuthClicked({
+                  report_id: reportId,
+                  findings_hidden: gatedSummaries.length,
+                  auth_method: "sign_up",
+                });
+                router.push(
+                  `/sign-up?redirect_url=${encodeURIComponent(`/report/${reportId}`)}`
+                );
+              }}
+            >
+              Unlock Full Report
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Signed-in power-user banner */}
+      {!loading && report && isSignedIn && (
+        <div className="w-full border-b border-border bg-muted/40">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Full report unlocked.</span>
+              {" "}Want this on every push?
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 shrink-0"
+              asChild
+            >
+              <a
+                href="https://github.com/apps/inkog-scanner/installations/new"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Install GitHub App
+                <ArrowRight className="w-4 h-4 ml-1.5" />
+              </a>
+            </Button>
+          </div>
+        </div>
+      )}
+
       <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-8">

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { Key, BarChart3, Settings2, GitBranch } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { TerminalProgressUI } from "@/components/TerminalProgressUI";
@@ -21,11 +22,20 @@ const EXAMPLE_REPOS = [
 export default function PublicScanPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isSignedIn, isLoaded } = useAuth();
   const [repoUrl, setRepoUrl] = useState(searchParams.get("url") || "");
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scanDone, setScanDone] = useState(false);
   const scanUrlRef = useRef<string>("");
+
+  // Redirect signed-in users to the full dashboard scanner
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      const url = searchParams.get("url");
+      router.replace(url ? `/dashboard/scan?url=${encodeURIComponent(url)}` : "/dashboard/scan");
+    }
+  }, [isLoaded, isSignedIn, router, searchParams]);
 
   // Auto-scan if ?url= is pre-filled (e.g., from "Scan again" link)
   const hasAutoScanned = useRef(false);
