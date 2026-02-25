@@ -28,8 +28,21 @@ export function TerminalProgressUI({
   fastForward,
 }: TerminalProgressUIProps) {
   const [visibleLines, setVisibleLines] = useState<number>(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Track elapsed time for slow-scan warnings
+  useEffect(() => {
+    if (!isActive) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isActive]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -104,6 +117,26 @@ export function TerminalProgressUI({
               <span className="text-green-400">{">"}</span>
               <span className="animate-pulse text-green-300">▋</span>
             </div>
+          )}
+
+          {/* Slow-scan warnings */}
+          {elapsedSeconds >= 60 && elapsedSeconds < 120 && visibleLines < PROGRESS_LINES.length && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mt-2 text-amber-400 text-xs"
+            >
+              {"> Scan is taking longer than expected for this repo size..."}
+            </motion.div>
+          )}
+          {elapsedSeconds >= 120 && visibleLines < PROGRESS_LINES.length && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mt-2 text-amber-400 text-xs"
+            >
+              {"> Still working. Large repos can take up to 3 minutes."}
+            </motion.div>
           )}
 
           {/* Completed indicator */}

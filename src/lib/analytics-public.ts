@@ -47,3 +47,13 @@ export function trackReportShared(properties: {
 }): void {
   posthog.capture("report_shared", properties);
 }
+
+export function trackAnonymousScanError(properties: {
+  repo_url: string;
+  error_code: string;
+  error_message: string;
+  duration_ms: number;
+  retry_count: number;
+}): void {
+  posthog.capture("anonymous_scan_error", properties);
+}

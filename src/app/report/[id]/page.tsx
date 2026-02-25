@@ -22,6 +22,7 @@ import { FindingDetailsPanel } from "@/components/FindingDetailsPanel";
 import { CodeSnippetDisplay } from "@/components/CodeSnippetDisplay";
 import { GovernanceScore } from "@/components/GovernanceScore";
 import { SecurityMetricCard } from "@/components/dashboard/SecurityMetricCard";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Button } from "@/components/ui/button";
 import {
   trackReportViewed,
@@ -233,6 +234,7 @@ export default function PublicReportPage() {
         : null;
 
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-background flex flex-col">
       <PublicHeader />
 
@@ -712,5 +714,6 @@ export default function PublicReportPage() {
         }}
       />
     </div>
+    </ErrorBoundary>
   );
 }

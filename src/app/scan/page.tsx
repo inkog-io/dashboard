@@ -6,11 +6,13 @@ import { useAuth } from "@clerk/nextjs";
 import { Key, BarChart3, Settings2, GitBranch } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { TerminalProgressUI } from "@/components/TerminalProgressUI";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
   trackAnonymousScanStarted,
   trackAnonymousScanCompleted,
+  trackAnonymousScanError,
 } from "@/lib/analytics-public";
 import type { PublicScanResponse, PublicScanError } from "@/lib/scan-public-types";
 
@@ -56,55 +58,116 @@ export default function PublicScanPage() {
       const startTime = Date.now();
       trackAnonymousScanStarted({ repo_url: url });
 
-      try {
-        const res = await fetch("/api/scan-public", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ repo_url: url.trim() }),
-        });
+      const MAX_RETRIES = 2;
+      const TIMEOUT_MS = 200_000; // 200s client timeout
+      let lastError = "";
+      let lastErrorCode = "";
 
-        const data = await res.json();
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-        if (!res.ok) {
-          const err = data as PublicScanError;
-          if (err.code === "rate_limited") {
-            setError("Too many scans. Please wait an hour and try again.");
-          } else if (err.code === "clone_failed") {
-            setError(
-              "Repository not found or is private. Only public GitHub repos are supported."
-            );
-          } else if (err.code === "invalid_url") {
-            setError(err.error);
-          } else if (err.code === "repo_too_large" || res.status === 502) {
-            setError(
-              "too_large"
-            );
-          } else {
-            setError("Scan failed. Please try again.");
+        try {
+          const res = await fetch("/api/scan-public", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ repo_url: url.trim() }),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            const err = data as PublicScanError;
+
+            // Non-retryable client errors (4xx)
+            if (res.status >= 400 && res.status < 500) {
+              if (err.code === "rate_limited") {
+                setError("Too many scans. Please wait an hour and try again.");
+              } else if (err.code === "clone_failed") {
+                setError(
+                  "Repository not found or is private. Only public GitHub repos are supported."
+                );
+              } else if (err.code === "invalid_url") {
+                setError(err.error);
+              } else if (err.code === "repo_too_large") {
+                setError("too_large");
+              } else {
+                setError("Scan failed. Please try again.");
+              }
+              setIsScanning(false);
+              return;
+            }
+
+            // 502 is also non-retryable (repo too large)
+            if (res.status === 502) {
+              setError("too_large");
+              setIsScanning(false);
+              return;
+            }
+
+            // Retryable server errors (5xx)
+            lastError = err.error || "Server error";
+            lastErrorCode = err.code || `http_${res.status}`;
+
+            if (attempt < MAX_RETRIES) {
+              const backoff = (attempt + 1) * 3000; // 3s, 6s
+              await new Promise((r) => setTimeout(r, backoff));
+              continue;
+            }
+            break;
           }
-          setIsScanning(false);
+
+          // Success
+          const result = data as PublicScanResponse;
+
+          trackAnonymousScanCompleted({
+            repo_url: url,
+            report_id: result.report_id,
+            findings_count: result.scan_result.findings_count,
+            critical_count: result.scan_result.critical_count,
+            duration_ms: Date.now() - startTime,
+          });
+
+          setScanDone(true);
+          setTimeout(() => {
+            router.push(`/report/${result.report_id}`);
+          }, 1200);
           return;
+        } catch (e) {
+          clearTimeout(timeoutId);
+
+          const isAbort = e instanceof DOMException && e.name === "AbortError";
+          lastError = isAbort
+            ? "Request timed out"
+            : "Network error";
+          lastErrorCode = isAbort ? "timeout" : "network_error";
+
+          if (attempt < MAX_RETRIES) {
+            const backoff = (attempt + 1) * 3000;
+            await new Promise((r) => setTimeout(r, backoff));
+            continue;
+          }
         }
-
-        const result = data as PublicScanResponse;
-
-        trackAnonymousScanCompleted({
-          repo_url: url,
-          report_id: result.report_id,
-          findings_count: result.scan_result.findings_count,
-          critical_count: result.scan_result.critical_count,
-          duration_ms: Date.now() - startTime,
-        });
-
-        // Signal terminal to fast-forward, then navigate
-        setScanDone(true);
-        setTimeout(() => {
-          router.push(`/report/${result.report_id}`);
-        }, 1200);
-      } catch {
-        setError("Network error. Please check your connection and try again.");
-        setIsScanning(false);
       }
+
+      // All retries exhausted
+      trackAnonymousScanError({
+        repo_url: url,
+        error_code: lastErrorCode,
+        error_message: lastError,
+        duration_ms: Date.now() - startTime,
+        retry_count: MAX_RETRIES,
+      });
+
+      setError(
+        lastErrorCode === "timeout"
+          ? "The scan timed out. The repository may be very large — try again or create a free account to scan via CLI."
+          : "Scan failed after multiple attempts. Please try again later."
+      );
+      setIsScanning(false);
     },
     [repoUrl, isScanning, router]
   );
@@ -119,6 +182,7 @@ export default function PublicScanPage() {
   }, [autoScanUrl, handleScan]);
 
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-background flex flex-col">
       <PublicHeader />
 
@@ -271,5 +335,6 @@ export default function PublicScanPage() {
         )}
       </main>
     </div>
+    </ErrorBoundary>
   );
 }
