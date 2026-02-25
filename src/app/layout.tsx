@@ -4,7 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { PostHogProvider } from "@/components/PostHogProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
-import { CookieConsent } from "@/components/CookieConsent";
+
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -55,7 +55,6 @@ export default function RootLayout({
                 richColors
                 closeButton
               />
-              <CookieConsent />
             </PostHogProvider>
           </ThemeProvider>
         </body>
