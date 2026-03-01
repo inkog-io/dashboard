@@ -68,7 +68,8 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [api, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [api]);
 
   useEffect(() => {
     if (api && isAdmin) {

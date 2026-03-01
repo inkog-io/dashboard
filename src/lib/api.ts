@@ -834,7 +834,7 @@ const RETRY_CONFIG = {
   baseDelayMs: 1000,
   maxDelayMs: 10000,
   timeoutMs: 30000,
-  retryableStatuses: [408, 429, 500, 502, 503, 504],
+  retryableStatuses: [408, 500, 502, 503, 504],
 };
 
 /**
