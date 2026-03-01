@@ -9,6 +9,7 @@ import {
   History,
   BookOpen,
   Github,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -20,6 +21,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useApiKeyStatus } from "@/hooks/useApiKeyStatus";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useGitHubInstallationStatus } from "@/hooks/useGitHubInstallationStatus";
 
 interface NavItem {
@@ -104,6 +106,7 @@ function NavItemComponent({
 export function SidebarNav({ isCollapsed }: SidebarNavProps) {
   const pathname = usePathname();
   const { hasKeys, loading: loadingKeys } = useApiKeyStatus();
+  const { isAdmin } = useCurrentUser();
   const { hasInstallations, loading: loadingInstallations } = useGitHubInstallationStatus();
 
   const isActive = (href: string) => {
@@ -141,6 +144,12 @@ export function SidebarNav({ isCollapsed }: SidebarNavProps) {
         },
       ],
     },
+    ...(isAdmin ? [{
+      title: "ADMIN",
+      items: [
+        { href: "/dashboard/admin", label: "Admin", icon: ShieldCheck },
+      ],
+    }] : []),
     {
       title: "HELP",
       items: [

@@ -9,7 +9,9 @@ import {
   History,
   Plus,
   Search,
+  ShieldCheck,
 } from "lucide-react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import {
   CommandDialog,
   CommandEmpty,
@@ -27,6 +29,7 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter();
+  const { isAdmin } = useCurrentUser();
 
   const runCommand = useCallback(
     (command: () => void) => {
@@ -67,6 +70,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             <Key className="mr-2 h-4 w-4" />
             <span>API Keys</span>
           </CommandItem>
+          {isAdmin && (
+            <CommandItem
+              onSelect={() => runCommand(() => router.push("/dashboard/admin"))}
+            >
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              <span>Admin</span>
+            </CommandItem>
+          )}
         </CommandGroup>
 
         <CommandSeparator />

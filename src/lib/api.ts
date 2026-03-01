@@ -167,6 +167,20 @@ export interface SuppressionStats {
   expiring_soon_threshold_days: number;
 }
 
+// =============================================================================
+// Admin / Current User Types
+// =============================================================================
+
+/** Current user info including role */
+export interface CurrentUser {
+  id: string;
+  email: string;
+  name: string | null;
+  avatar_url: string | null;
+  role: 'admin' | 'user';
+  created_at: string;
+}
+
 export interface CreateKeyResponse {
   success: boolean;
   key: string;  // Raw key - only shown once!
@@ -1356,6 +1370,29 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
           method: 'POST',
           body: JSON.stringify(params),
         }, 180_000),
+    },
+
+    /**
+     * Current User
+     */
+    me: {
+      /** Get current user info including role */
+      get: () => request<{ user: CurrentUser }>('/v1/me'),
+    },
+
+    /**
+     * Admin API - User management (admin only)
+     */
+    admin: {
+      /** List all users with roles */
+      listUsers: () => request<{ users: CurrentUser[]; total: number }>('/v1/admin/users'),
+
+      /** Update a user's role */
+      updateUserRole: (userId: string, role: 'admin' | 'user') =>
+        request<{ success: boolean }>(`/v1/admin/users/${userId}/role`, {
+          method: 'PATCH',
+          body: JSON.stringify({ role }),
+        }),
     },
   };
 }

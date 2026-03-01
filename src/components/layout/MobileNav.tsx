@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { Menu, LayoutDashboard, Shield, Key, History, BookOpen } from "lucide-react";
+import { Menu, LayoutDashboard, Shield, Key, History, BookOpen, ShieldCheck } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -13,20 +13,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
 }
-
-const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/scan", label: "Scan", icon: Shield },
-  { href: "/dashboard/history", label: "History", icon: History },
-  { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
-  { href: "/dashboard/onboarding", label: "Setup Guide", icon: BookOpen },
-];
 
 interface MobileNavProps {
   userEmail?: string;
@@ -35,6 +28,16 @@ interface MobileNavProps {
 export function MobileNav({ userEmail }: MobileNavProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { isAdmin } = useCurrentUser();
+
+  const navItems: NavItem[] = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard/scan", label: "Scan", icon: Shield },
+    { href: "/dashboard/history", label: "History", icon: History },
+    { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
+    ...(isAdmin ? [{ href: "/dashboard/admin", label: "Admin", icon: ShieldCheck }] : []),
+    { href: "/dashboard/onboarding", label: "Setup Guide", icon: BookOpen },
+  ];
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
