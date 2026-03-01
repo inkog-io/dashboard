@@ -224,6 +224,11 @@ export default function HistoryPage() {
     updateURL(1, sortBy, sortOrder, newFilters);
   };
 
+  // Exclude pending scans that already appear in API results
+  const visiblePendingScans = pendingScans.filter(
+    (p) => !scans.some((s) => s.id === p.scanId)
+  );
+
   // Format date for display
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
@@ -359,7 +364,7 @@ export default function HistoryPage() {
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100" />
             </div>
-          ) : scans.length === 0 && pendingScans.length === 0 ? (
+          ) : scans.length === 0 && visiblePendingScans.length === 0 ? (
             <div className="text-center py-8">
               <History className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
               <h3 className="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -431,7 +436,7 @@ export default function HistoryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isAdmin && pendingScans.map((pending) => (
+                  {isAdmin && visiblePendingScans.map((pending) => (
                     <TableRow
                       key={`pending-${pending.scanId}`}
                       className="dark:border-gray-700 bg-blue-50/50 dark:bg-blue-900/10"
