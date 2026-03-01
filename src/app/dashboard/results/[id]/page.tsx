@@ -53,6 +53,7 @@ import { FindingsToolbar, type SeverityFilter, type TypeFilter } from "@/compone
 import { StrengthsSection } from "@/components/dashboard/StrengthsSection";
 import { ScanDiffView } from "@/components/ScanDiffView";
 import { GroupedFindings } from "@/components/GroupedFindings";
+import { AIScanResultsView, type AIScanReport } from "@/components/AIScanResultsView";
 
 export default function ScanResultsPage() {
   const params = useParams();
@@ -115,9 +116,11 @@ export default function ScanResultsPage() {
     fetchScan();
   }, [api, params.id]);
 
+  const isAIScan = scan?.scan_policy === "ai-checks";
+
   // Compute type counts from findings using shared utility
   const typeCounts = useMemo(() => {
-    if (!scan?.findings) return { vulnerability: 0, governance: 0 };
+    if (!scan?.findings || !Array.isArray(scan.findings)) return { vulnerability: 0, governance: 0 };
 
     return scan.findings.reduce(
       (acc, finding) => {
@@ -135,7 +138,7 @@ export default function ScanResultsPage() {
 
   // Filter findings based on type, severity, framework and search using shared utilities
   const filteredFindings = useMemo(() => {
-    if (!scan?.findings) return [];
+    if (!scan?.findings || !Array.isArray(scan.findings)) return [];
 
     return scan.findings.filter((finding) => {
       // Type filter using shared utility
@@ -362,234 +365,253 @@ export default function ScanResultsPage() {
         </div>
       </div>
 
-      {/* Summary Stats */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {scan.files_scanned}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Files Scanned</p>
-          </div>
-          <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {scan.findings_count}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Total Findings</p>
-          </div>
-          <div className="text-center p-3 bg-red-50 dark:bg-red-900/30 rounded-lg">
-            <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-              {scan.critical_count}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Critical</p>
-          </div>
-          <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
-            <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-              {scan.high_count}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">High</p>
-          </div>
-          <div className="text-center p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
-            <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">
-              {scan.governance_score}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Compliance</p>
-          </div>
-        </div>
-        {scan.framework_mapping && Object.keys(scan.framework_mapping).length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2 justify-center">
-            {Object.entries(scan.framework_mapping).map(([name, fw]) => (
-              <span key={name} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
-                fw.status === 'PASS'
-                  ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
-                  : fw.status === 'PARTIAL'
-                  ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
-                  : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
-              }`}>
-                {name}
-              </span>
-            ))}
-          </div>
-        )}
-        <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
-          Scanned {scan.lines_of_code.toLocaleString()} lines of code in {scan.duration_ms}ms
-          {scan.scan_policy && (
-            <span className="ml-2">
-              &middot; Policy: <span className="capitalize">{scan.scan_policy}</span>
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Diff Error */}
-      {diffError && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-            <AlertCircle className="h-5 w-5" />
-            <span className="font-medium">Could not load diff</span>
-          </div>
-          <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">{diffError}</p>
-        </div>
-      )}
-
-      {/* Diff View - replaces regular findings when active */}
-      {showDiff && diffData && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
-          <ScanDiffView diff={diffData} onClose={() => setShowDiff(false)} />
-        </div>
-      )}
-
-      {/* Strengths Section */}
-      {scan.strengths && scan.strengths.length > 0 && (
-        <StrengthsSection strengths={scan.strengths} />
-      )}
-
-      {/* Governance Section */}
-      {scan.governance_score !== undefined && (
-        <ErrorBoundary>
-          <GovernanceScore
-            score={scan.governance_score}
-            readiness={scan.eu_ai_act_readiness as 'READY' | 'PARTIAL' | 'NOT_READY' || "PARTIAL"}
-            articleMapping={scan.article_mapping}
-            frameworkMapping={scan.framework_mapping}
-            onFrameworkClick={(frameworkId) => {
-              // Set framework filter instead of search query
-              setFrameworkFilter(frameworkId);
-              setSearchQuery('');
-              document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            onArticleClick={(article) => {
-              // For articles, search by the specific article name
-              setSearchQuery(article);
-              setFrameworkFilter(null);
-              document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-          />
-        </ErrorBoundary>
-      )}
-
-      {/* Agent Topology Visualization */}
-      {scan.topology_map && (
-        <ErrorBoundary
-          fallback={
-            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 text-center">
-              <AlertCircle className="h-8 w-8 text-amber-500 mx-auto mb-2" />
-              <p className="text-amber-800 dark:text-amber-200 font-medium">
-                Topology visualization failed to load
-              </p>
-              <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
-                Your scan results are still available below.
-              </p>
+      {/* AI Scan Results — dedicated view */}
+      {isAIScan ? (
+        <AIScanResultsView
+          report={scan.findings as unknown as AIScanReport}
+          scanMeta={{
+            agent_name: scan.agent_name,
+            created_at: scan.created_at,
+            files_scanned: scan.files_scanned,
+            findings_count: scan.findings_count,
+            critical_count: scan.critical_count,
+            high_count: scan.high_count,
+            medium_count: scan.medium_count,
+            low_count: scan.low_count,
+            risk_score: scan.risk_score,
+          }}
+        />
+      ) : (
+        <>
+          {/* Summary Stats */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {scan.files_scanned}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Files Scanned</p>
+              </div>
+              <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {scan.findings_count}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Total Findings</p>
+              </div>
+              <div className="text-center p-3 bg-red-50 dark:bg-red-900/30 rounded-lg">
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                  {scan.critical_count}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Critical</p>
+              </div>
+              <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  {scan.high_count}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">High</p>
+              </div>
+              <div className="text-center p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
+                <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">
+                  {scan.governance_score}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Compliance</p>
+              </div>
             </div>
-          }
-        >
-          <TopologyMapVisualization
-            topology={scan.topology_map}
-            findings={scan.findings}
-            onFindingClick={(findingId) => {
-              const finding = scan.findings.find((f) => f.id === findingId);
-              if (finding) {
-                setSelectedFinding(finding);
+            {scan.framework_mapping && Object.keys(scan.framework_mapping).length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2 justify-center">
+                {Object.entries(scan.framework_mapping).map(([name, fw]) => (
+                  <span key={name} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
+                    fw.status === 'PASS'
+                      ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
+                      : fw.status === 'PARTIAL'
+                      ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                      : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
+                  }`}>
+                    {name}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+              Scanned {scan.lines_of_code.toLocaleString()} lines of code in {scan.duration_ms}ms
+              {scan.scan_policy && (
+                <span className="ml-2">
+                  &middot; Policy: <span className="capitalize">{scan.scan_policy}</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Diff Error */}
+          {diffError && (
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+              <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                <AlertCircle className="h-5 w-5" />
+                <span className="font-medium">Could not load diff</span>
+              </div>
+              <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">{diffError}</p>
+            </div>
+          )}
+
+          {/* Diff View - replaces regular findings when active */}
+          {showDiff && diffData && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+              <ScanDiffView diff={diffData} onClose={() => setShowDiff(false)} />
+            </div>
+          )}
+
+          {/* Strengths Section */}
+          {scan.strengths && scan.strengths.length > 0 && (
+            <StrengthsSection strengths={scan.strengths} />
+          )}
+
+          {/* Governance Section */}
+          {scan.governance_score !== undefined && (
+            <ErrorBoundary>
+              <GovernanceScore
+                score={scan.governance_score}
+                readiness={scan.eu_ai_act_readiness as 'READY' | 'PARTIAL' | 'NOT_READY' || "PARTIAL"}
+                articleMapping={scan.article_mapping}
+                frameworkMapping={scan.framework_mapping}
+                onFrameworkClick={(frameworkId) => {
+                  setFrameworkFilter(frameworkId);
+                  setSearchQuery('');
+                  document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                onArticleClick={(article) => {
+                  setSearchQuery(article);
+                  setFrameworkFilter(null);
+                  document.getElementById('findings-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              />
+            </ErrorBoundary>
+          )}
+
+          {/* Agent Topology Visualization */}
+          {scan.topology_map && (
+            <ErrorBoundary
+              fallback={
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 text-center">
+                  <AlertCircle className="h-8 w-8 text-amber-500 mx-auto mb-2" />
+                  <p className="text-amber-800 dark:text-amber-200 font-medium">
+                    Topology visualization failed to load
+                  </p>
+                  <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                    Your scan results are still available below.
+                  </p>
+                </div>
               }
-            }}
+            >
+              <TopologyMapVisualization
+                topology={scan.topology_map}
+                findings={Array.isArray(scan.findings) ? scan.findings : []}
+                onFindingClick={(findingId) => {
+                  if (!Array.isArray(scan.findings)) return;
+                  const finding = scan.findings.find((f) => f.id === findingId);
+                  if (finding) {
+                    setSelectedFinding(finding);
+                  }
+                }}
+              />
+            </ErrorBoundary>
+          )}
+
+          {/* Findings Section - hidden when diff view is active */}
+          {!showDiff && scan.findings && Array.isArray(scan.findings) && scan.findings.length > 0 ? (
+            <div id="findings-section" className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden scroll-mt-4">
+              <div className="px-5 border-b border-gray-100 dark:border-gray-800">
+                <FindingsToolbar
+                  totalCount={scan.findings_count}
+                  criticalCount={scan.critical_count}
+                  highCount={scan.high_count}
+                  mediumCount={scan.medium_count}
+                  lowCount={scan.low_count}
+                  vulnerabilityCount={typeCounts.vulnerability}
+                  governanceCount={typeCounts.governance}
+                  selectedSeverity={severityFilter}
+                  onSeverityChange={setSeverityFilter}
+                  selectedType={typeFilter}
+                  onTypeChange={setTypeFilter}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                />
+              </div>
+
+              {/* Framework Filter Indicator */}
+              {frameworkFilter && (
+                <div className="px-5 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-blue-700 dark:text-blue-300">
+                      Filtered by: <strong>{frameworkDisplayNames[frameworkFilter] || frameworkFilter}</strong>
+                    </span>
+                    <button
+                      onClick={() => setFrameworkFilter(null)}
+                      className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                    >
+                      Clear filter
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Search Query Filter Indicator (from article clicks or manual search) */}
+              {searchQuery && !frameworkFilter && (
+                <div className="px-5 py-2 bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-100 dark:border-indigo-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-indigo-700 dark:text-indigo-300">
+                      Searching: <strong>{searchQuery}</strong>
+                    </span>
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200"
+                    >
+                      Clear search
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Findings List - grouped by line number for better overview */}
+              {filteredFindings.length > 0 ? (
+                <GroupedFindings
+                  findings={filteredFindings}
+                  onFindingClick={(finding) => setSelectedFinding(finding)}
+                />
+              ) : (
+                <div className="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
+                  No findings match your filters
+                </div>
+              )}
+
+              {/* Results count */}
+              {filteredFindings.length > 0 && (
+                <div className="px-5 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                  Showing {filteredFindings.length} of {scan.findings_count} findings
+                </div>
+              )}
+            </div>
+          ) : !showDiff ? (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-8 text-center">
+              <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
+              <p className="text-lg font-medium text-green-800 dark:text-green-200">
+                No vulnerabilities found!
+              </p>
+              <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                Your code passed all security checks.
+              </p>
+            </div>
+          ) : null}
+
+          {/* Finding Details Panel (Slide-out) */}
+          <FindingDetailsPanel
+            finding={selectedFinding}
+            open={!!selectedFinding}
+            onClose={() => setSelectedFinding(null)}
           />
-        </ErrorBoundary>
+        </>
       )}
-
-      {/* Findings Section - hidden when diff view is active */}
-      {!showDiff && scan.findings && scan.findings.length > 0 ? (
-        <div id="findings-section" className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden scroll-mt-4">
-          <div className="px-5 border-b border-gray-100 dark:border-gray-800">
-            <FindingsToolbar
-              totalCount={scan.findings_count}
-              criticalCount={scan.critical_count}
-              highCount={scan.high_count}
-              mediumCount={scan.medium_count}
-              lowCount={scan.low_count}
-              vulnerabilityCount={typeCounts.vulnerability}
-              governanceCount={typeCounts.governance}
-              selectedSeverity={severityFilter}
-              onSeverityChange={setSeverityFilter}
-              selectedType={typeFilter}
-              onTypeChange={setTypeFilter}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-            />
-          </div>
-
-          {/* Framework Filter Indicator */}
-          {frameworkFilter && (
-            <div className="px-5 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-blue-700 dark:text-blue-300">
-                  Filtered by: <strong>{frameworkDisplayNames[frameworkFilter] || frameworkFilter}</strong>
-                </span>
-                <button
-                  onClick={() => setFrameworkFilter(null)}
-                  className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
-                >
-                  Clear filter
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Search Query Filter Indicator (from article clicks or manual search) */}
-          {searchQuery && !frameworkFilter && (
-            <div className="px-5 py-2 bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-100 dark:border-indigo-800">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-indigo-700 dark:text-indigo-300">
-                  Searching: <strong>{searchQuery}</strong>
-                </span>
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200"
-                >
-                  Clear search
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Findings List - grouped by line number for better overview */}
-          {filteredFindings.length > 0 ? (
-            <GroupedFindings
-              findings={filteredFindings}
-              onFindingClick={(finding) => setSelectedFinding(finding)}
-            />
-          ) : (
-            <div className="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
-              No findings match your filters
-            </div>
-          )}
-
-          {/* Results count */}
-          {filteredFindings.length > 0 && (
-            <div className="px-5 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
-              Showing {filteredFindings.length} of {scan.findings_count} findings
-            </div>
-          )}
-        </div>
-      ) : !showDiff ? (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-8 text-center">
-          <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
-          <p className="text-lg font-medium text-green-800 dark:text-green-200">
-            No vulnerabilities found!
-          </p>
-          <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-            Your code passed all security checks.
-          </p>
-        </div>
-      ) : null}
-
-      {/* Finding Details Panel (Slide-out) */}
-      <FindingDetailsPanel
-        finding={selectedFinding}
-        open={!!selectedFinding}
-        onClose={() => setSelectedFinding(null)}
-      />
     </div>
   );
 }
