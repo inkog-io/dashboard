@@ -149,6 +149,13 @@ const CONFIDENCE_BADGE = {
 
 type SeverityKey = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
+const SEVERITY_ORDER: Record<SeverityKey, number> = {
+  CRITICAL: 0,
+  HIGH: 1,
+  MEDIUM: 2,
+  LOW: 3,
+};
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -159,10 +166,11 @@ export function AIScanResultsView({ report, scanMeta }: AIScanResultsViewProps) 
   const [showCleanDetections, setShowCleanDetections] = useState(false);
   const [showMethodology, setShowMethodology] = useState(false);
 
-  const filteredFindings =
+  const filteredFindings = (
     severityFilter === "ALL"
-      ? report.findings
-      : report.findings.filter((f) => f.severity === severityFilter);
+      ? [...report.findings]
+      : report.findings.filter((f) => f.severity === severityFilter)
+  ).sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
 
   return (
     <div className="space-y-6">

@@ -11,11 +11,13 @@ import {
   FileArchive,
   X,
   ArrowLeft,
+  History,
 } from "lucide-react";
 import Link from "next/link";
 
 import { createAPIClient, InkogAPIError, type InkogAPI } from "@/lib/api";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { addPendingAIScan, removePendingAIScan } from "@/lib/pending-ai-scans";
 
 type AIScanStatus = "idle" | "uploading" | "processing" | "completed" | "failed";
 
@@ -82,10 +84,12 @@ export default function AIChecksPage() {
       const data = await api.admin.getAIScanStatus(id);
       if (data.status === "completed") {
         if (pollRef.current) clearInterval(pollRef.current);
+        removePendingAIScan(id);
         // Redirect to the polished results page
         router.push(`/dashboard/results/${id}`);
       } else if (data.status === "failed") {
         if (pollRef.current) clearInterval(pollRef.current);
+        removePendingAIScan(id);
         setStatus("failed");
         setError("AI analysis failed. Please try again.");
       }
@@ -102,8 +106,14 @@ export default function AIChecksPage() {
 
     try {
       const data = await api.admin.triggerAIScan(file, agentName || "AI Security Scan");
+      const resolvedName = agentName || "AI Security Scan";
       setScanId(data.scan_id);
       setStatus("processing");
+      addPendingAIScan({
+        scanId: data.scan_id,
+        agentName: resolvedName,
+        startedAt: new Date().toISOString(),
+      });
 
       // Start polling
       pollRef.current = setInterval(() => {
@@ -257,13 +267,28 @@ export default function AIChecksPage() {
             <p className="text-muted-foreground text-sm mt-1">
               {status === "uploading"
                 ? "Sending your repository to the analysis server..."
-                : "The AI agent is analyzing your code against 30+ detection rules. This typically takes 2-5 minutes."}
+                : "The AI agent is analyzing your code against 30+ detection rules. This can take up to 1-2 hours."}
             </p>
           </div>
           {scanId && (
             <p className="text-xs text-muted-foreground font-mono">
               Scan ID: {scanId}
             </p>
+          )}
+          {status === "processing" && (
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-muted text-sm text-muted-foreground">
+              <History className="h-4 w-4" />
+              <span>
+                You can leave this page.{" "}
+                <Link
+                  href="/dashboard/history"
+                  className="underline font-medium text-foreground hover:opacity-80"
+                >
+                  Check History
+                </Link>{" "}
+                to see when it&apos;s done.
+              </span>
+            </div>
           )}
         </div>
       )}

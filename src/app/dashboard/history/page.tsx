@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -13,6 +13,8 @@ import {
   ChevronRight,
   Upload,
   Terminal,
+  Loader2,
+  Bot,
 } from "lucide-react";
 
 import {
@@ -46,11 +48,18 @@ import {
   Pagination,
   type FilterState,
 } from "@/components/history";
+import {
+  getPendingAIScans,
+  removePendingAIScan,
+  type PendingAIScan,
+} from "@/lib/pending-ai-scans";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function HistoryPage() {
   const { getToken } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isAdmin } = useCurrentUser();
 
   const [api, setApi] = useState<InkogAPI | null>(null);
   const [scans, setScans] = useState<Scan[]>([]);
@@ -63,6 +72,8 @@ export default function HistoryPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pendingScans, setPendingScans] = useState<PendingAIScan[]>([]);
+  const pendingPollRef = useRef<NodeJS.Timeout | null>(null);
 
   // State from URL params
   const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
@@ -143,6 +154,56 @@ export default function HistoryPage() {
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
+
+  // Poll pending AI scans
+  useEffect(() => {
+    if (!api || !isAdmin) return;
+
+    // Load initial pending scans
+    setPendingScans(getPendingAIScans());
+
+    const poll = async () => {
+      const current = getPendingAIScans();
+      if (current.length === 0) {
+        setPendingScans([]);
+        return;
+      }
+
+      let changed = false;
+      for (const pending of current) {
+        try {
+          const data = await api.admin.getAIScanStatus(pending.scanId);
+          if (data.status === "completed" || data.status === "failed") {
+            removePendingAIScan(pending.scanId);
+            changed = true;
+          }
+        } catch {
+          // Ignore transient errors
+        }
+      }
+
+      if (changed) {
+        setPendingScans(getPendingAIScans());
+        fetchHistory();
+      }
+    };
+
+    pendingPollRef.current = setInterval(poll, 15_000);
+    return () => {
+      if (pendingPollRef.current) clearInterval(pendingPollRef.current);
+    };
+  }, [api, isAdmin, fetchHistory]);
+
+  // Cross-tab sync via StorageEvent
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "inkog-pending-ai-scans") {
+        setPendingScans(getPendingAIScans());
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   // Handlers
   const handlePageChange = (newPage: number) => {
@@ -298,7 +359,7 @@ export default function HistoryPage() {
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100" />
             </div>
-          ) : scans.length === 0 ? (
+          ) : scans.length === 0 && pendingScans.length === 0 ? (
             <div className="text-center py-8">
               <History className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
               <h3 className="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -370,6 +431,33 @@ export default function HistoryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {isAdmin && pendingScans.map((pending) => (
+                    <TableRow
+                      key={`pending-${pending.scanId}`}
+                      className="dark:border-gray-700 bg-blue-50/50 dark:bg-blue-900/10"
+                    >
+                      <TableCell className="text-gray-600 dark:text-gray-400">
+                        {formatDate(pending.startedAt)}
+                      </TableCell>
+                      <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                        <span className="inline-flex items-center gap-1.5">
+                          <Bot className="h-4 w-4" />
+                          {pending.agentName}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                      <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                      <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                      <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Processing
+                        </span>
+                      </TableCell>
+                      <TableCell />
+                    </TableRow>
+                  ))}
                   {scans.map((scan) => (
                     <TableRow
                       key={scan.id}

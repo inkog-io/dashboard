@@ -367,20 +367,32 @@ export default function ScanResultsPage() {
 
       {/* AI Scan Results — dedicated view */}
       {isAIScan ? (
-        <AIScanResultsView
-          report={scan.findings as unknown as AIScanReport}
-          scanMeta={{
-            agent_name: scan.agent_name,
-            created_at: scan.created_at,
-            files_scanned: scan.files_scanned,
-            findings_count: scan.findings_count,
-            critical_count: scan.critical_count,
-            high_count: scan.high_count,
-            medium_count: scan.medium_count,
-            low_count: scan.low_count,
-            risk_score: scan.risk_score,
-          }}
-        />
+        scan.findings && typeof scan.findings === "object" && "findings" in (scan.findings as object) ? (
+          <AIScanResultsView
+            report={scan.findings as unknown as AIScanReport}
+            scanMeta={{
+              agent_name: scan.agent_name,
+              created_at: scan.created_at,
+              files_scanned: scan.files_scanned,
+              findings_count: scan.findings_count,
+              critical_count: scan.critical_count,
+              high_count: scan.high_count,
+              medium_count: scan.medium_count,
+              low_count: scan.low_count,
+              risk_score: scan.risk_score,
+            }}
+          />
+        ) : (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-8 text-center">
+            <AlertCircle className="h-10 w-10 text-amber-500 mx-auto mb-3" />
+            <p className="text-lg font-medium text-amber-800 dark:text-amber-200">
+              AI scan results are unavailable
+            </p>
+            <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+              This scan may still be processing or its results are incomplete. Try again later.
+            </p>
+          </div>
+        )
       ) : (
         <>
           {/* Summary Stats */}
