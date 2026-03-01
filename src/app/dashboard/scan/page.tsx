@@ -26,6 +26,7 @@ import {
   type InkogAPI,
 } from "@/lib/api";
 import { useApiKeyStatus } from "@/hooks/useApiKeyStatus";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import {
   getFindingType,
   matchesFindingSearch,
@@ -44,6 +45,7 @@ export default function ScanPage() {
   const { getToken } = useAuth();
   const [api, setApi] = useState<InkogAPI | null>(null);
   const { hasKeys } = useApiKeyStatus();
+  const { isAdmin } = useCurrentUser();
 
   const [files, setFiles] = useState<File[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -354,14 +356,25 @@ def recursive_tool(depth=0):
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          AI Agent Security Scanner
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Detect vulnerabilities and governance gaps in LangChain, CrewAI, n8n,
-          and custom AI agents
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            AI Agent Security Scanner
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Detect vulnerabilities and governance gaps in LangChain, CrewAI, n8n,
+            and custom AI agents
+          </p>
+        </div>
+        {isAdmin && (
+          <Link
+            href="/dashboard/scan/ai-checks"
+            className="flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity text-sm font-medium whitespace-nowrap"
+          >
+            <Bot className="h-4 w-4" />
+            AI Checks
+          </Link>
+        )}
       </div>
 
       {/* Upload Section - Hidden when results exist */}

@@ -1393,6 +1393,44 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
           method: 'PATCH',
           body: JSON.stringify({ role }),
         }),
+
+      /** Trigger an AI-powered security scan (admin only) */
+      triggerAIScan: async (file: File, agentName: string) => {
+        const token = await getToken();
+        if (!token) {
+          throw new InkogAPIError('Not authenticated', 'not_authenticated', 401);
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('agent_name', agentName);
+
+        const response = await fetchWithRetry(`${API_BASE_URL}/v1/admin/ai-scan`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            // Don't set Content-Type — browser sets it with boundary for FormData
+          },
+          body: formData,
+        }, 0, 180_000); // no retries, 3 min timeout
+
+        const data = await response.json();
+        if (!response.ok) {
+          const error = data as APIError;
+          throw new InkogAPIError(
+            error.message || error.error || 'AI scan failed',
+            error.code || 'ai_scan_error',
+            response.status,
+          );
+        }
+        return data as { scan_id: string; status: string; message: string };
+      },
+
+      /** Check AI scan status */
+      getAIScanStatus: (scanId: string) =>
+        request<{ scan_id: string; status: 'processing' | 'completed' | 'failed'; scan: Scan }>(
+          `/v1/admin/ai-scan/${scanId}`,
+        ),
     },
   };
 }
