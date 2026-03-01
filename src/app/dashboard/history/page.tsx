@@ -224,10 +224,10 @@ export default function HistoryPage() {
     updateURL(1, sortBy, sortOrder, newFilters);
   };
 
-  // Exclude pending scans that already appear in API results
-  const visiblePendingScans = pendingScans.filter(
-    (p) => !scans.some((s) => s.id === p.scanId)
-  );
+  // Pending scans take priority: hide API rows that are still processing
+  const pendingScanIds = new Set(pendingScans.map((p) => p.scanId));
+  const visibleScans = scans.filter((s) => !pendingScanIds.has(s.id));
+  const visiblePendingScans = pendingScans;
 
   // Format date for display
   const formatDate = (dateStr: string) => {
@@ -364,7 +364,7 @@ export default function HistoryPage() {
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100" />
             </div>
-          ) : scans.length === 0 && visiblePendingScans.length === 0 ? (
+          ) : visibleScans.length === 0 && visiblePendingScans.length === 0 ? (
             <div className="text-center py-8">
               <History className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
               <h3 className="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -463,7 +463,7 @@ export default function HistoryPage() {
                       <TableCell />
                     </TableRow>
                   ))}
-                  {scans.map((scan) => (
+                  {visibleScans.map((scan) => (
                     <TableRow
                       key={scan.id}
                       className="dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer group"
