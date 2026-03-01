@@ -229,6 +229,23 @@ export default function HistoryPage() {
   const visibleScans = scans.filter((s) => !pendingScanIds.has(s.id));
   const visiblePendingScans = pendingScans;
 
+  // Merge pending + API rows into a single sorted list
+  type MergedRow =
+    | { kind: "scan"; data: Scan }
+    | { kind: "pending"; data: PendingAIScan };
+
+  const mergedRows: MergedRow[] = [
+    ...visibleScans.map((s): MergedRow => ({ kind: "scan", data: s })),
+    ...(isAdmin
+      ? visiblePendingScans.map((p): MergedRow => ({ kind: "pending", data: p }))
+      : []),
+  ].sort((a, b) => {
+    const dateA = a.kind === "scan" ? a.data.created_at : a.data.startedAt;
+    const dateB = b.kind === "scan" ? b.data.created_at : b.data.startedAt;
+    const cmp = new Date(dateA).getTime() - new Date(dateB).getTime();
+    return sortOrder === "desc" ? -cmp : cmp;
+  });
+
   // Format date for display
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
@@ -436,88 +453,88 @@ export default function HistoryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isAdmin && visiblePendingScans.map((pending) => (
-                    <TableRow
-                      key={`pending-${pending.scanId}`}
-                      className="dark:border-gray-700 bg-blue-50/50 dark:bg-blue-900/10"
-                    >
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {formatDate(pending.startedAt)}
-                      </TableCell>
-                      <TableCell className="font-medium text-gray-900 dark:text-gray-100">
-                        <span className="inline-flex items-center gap-1.5">
-                          <Bot className="h-4 w-4" />
-                          {pending.agentName}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
-                      <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
-                      <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
-                      <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          Processing
-                        </span>
-                      </TableCell>
-                      <TableCell />
-                    </TableRow>
-                  ))}
-                  {visibleScans.map((scan) => (
-                    <TableRow
-                      key={scan.id}
-                      className="dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer group"
-                      onClick={() => router.push(`/dashboard/results/${scan.id}`)}
-                    >
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {formatDate(scan.created_at)}
-                      </TableCell>
-                      <TableCell className="font-medium text-gray-900 dark:text-gray-100">
-                        {scan.agent_name || <span className="text-gray-400 italic">Unnamed</span>}
-                      </TableCell>
-                      <TableCell className="dark:text-gray-300">
-                        {scan.files_scanned}
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium dark:text-gray-200">
-                          {scan.findings_count}
-                        </span>
-                        {scan.findings_count > 0 && (
-                          <span className="text-gray-500 dark:text-gray-500 text-sm ml-1">
-                            ({scan.critical_count}C/{scan.high_count}H/
-                            {scan.medium_count}M/{scan.low_count}L)
+                  {mergedRows.map((row) =>
+                    row.kind === "pending" ? (
+                      <TableRow
+                        key={`pending-${row.data.scanId}`}
+                        className="dark:border-gray-700 bg-blue-50/50 dark:bg-blue-900/10"
+                      >
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {formatDate(row.data.startedAt)}
+                        </TableCell>
+                        <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Bot className="h-4 w-4" />
+                            {row.data.agentName}
                           </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`font-medium ${
-                            scan.risk_score >= 80
-                              ? "text-red-600 dark:text-red-400"
-                              : scan.risk_score >= 50
-                              ? "text-orange-600 dark:text-orange-400"
-                              : scan.risk_score >= 30
-                              ? "text-amber-600 dark:text-amber-400"
-                              : "text-green-600 dark:text-green-400"
-                          }`}
-                        >
-                          {scan.risk_score}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-gray-500 dark:text-gray-400">
-                        {scan.duration_ms}ms
-                      </TableCell>
-                      <TableCell>
-                        {getSeverityBadge(
-                          scan.critical_count,
-                          scan.high_count,
-                          scan.findings_count
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                        <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                        <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                        <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                        <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                        <TableCell>
+                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Processing
+                          </span>
+                        </TableCell>
+                        <TableCell />
+                      </TableRow>
+                    ) : (
+                      <TableRow
+                        key={row.data.id}
+                        className="dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer group"
+                        onClick={() => router.push(`/dashboard/results/${row.data.id}`)}
+                      >
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {formatDate(row.data.created_at)}
+                        </TableCell>
+                        <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                          {row.data.agent_name || <span className="text-gray-400 italic">Unnamed</span>}
+                        </TableCell>
+                        <TableCell className="dark:text-gray-300">
+                          {row.data.files_scanned}
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium dark:text-gray-200">
+                            {row.data.findings_count}
+                          </span>
+                          {row.data.findings_count > 0 && (
+                            <span className="text-gray-500 dark:text-gray-500 text-sm ml-1">
+                              ({row.data.critical_count}C/{row.data.high_count}H/
+                              {row.data.medium_count}M/{row.data.low_count}L)
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`font-medium ${
+                              row.data.risk_score >= 80
+                                ? "text-red-600 dark:text-red-400"
+                                : row.data.risk_score >= 50
+                                ? "text-orange-600 dark:text-orange-400"
+                                : row.data.risk_score >= 30
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-green-600 dark:text-green-400"
+                            }`}
+                          >
+                            {row.data.risk_score}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-gray-500 dark:text-gray-400">
+                          {row.data.duration_ms}ms
+                        </TableCell>
+                        <TableCell>
+                          {getSeverityBadge(
+                            row.data.critical_count,
+                            row.data.high_count,
+                            row.data.findings_count
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
+                        </TableCell>
+                      </TableRow>
                   ))}
                 </TableBody>
               </Table>
