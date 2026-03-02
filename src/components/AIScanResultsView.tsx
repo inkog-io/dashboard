@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Shield,
   CheckCircle2,
@@ -15,6 +15,10 @@ import {
   Layers,
 } from "lucide-react";
 import { CodeSnippetDisplay } from "@/components/CodeSnippetDisplay";
+import { StrengthsSection } from "@/components/dashboard/StrengthsSection";
+import { GovernanceScore } from "@/components/GovernanceScore";
+import { AIScanFindingPanel } from "@/components/AIScanFindingPanel";
+import { deriveStrengths, deriveGovernanceData } from "@/lib/ai-scan-utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -69,7 +73,7 @@ export interface AIScanReport {
   };
 }
 
-interface AIScanFinding {
+export interface AIScanFinding {
   finding_number: number;
   title: string;
   detection_id: string;
@@ -162,9 +166,15 @@ const SEVERITY_ORDER: Record<SeverityKey, number> = {
 
 export function AIScanResultsView({ report, scanMeta }: AIScanResultsViewProps) {
   const [severityFilter, setSeverityFilter] = useState<SeverityKey | "ALL">("ALL");
-  const [expandedFinding, setExpandedFinding] = useState<number | null>(null);
+  const [selectedFinding, setSelectedFinding] = useState<AIScanFinding | null>(null);
   const [showCleanDetections, setShowCleanDetections] = useState(false);
   const [showMethodology, setShowMethodology] = useState(false);
+
+  const derivedStrengths = useMemo(
+    () => deriveStrengths(report.clean_detections),
+    [report.clean_detections]
+  );
+  const governance = useMemo(() => deriveGovernanceData(report), [report]);
 
   const filteredFindings = (
     severityFilter === "ALL"
@@ -246,7 +256,17 @@ export function AIScanResultsView({ report, scanMeta }: AIScanResultsViewProps) 
         </div>
       </div>
 
-      {/* ── 3. Findings ── */}
+      {/* ── 3. Security Strengths ── */}
+      <StrengthsSection strengths={derivedStrengths} />
+
+      {/* ── 4. Governance Score ── */}
+      <GovernanceScore
+        score={governance.score}
+        readiness={governance.readiness}
+        frameworkMapping={governance.frameworkMapping}
+      />
+
+      {/* ── 5. Findings ── */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -285,10 +305,7 @@ export function AIScanResultsView({ report, scanMeta }: AIScanResultsViewProps) 
             <FindingCard
               key={finding.finding_number}
               finding={finding}
-              expanded={expandedFinding === finding.finding_number}
-              onToggle={() =>
-                setExpandedFinding(expandedFinding === finding.finding_number ? null : finding.finding_number)
-              }
+              onClick={() => setSelectedFinding(finding)}
             />
           ))}
           {filteredFindings.length === 0 && (
@@ -306,7 +323,7 @@ export function AIScanResultsView({ report, scanMeta }: AIScanResultsViewProps) 
         </div>
       </div>
 
-      {/* ── 4. Clean Detections ── */}
+      {/* ── 6. Clean Detections ── */}
       {report.clean_detections.length > 0 && (
         <CollapsibleSection
           open={showCleanDetections}
@@ -330,7 +347,7 @@ export function AIScanResultsView({ report, scanMeta }: AIScanResultsViewProps) 
         </CollapsibleSection>
       )}
 
-      {/* ── 5. Compliance Summary ── */}
+      {/* ── 7. Compliance Summary ── */}
       {report.compliance_summary.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
@@ -355,7 +372,7 @@ export function AIScanResultsView({ report, scanMeta }: AIScanResultsViewProps) 
         </div>
       )}
 
-      {/* ── 6. Methodology ── */}
+      {/* ── 8. Methodology ── */}
       {report.methodology && (
         <CollapsibleSection
           open={showMethodology}
@@ -379,6 +396,12 @@ export function AIScanResultsView({ report, scanMeta }: AIScanResultsViewProps) 
           </div>
         </CollapsibleSection>
       )}
+
+      {/* ── 9. Finding Detail Panel ── */}
+      <AIScanFindingPanel
+        finding={selectedFinding}
+        onClose={() => setSelectedFinding(null)}
+      />
     </div>
   );
 }
@@ -496,111 +519,49 @@ function MethodologyField({ label, value }: { label: string; value: string }) {
 
 function FindingCard({
   finding,
-  expanded,
-  onToggle,
+  onClick,
 }: {
   finding: AIScanFinding;
-  expanded: boolean;
-  onToggle: () => void;
+  onClick: () => void;
 }) {
   const sev = SEVERITY_CONFIG[finding.severity];
 
   return (
-    <div>
-      {/* Header row - always visible */}
-      <button onClick={onToggle} className="w-full px-6 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 text-gray-400">
-            {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </span>
+    <button onClick={onClick} className="w-full px-6 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 text-gray-400">
+          <ChevronRight className="h-4 w-4" />
+        </span>
 
-          {/* Severity badge */}
-          <span className={`px-2 py-0.5 rounded text-xs font-semibold border ${sev.badge} flex-shrink-0`}>
-            {finding.severity}
-          </span>
+        {/* Severity badge */}
+        <span className={`px-2 py-0.5 rounded text-xs font-semibold border ${sev.badge} flex-shrink-0`}>
+          {finding.severity}
+        </span>
 
-          {/* Title + tags */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center flex-wrap gap-2">
-              <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{finding.title}</span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
-                {finding.category}
+        {/* Title + tags */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center flex-wrap gap-2">
+            <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{finding.title}</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+              {finding.category}
+            </span>
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${CONFIDENCE_BADGE[finding.confidence]}`}>
+              {finding.confidence} confidence
+            </span>
+          </div>
+
+          {/* Affected files */}
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {finding.affected_files.map((af, i) => (
+              <span key={i} className="inline-flex items-center gap-1 text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                <FileCode className="h-3 w-3" />
+                {af.file_path}:{af.line_numbers}
               </span>
-              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${CONFIDENCE_BADGE[finding.confidence]}`}>
-                {finding.confidence} confidence
-              </span>
-            </div>
-
-            {/* Affected files */}
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {finding.affected_files.map((af, i) => (
-                <span key={i} className="inline-flex items-center gap-1 text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  <FileCode className="h-3 w-3" />
-                  {af.file_path}:{af.line_numbers}
-                </span>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
-      </button>
-
-      {/* Expanded detail */}
-      {expanded && (
-        <div className="px-6 pb-5 ml-7 space-y-4 border-t border-gray-100 dark:border-gray-800 pt-4">
-          {/* Explanation */}
-          <div>
-            <SectionLabel>Explanation</SectionLabel>
-            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{finding.explanation}</p>
-          </div>
-
-          {/* Proof / Evidence */}
-          {finding.proof.length > 0 && (
-            <div>
-              <SectionLabel>Evidence</SectionLabel>
-              <div className="space-y-3">
-                {finding.proof.map((p, i) => (
-                  <div key={i}>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mb-1.5">
-                      {p.file_path}:{p.start_line}-{p.end_line}
-                    </p>
-                    <CodeSnippetDisplay code={p.code_snippet} file={p.file_path} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Recommended Action */}
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-            <SectionLabel className="text-green-700 dark:text-green-400">Recommended Action</SectionLabel>
-            <p className="text-sm text-green-800 dark:text-green-300 leading-relaxed">{finding.recommended_action}</p>
-          </div>
-
-          {/* Compliance Mappings */}
-          {finding.compliance_mappings.length > 0 && (
-            <div>
-              <SectionLabel>Compliance Mappings</SectionLabel>
-              <div className="flex flex-wrap gap-1.5">
-                {finding.compliance_mappings.map((cm, i) => (
-                  <span key={i} className="px-2 py-0.5 rounded-full text-xs font-medium bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-800">
-                    {cm.framework}: {cm.reference}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Meta footer */}
-          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800">
-            <span>Confidence: <strong>{finding.confidence}</strong></span>
-            <span className="text-gray-300 dark:text-gray-600">|</span>
-            <span>FP Risk: <strong>{finding.false_positive_risk}</strong></span>
-            <span className="text-gray-300 dark:text-gray-600">|</span>
-            <span className="font-mono">{finding.detection_id}</span>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+    </button>
   );
 }
 
