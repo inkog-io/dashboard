@@ -171,13 +171,13 @@ export interface SuppressionStats {
 // Admin / Current User Types
 // =============================================================================
 
-/** Current user info including role */
+/** Current user info including roles */
 export interface CurrentUser {
   id: string;
   email: string;
   name: string | null;
   avatar_url: string | null;
-  role: 'admin' | 'user';
+  roles: ('admin' | 'user' | 'aiscan')[];
   created_at: string;
 }
 
@@ -1397,11 +1397,11 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
       /** List all users with roles */
       listUsers: () => request<{ users: CurrentUser[]; total: number }>('/v1/admin/users'),
 
-      /** Update a user's role */
-      updateUserRole: (userId: string, role: 'admin' | 'user') =>
+      /** Update a user's roles */
+      updateUserRoles: (userId: string, roles: ('admin' | 'user' | 'aiscan')[]) =>
         request<{ success: boolean }>(`/v1/admin/users/${userId}/role`, {
           method: 'PATCH',
-          body: JSON.stringify({ role }),
+          body: JSON.stringify({ roles }),
         }),
 
       /** Trigger an AI-powered security scan (admin only) */

@@ -77,23 +77,36 @@ export default function AdminPage() {
     }
   }, [api, isAdmin, fetchUsers]);
 
-  // Update user role
-  const handleRoleChange = async (userId: string, newRole: "admin" | "user") => {
+  // Toggle a role on/off for a user
+  const toggleRole = async (userId: string, currentRoles: string[], roleToToggle: string) => {
     if (!api) return;
 
     setUpdatingUserId(userId);
     try {
-      await api.admin.updateUserRole(userId, newRole);
+      let newRoles: ('admin' | 'user' | 'aiscan')[];
+      if (currentRoles.includes(roleToToggle)) {
+        // Remove role
+        newRoles = currentRoles.filter((r) => r !== roleToToggle) as ('admin' | 'user' | 'aiscan')[];
+      } else {
+        // Add role
+        newRoles = [...currentRoles, roleToToggle] as ('admin' | 'user' | 'aiscan')[];
+      }
+      // Ensure "user" is always present
+      if (!newRoles.includes("user")) {
+        newRoles.push("user");
+      }
+
+      await api.admin.updateUserRoles(userId, newRoles);
       toast.success({
-        title: "Role updated",
-        description: `User role changed to ${newRole}`,
+        title: "Roles updated",
+        description: `User roles changed to ${newRoles.join(", ")}`,
       });
       // Update local state
       setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+        prev.map((u) => (u.id === userId ? { ...u, roles: newRoles } : u))
       );
     } catch (err) {
-      toast.handleAPIError(err, "Failed to update role");
+      toast.handleAPIError(err, "Failed to update roles");
     } finally {
       setUpdatingUserId(null);
     }
@@ -185,15 +198,23 @@ export default function AdminPage() {
                         {user.email}
                       </TableCell>
                       <TableCell>
-                        {user.role === "admin" ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                            Admin
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                            User
-                          </span>
-                        )}
+                        <div className="flex flex-wrap gap-1">
+                          {user.roles?.includes("admin") && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                              Admin
+                            </span>
+                          )}
+                          {user.roles?.includes("aiscan") && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+                              AI Scan
+                            </span>
+                          )}
+                          {!user.roles?.includes("admin") && !user.roles?.includes("aiscan") && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                              User
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(user.created_at).toLocaleDateString()}
@@ -214,7 +235,7 @@ export default function AdminPage() {
                                   <Loader2 className="h-3 w-3 animate-spin" />
                                 ) : (
                                   <>
-                                    Role
+                                    Roles
                                     <ChevronDown className="h-3 w-3" />
                                   </>
                                 )}
@@ -222,16 +243,14 @@ export default function AdminPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onClick={() => handleRoleChange(user.id, "admin")}
-                                disabled={user.role === "admin"}
+                                onClick={() => toggleRole(user.id, user.roles || [], "admin")}
                               >
-                                Make Admin
+                                {user.roles?.includes("admin") ? "Remove Admin" : "Make Admin"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleRoleChange(user.id, "user")}
-                                disabled={user.role === "user"}
+                                onClick={() => toggleRole(user.id, user.roles || [], "aiscan")}
                               >
-                                Make User
+                                {user.roles?.includes("aiscan") ? "Remove AI Scan" : "Grant AI Scan"}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

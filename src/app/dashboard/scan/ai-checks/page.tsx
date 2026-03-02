@@ -24,7 +24,7 @@ type AIScanStatus = "idle" | "uploading" | "processing" | "completed" | "failed"
 export default function AIChecksPage() {
   const { getToken } = useAuth();
   const router = useRouter();
-  const { isAdmin, isLoading: userLoading } = useCurrentUser();
+  const { canAccessAIScan, isLoading: userLoading } = useCurrentUser();
 
   const [api, setApi] = useState<InkogAPI | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -41,10 +41,10 @@ export default function AIChecksPage() {
 
   // Redirect non-admins
   useEffect(() => {
-    if (!userLoading && !isAdmin) {
+    if (!userLoading && !canAccessAIScan) {
       router.push("/dashboard");
     }
-  }, [isAdmin, userLoading, router]);
+  }, [canAccessAIScan, userLoading, router]);
 
   // Clean up polling on unmount
   useEffect(() => {
@@ -146,7 +146,7 @@ export default function AIChecksPage() {
     );
   }
 
-  if (!isAdmin) return null;
+  if (!canAccessAIScan) return null;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">

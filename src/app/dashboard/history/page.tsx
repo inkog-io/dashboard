@@ -61,7 +61,7 @@ export default function HistoryPage() {
   const { getToken } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isAdmin } = useCurrentUser();
+  const { user, isAdmin, canAccessAIScan } = useCurrentUser();
 
   const [api, setApi] = useState<InkogAPI | null>(null);
   const [scans, setScans] = useState<Scan[]>([]);
@@ -161,7 +161,7 @@ export default function HistoryPage() {
 
   // Poll pending AI scans
   useEffect(() => {
-    if (!api || !isAdmin) return;
+    if (!api || !canAccessAIScan) return;
 
     // Load initial pending scans
     setPendingScans(getPendingAIScans());
@@ -196,7 +196,7 @@ export default function HistoryPage() {
     return () => {
       if (pendingPollRef.current) clearInterval(pendingPollRef.current);
     };
-  }, [api, isAdmin, fetchHistory]);
+  }, [api, canAccessAIScan, fetchHistory]);
 
   // Cross-tab sync via StorageEvent
   useEffect(() => {
@@ -240,7 +240,7 @@ export default function HistoryPage() {
 
   const mergedRows: MergedRow[] = [
     ...visibleScans.map((s): MergedRow => ({ kind: "scan", data: s })),
-    ...(isAdmin
+    ...(canAccessAIScan
       ? visiblePendingScans.map((p): MergedRow => ({ kind: "pending", data: p }))
       : []),
   ].sort((a, b) => {

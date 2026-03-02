@@ -45,7 +45,7 @@ export default function ScanPage() {
   const { getToken } = useAuth();
   const [api, setApi] = useState<InkogAPI | null>(null);
   const { hasKeys } = useApiKeyStatus();
-  const { isAdmin } = useCurrentUser();
+  const { canAccessAIScan } = useCurrentUser();
 
   const [files, setFiles] = useState<File[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -366,7 +366,7 @@ def recursive_tool(depth=0):
             and custom AI agents
           </p>
         </div>
-        {isAdmin && (
+        {canAccessAIScan && (
           <Link
             href="/dashboard/scan/ai-checks"
             className="flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity text-sm font-medium whitespace-nowrap"
