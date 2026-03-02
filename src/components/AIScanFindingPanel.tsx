@@ -131,7 +131,7 @@ export function AIScanFindingPanel({ finding, onClose }: AIScanFindingPanelProps
       {/* Panel */}
       <div
         ref={panelRef}
-        className={`fixed right-0 top-0 h-full w-full max-w-xl bg-white dark:bg-gray-900 shadow-2xl z-[60] transform transition-transform duration-300 ease-out overflow-hidden flex flex-col ${
+        className={`fixed inset-y-0 right-0 w-full max-w-xl bg-white dark:bg-gray-900 shadow-2xl z-[60] transition-transform duration-300 ease-out overflow-hidden flex flex-col ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
