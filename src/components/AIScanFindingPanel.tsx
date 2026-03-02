@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X, MapPin, Shield, AlertTriangle } from "lucide-react";
 import { CodeSnippetDisplay } from "@/components/CodeSnippetDisplay";
 
@@ -119,7 +120,7 @@ export function AIScanFindingPanel({ finding, onClose }: AIScanFindingPanelProps
 
   const sev = SEVERITY_CONFIG[finding.severity] || SEVERITY_CONFIG.LOW;
 
-  return (
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
@@ -276,7 +277,8 @@ export function AIScanFindingPanel({ finding, onClose }: AIScanFindingPanelProps
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
