@@ -56,6 +56,7 @@ import { ScanDiffView } from "@/components/ScanDiffView";
 import { GroupedFindings } from "@/components/GroupedFindings";
 import { AIScanResultsView, type AIScanReport } from "@/components/AIScanResultsView";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function ScanResultsPage() {
   const params = useParams();
@@ -77,6 +78,10 @@ export default function ScanResultsPage() {
 
   // Export state
   const [exporting, setExporting] = useState<'json' | 'sarif' | 'pdf' | null>(null);
+
+  // Delete state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Diff mode state
   const [showDiff, setShowDiff] = useState(false);
@@ -250,12 +255,14 @@ export default function ScanResultsPage() {
   // Handle delete scan
   const handleDeleteScan = async () => {
     if (!api || !scan) return;
-    if (!window.confirm("Delete this scan? This cannot be undone.")) return;
+    setDeleting(true);
     try {
       await api.scans.delete(scan.id);
       router.push("/dashboard/history");
     } catch {
-      // Deletion failed silently
+      setShowDeleteDialog(false);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -381,7 +388,7 @@ export default function ScanResultsPage() {
             <Button
               variant="outline"
               className="h-9 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 border-red-200 dark:border-red-800"
-              onClick={handleDeleteScan}
+              onClick={() => setShowDeleteDialog(true)}
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
@@ -649,6 +656,16 @@ export default function ScanResultsPage() {
           />
         </>
       )}
+
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={handleDeleteScan}
+        title="Delete scan"
+        description="This will permanently delete this scan and its results. This action cannot be undone."
+        confirmLabel="Delete scan"
+        loading={deleting}
+      />
     </div>
   );
 }

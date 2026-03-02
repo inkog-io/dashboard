@@ -55,6 +55,7 @@ import {
   type PendingAIScan,
 } from "@/lib/pending-ai-scans";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function HistoryPage() {
   const { getToken } = useAuth();
@@ -75,6 +76,8 @@ export default function HistoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [pendingScans, setPendingScans] = useState<PendingAIScan[]>([]);
   const pendingPollRef = useRef<NodeJS.Timeout | null>(null);
+  const [deleteScanId, setDeleteScanId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // State from URL params
   const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
@@ -263,15 +266,18 @@ export default function HistoryPage() {
     scan.scan_policy === "ai-checks" && scan.files_scanned === 0 && scan.findings_count <= 0;
 
   // Handle delete scan
-  const handleDeleteScan = async (e: React.MouseEvent, scanId: string) => {
-    e.stopPropagation();
-    if (!api) return;
-    if (!window.confirm("Delete this scan?")) return;
+  const handleDeleteScan = async () => {
+    if (!api || !deleteScanId) return;
+    setDeleting(true);
     try {
-      await api.scans.delete(scanId);
+      await api.scans.delete(deleteScanId);
+      setDeleteScanId(null);
       fetchHistory();
     } catch {
-      // Deletion failed silently — row stays
+      // Deletion failed — close dialog, row stays
+      setDeleteScanId(null);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -563,7 +569,10 @@ export default function HistoryPage() {
                           <div className="flex items-center gap-1">
                             {row.data.user_id === user?.id && (
                               <button
-                                onClick={(e) => handleDeleteScan(e, row.data.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteScanId(row.data.id);
+                                }}
                                 className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                                 title="Delete scan"
                               >
@@ -593,6 +602,16 @@ export default function HistoryPage() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!deleteScanId}
+        onOpenChange={(open) => { if (!open) setDeleteScanId(null); }}
+        onConfirm={handleDeleteScan}
+        title="Delete scan"
+        description="This will permanently delete this scan and its results. This action cannot be undone."
+        confirmLabel="Delete scan"
+        loading={deleting}
+      />
     </div>
   );
 }
