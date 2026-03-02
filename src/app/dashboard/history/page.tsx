@@ -15,6 +15,7 @@ import {
   Terminal,
   Loader2,
   Bot,
+  Trash2,
 } from "lucide-react";
 
 import {
@@ -59,7 +60,7 @@ export default function HistoryPage() {
   const { getToken } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAdmin } = useCurrentUser();
+  const { user, isAdmin } = useCurrentUser();
 
   const [api, setApi] = useState<InkogAPI | null>(null);
   const [scans, setScans] = useState<Scan[]>([]);
@@ -255,6 +256,23 @@ export default function HistoryPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  // Check if an AI scan is in error/incomplete state
+  const isErrorAIScan = (scan: Scan) =>
+    scan.scan_policy === "ai-checks" && scan.files_scanned === 0 && scan.findings_count <= 0;
+
+  // Handle delete scan
+  const handleDeleteScan = async (e: React.MouseEvent, scanId: string) => {
+    e.stopPropagation();
+    if (!api) return;
+    if (!window.confirm("Delete this scan?")) return;
+    try {
+      await api.scans.delete(scanId);
+      fetchHistory();
+    } catch {
+      // Deletion failed silently — row stays
+    }
   };
 
   // Get severity badge
@@ -522,17 +540,38 @@ export default function HistoryPage() {
                           </span>
                         </TableCell>
                         <TableCell className="text-gray-500 dark:text-gray-400">
-                          {row.data.duration_ms}ms
+                          {row.data.duration_ms === 0
+                            ? "--"
+                            : row.data.duration_ms >= 1000
+                            ? `${(row.data.duration_ms / 1000).toFixed(1)}s`
+                            : `${row.data.duration_ms}ms`}
                         </TableCell>
                         <TableCell>
-                          {getSeverityBadge(
-                            row.data.critical_count,
-                            row.data.high_count,
-                            row.data.findings_count
+                          {isErrorAIScan(row.data) ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+                              Error
+                            </span>
+                          ) : (
+                            getSeverityBadge(
+                              row.data.critical_count,
+                              row.data.high_count,
+                              row.data.findings_count
+                            )
                           )}
                         </TableCell>
                         <TableCell>
-                          <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
+                          <div className="flex items-center gap-1">
+                            {row.data.user_id === user?.id && (
+                              <button
+                                onClick={(e) => handleDeleteScan(e, row.data.id)}
+                                className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                title="Delete scan"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                            <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
+                          </div>
                         </TableCell>
                       </TableRow>
                   ))}

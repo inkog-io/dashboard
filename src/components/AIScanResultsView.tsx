@@ -185,7 +185,7 @@ export function AIScanResultsView({ report, scanMeta }: AIScanResultsViewProps) 
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <span>{report.report.detection_rules_applied} / {report.report.detection_rules_total} detection rules applied</span>
+          <span title="Rules that produced a Finding or Clean result. Rules marked N/A were not applicable to this agent's architecture (e.g., SQL injection on an agent with no database access). All rules were evaluated.">{report.report.detection_rules_applied} / {report.report.detection_rules_total} detection rules applied</span>
           <span className="hidden sm:inline">&middot;</span>
           <span>{report.report.total_clean} clean detections</span>
         </div>

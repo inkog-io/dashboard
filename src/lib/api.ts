@@ -1090,6 +1090,16 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
        * Export scan as PDF (compliance report)
        * Returns a Blob for download
        */
+      /**
+       * Delete a scan (ownership enforced server-side)
+       */
+      delete: (scanId: string) =>
+        request<{ success: boolean }>(`/v1/scans/${scanId}`, { method: 'DELETE' }),
+
+      /**
+       * Export scan as PDF (compliance report)
+       * Returns a Blob for download
+       */
       exportPDF: async (scanId: string): Promise<Blob> => {
         const token = await getToken();
         if (!token) {

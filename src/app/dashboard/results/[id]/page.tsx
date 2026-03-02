@@ -21,6 +21,7 @@ import {
   FileText,
   Code,
   GitCompare,
+  Trash2,
 } from "lucide-react";
 
 import {
@@ -54,11 +55,13 @@ import { StrengthsSection } from "@/components/dashboard/StrengthsSection";
 import { ScanDiffView } from "@/components/ScanDiffView";
 import { GroupedFindings } from "@/components/GroupedFindings";
 import { AIScanResultsView, type AIScanReport } from "@/components/AIScanResultsView";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function ScanResultsPage() {
   const params = useParams();
   const router = useRouter();
   const { getToken } = useAuth();
+  const { user } = useCurrentUser();
   const [api, setApi] = useState<InkogAPI | null>(null);
 
   const [scan, setScan] = useState<ScanFull | null>(null);
@@ -244,6 +247,18 @@ export default function ScanResultsPage() {
     }
   };
 
+  // Handle delete scan
+  const handleDeleteScan = async () => {
+    if (!api || !scan) return;
+    if (!window.confirm("Delete this scan? This cannot be undone.")) return;
+    try {
+      await api.scans.delete(scan.id);
+      router.push("/dashboard/history");
+    } catch {
+      // Deletion failed silently
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -361,7 +376,17 @@ export default function ScanResultsPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          {/* Rescan button removed - code is ephemeral and not stored */}
+
+          {scan.user_id === user?.id && (
+            <Button
+              variant="outline"
+              className="h-9 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 border-red-200 dark:border-red-800"
+              onClick={handleDeleteScan}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          )}
         </div>
       </div>
 
