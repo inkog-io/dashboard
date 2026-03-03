@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Clock,
   AlertCircle,
+  CheckCircle,
   ChevronRight,
   Upload,
   Terminal,
@@ -281,32 +282,28 @@ export default function HistoryPage() {
     }
   };
 
-  // Get severity badge
-  const getSeverityBadge = (critical: number, high: number, findings: number) => {
-    if (critical > 0) {
+  // Get scan status badge
+  const getScanStatusBadge = (scan: Scan) => {
+    if (scan.findings_count === -1) {
       return (
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-          Critical: {critical}
+        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Processing
         </span>
       );
     }
-    if (high > 0) {
+    if (isErrorAIScan(scan) || scan.risk_score === -2) {
       return (
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
-          High: {high}
-        </span>
-      );
-    }
-    if (findings > 0) {
-      return (
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
-          Medium
+        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+          <AlertCircle className="h-3 w-3" />
+          Failed
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-        Clean
+      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+        <CheckCircle className="h-3 w-3" />
+        Completed
       </span>
     );
   };
@@ -523,12 +520,6 @@ export default function HistoryPage() {
                           <span className="font-medium dark:text-gray-200">
                             {row.data.findings_count}
                           </span>
-                          {row.data.findings_count > 0 && (
-                            <span className="text-gray-500 dark:text-gray-500 text-sm ml-1">
-                              ({row.data.critical_count}C/{row.data.high_count}H/
-                              {row.data.medium_count}M/{row.data.low_count}L)
-                            </span>
-                          )}
                         </TableCell>
                         <TableCell>
                           <span
@@ -553,17 +544,7 @@ export default function HistoryPage() {
                             : `${row.data.duration_ms}ms`}
                         </TableCell>
                         <TableCell>
-                          {isErrorAIScan(row.data) ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-                              Error
-                            </span>
-                          ) : (
-                            getSeverityBadge(
-                              row.data.critical_count,
-                              row.data.high_count,
-                              row.data.findings_count
-                            )
-                          )}
+                          {getScanStatusBadge(row.data)}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
