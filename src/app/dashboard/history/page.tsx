@@ -468,6 +468,15 @@ export default function HistoryPage() {
                         onSort={handleSort}
                       />
                     </TableHead>
+                    <TableHead className="dark:text-gray-400">
+                      <SortableHeader
+                        label="Governance"
+                        sortKey="governance_score"
+                        currentSortBy={sortBy}
+                        currentSortOrder={sortOrder}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
                     <TableHead className="dark:text-gray-400">Duration</TableHead>
                     <TableHead className="dark:text-gray-400">Status</TableHead>
                     <TableHead className="w-10" />
@@ -489,6 +498,7 @@ export default function HistoryPage() {
                             {row.data.agentName}
                           </span>
                         </TableCell>
+                        <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
                         <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
                         <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
                         <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
@@ -541,6 +551,19 @@ export default function HistoryPage() {
                             }`}
                           >
                             {row.data.risk_score}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`font-medium ${
+                              (row.data.governance_score ?? 0) >= 80
+                                ? "text-green-600 dark:text-green-400"
+                                : (row.data.governance_score ?? 0) >= 50
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-red-600 dark:text-red-400"
+                            }`}
+                          >
+                            {row.data.governance_score ?? "--"}
                           </span>
                         </TableCell>
                         <TableCell className="text-gray-500 dark:text-gray-400">
