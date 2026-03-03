@@ -515,7 +515,7 @@ export default function HistoryPage() {
                             {row.data.agent_name || <span className="text-gray-400 italic">Unnamed</span>}
                             {row.data.scan_policy === "ai-checks" && (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
-                                AI
+                                Inkog AI
                               </span>
                             )}
                           </span>
