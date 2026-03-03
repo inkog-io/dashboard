@@ -242,6 +242,7 @@ export interface Agent {
   last_scan_at: string | null;
   total_scans: number;
   health_status: 'unknown' | 'healthy' | 'warning' | 'critical';
+  governance_score?: number | null;
   created_at: string;
   updated_at: string;
 }

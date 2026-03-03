@@ -267,7 +267,7 @@ export function AgentList({
           <TableRow className="bg-muted/50">
             <TableHead className="font-semibold">Agent</TableHead>
             <TableHead className="font-semibold">Last Scan</TableHead>
-            <TableHead className="font-semibold text-center">Scan #</TableHead>
+            <TableHead className="font-semibold text-center">Governance</TableHead>
             <TableHead className="font-semibold text-center">Health</TableHead>
             <TableHead className="font-semibold text-right">Actions</TableHead>
           </TableRow>
@@ -326,9 +326,21 @@ export function AgentList({
               </TableCell>
 
               <TableCell className="text-center">
-                <span className="text-sm font-mono text-muted-foreground">
-                  #{agent.total_scans}
-                </span>
+                {agent.governance_score != null ? (
+                  <span
+                    className={`text-sm font-medium ${
+                      agent.governance_score >= 80
+                        ? "text-green-600 dark:text-green-400"
+                        : agent.governance_score >= 50
+                        ? "text-amber-600 dark:text-amber-400"
+                        : "text-red-600 dark:text-red-400"
+                    }`}
+                  >
+                    {agent.governance_score}%
+                  </span>
+                ) : (
+                  <span className="text-sm text-muted-foreground/60">--</span>
+                )}
               </TableCell>
 
               <TableCell className="text-center">
