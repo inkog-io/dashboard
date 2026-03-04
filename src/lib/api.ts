@@ -177,7 +177,7 @@ export interface CurrentUser {
   email: string;
   name: string | null;
   avatar_url: string | null;
-  roles: ('admin' | 'user' | 'aiscan')[];
+  roles: ('admin' | 'user' | 'deepscan')[];
   created_at: string;
 }
 
@@ -1399,14 +1399,14 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
       listUsers: () => request<{ users: CurrentUser[]; total: number }>('/v1/admin/users'),
 
       /** Update a user's roles */
-      updateUserRoles: (userId: string, roles: ('admin' | 'user' | 'aiscan')[]) =>
+      updateUserRoles: (userId: string, roles: ('admin' | 'user' | 'deepscan')[]) =>
         request<{ success: boolean }>(`/v1/admin/users/${userId}/role`, {
           method: 'PATCH',
           body: JSON.stringify({ roles }),
         }),
 
-      /** Trigger an AI-powered security scan (admin only) */
-      triggerAIScan: async (file: File, agentName: string) => {
+      /** Trigger an Inkog Deep scan (admin only) */
+      triggerDeepScan: async (file: File, agentName: string) => {
         const token = await getToken();
         if (!token) {
           throw new InkogAPIError('Not authenticated', 'not_authenticated', 401);
@@ -1416,7 +1416,7 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
         formData.append('file', file);
         formData.append('agent_name', agentName);
 
-        const response = await fetchWithRetry(`${API_BASE_URL}/v1/admin/ai-scan`, {
+        const response = await fetchWithRetry(`${API_BASE_URL}/v1/admin/deep-scan`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1429,18 +1429,18 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
         if (!response.ok) {
           const error = data as APIError;
           throw new InkogAPIError(
-            error.message || error.error || 'AI scan failed',
-            error.code || 'ai_scan_error',
+            error.message || error.error || 'Deep scan failed',
+            error.code || 'deep_scan_error',
             response.status,
           );
         }
         return data as { scan_id: string; status: string; message: string };
       },
 
-      /** Check AI scan status */
-      getAIScanStatus: (scanId: string) =>
+      /** Check deep scan status */
+      getDeepScanStatus: (scanId: string) =>
         request<{ scan_id: string; status: 'processing' | 'completed' | 'failed'; scan: Scan }>(
-          `/v1/admin/ai-scan/${scanId}`,
+          `/v1/admin/deep-scan/${scanId}`,
         ),
     },
   };

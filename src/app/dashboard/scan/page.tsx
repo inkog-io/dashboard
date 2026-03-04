@@ -45,7 +45,7 @@ export default function ScanPage() {
   const { getToken } = useAuth();
   const [api, setApi] = useState<InkogAPI | null>(null);
   const { hasKeys } = useApiKeyStatus();
-  const { canAccessAIScan } = useCurrentUser();
+  const { canAccessDeepScan } = useCurrentUser();
 
   const [files, setFiles] = useState<File[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -366,13 +366,13 @@ def recursive_tool(depth=0):
             and custom AI agents
           </p>
         </div>
-        {canAccessAIScan && (
+        {canAccessDeepScan && (
           <Link
-            href="/dashboard/scan/ai-checks"
+            href="/dashboard/scan/deep-checks"
             className="flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity text-sm font-medium whitespace-nowrap"
           >
             <Bot className="h-4 w-4" />
-            AI Checks
+            Deep Checks
           </Link>
         )}
       </div>

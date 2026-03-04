@@ -7,7 +7,7 @@ import { createAPIClient, type CurrentUser } from "@/lib/api";
 interface CurrentUserState {
   user: CurrentUser | null;
   isAdmin: boolean;
-  canAccessAIScan: boolean;
+  canAccessDeepScan: boolean;
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -15,7 +15,7 @@ interface CurrentUserState {
 
 /**
  * Hook to fetch the current user's info including roles.
- * Provides `isAdmin` and `canAccessAIScan` convenience booleans.
+ * Provides `isAdmin` and `canAccessDeepScan` convenience booleans.
  */
 export function useCurrentUser(): CurrentUserState {
   const { getToken, isSignedIn } = useAuth();
@@ -50,7 +50,7 @@ export function useCurrentUser(): CurrentUserState {
   return {
     user,
     isAdmin: user?.roles?.includes("admin") ?? false,
-    canAccessAIScan: (user?.roles?.includes("admin") || user?.roles?.includes("aiscan")) ?? false,
+    canAccessDeepScan: (user?.roles?.includes("admin") || user?.roles?.includes("deepscan")) ?? false,
     isLoading,
     error,
     refresh: fetchUser,

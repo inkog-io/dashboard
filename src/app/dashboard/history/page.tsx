@@ -51,10 +51,10 @@ import {
   type FilterState,
 } from "@/components/history";
 import {
-  getPendingAIScans,
-  removePendingAIScan,
-  type PendingAIScan,
-} from "@/lib/pending-ai-scans";
+  getPendingDeepScans,
+  removePendingDeepScan,
+  type PendingDeepScan,
+} from "@/lib/pending-deep-scans";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
@@ -62,7 +62,7 @@ export default function HistoryPage() {
   const { getToken } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isAdmin, canAccessAIScan } = useCurrentUser();
+  const { user, isAdmin, canAccessDeepScan } = useCurrentUser();
 
   const [api, setApi] = useState<InkogAPI | null>(null);
   const [scans, setScans] = useState<Scan[]>([]);
@@ -75,7 +75,7 @@ export default function HistoryPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pendingScans, setPendingScans] = useState<PendingAIScan[]>([]);
+  const [pendingScans, setPendingScans] = useState<PendingDeepScan[]>([]);
   const pendingPollRef = useRef<NodeJS.Timeout | null>(null);
   const [deleteScanId, setDeleteScanId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -160,15 +160,15 @@ export default function HistoryPage() {
     fetchHistory();
   }, [fetchHistory]);
 
-  // Poll pending AI scans
+  // Poll pending deep scans
   useEffect(() => {
-    if (!api || !canAccessAIScan) return;
+    if (!api || !canAccessDeepScan) return;
 
     // Load initial pending scans
-    setPendingScans(getPendingAIScans());
+    setPendingScans(getPendingDeepScans());
 
     const poll = async () => {
-      const current = getPendingAIScans();
+      const current = getPendingDeepScans();
       if (current.length === 0) {
         setPendingScans([]);
         return;
@@ -177,9 +177,9 @@ export default function HistoryPage() {
       let changed = false;
       for (const pending of current) {
         try {
-          const data = await api.admin.getAIScanStatus(pending.scanId);
+          const data = await api.admin.getDeepScanStatus(pending.scanId);
           if (data.status === "completed" || data.status === "failed") {
-            removePendingAIScan(pending.scanId);
+            removePendingDeepScan(pending.scanId);
             changed = true;
           }
         } catch {
@@ -188,7 +188,7 @@ export default function HistoryPage() {
       }
 
       if (changed) {
-        setPendingScans(getPendingAIScans());
+        setPendingScans(getPendingDeepScans());
         fetchHistory();
       }
     };
@@ -197,13 +197,13 @@ export default function HistoryPage() {
     return () => {
       if (pendingPollRef.current) clearInterval(pendingPollRef.current);
     };
-  }, [api, canAccessAIScan, fetchHistory]);
+  }, [api, canAccessDeepScan, fetchHistory]);
 
   // Cross-tab sync via StorageEvent
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "inkog-pending-ai-scans") {
-        setPendingScans(getPendingAIScans());
+      if (e.key === "inkog-pending-deep-scans") {
+        setPendingScans(getPendingDeepScans());
       }
     };
     window.addEventListener("storage", onStorage);
@@ -237,11 +237,11 @@ export default function HistoryPage() {
   // Merge pending + API rows into a single sorted list
   type MergedRow =
     | { kind: "scan"; data: Scan }
-    | { kind: "pending"; data: PendingAIScan };
+    | { kind: "pending"; data: PendingDeepScan };
 
   const mergedRows: MergedRow[] = [
     ...visibleScans.map((s): MergedRow => ({ kind: "scan", data: s })),
-    ...(canAccessAIScan
+    ...(canAccessDeepScan
       ? visiblePendingScans.map((p): MergedRow => ({ kind: "pending", data: p }))
       : []),
   ].sort((a, b) => {
@@ -262,9 +262,9 @@ export default function HistoryPage() {
     });
   };
 
-  // Check if an AI scan is in error/incomplete state
-  const isErrorAIScan = (scan: Scan) =>
-    scan.scan_policy === "ai-checks" && scan.files_scanned === 0 && scan.findings_count <= 0;
+  // Check if a deep scan is in error/incomplete state
+  const isErrorDeepScan = (scan: Scan) =>
+    scan.scan_policy === "deep-checks" && scan.files_scanned === 0 && scan.findings_count <= 0;
 
   // Handle delete scan
   const handleDeleteScan = async () => {
@@ -292,7 +292,7 @@ export default function HistoryPage() {
         </span>
       );
     }
-    if (isErrorAIScan(scan) || scan.risk_score === -2) {
+    if (isErrorDeepScan(scan) || scan.risk_score === -2) {
       return (
         <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
           <AlertCircle className="h-3 w-3" />
@@ -523,9 +523,9 @@ export default function HistoryPage() {
                         <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                           <span className="inline-flex items-center gap-1.5">
                             {row.data.agent_name || <span className="text-gray-400 italic">Unnamed</span>}
-                            {row.data.scan_policy === "ai-checks" && (
+                            {row.data.scan_policy === "deep-checks" && (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
-                                Inkog AI
+                                Inkog Deep
                               </span>
                             )}
                           </span>

@@ -1,5 +1,5 @@
 import type { Strength } from "@/lib/api";
-import type { AIScanReport } from "@/components/AIScanResultsView";
+import type { DeepScanReport } from "@/components/DeepScanResultsView";
 
 // ---------------------------------------------------------------------------
 // deriveStrengths
@@ -37,7 +37,7 @@ const STRENGTH_RULES: StrengthRule[] = [
 ];
 
 export function deriveStrengths(
-  cleanDetections: AIScanReport["clean_detections"]
+  cleanDetections: DeepScanReport["clean_detections"]
 ): Strength[] {
   const seen = new Set<ControlType>();
   const strengths: Strength[] = [];
@@ -81,7 +81,7 @@ export interface GovernanceData {
 
 const FRAMEWORK_PREFIXES = ["EU AI Act", "OWASP", "NIST", "ISO"];
 
-export function deriveGovernanceData(report: AIScanReport): GovernanceData {
+export function deriveGovernanceData(report: DeepScanReport): GovernanceData {
   // --- Score ---
   const sev = report.severity_summary;
   let score = 100;
@@ -115,7 +115,7 @@ export function deriveGovernanceData(report: AIScanReport): GovernanceData {
   const frameworkMapping: Record<string, FrameworkStatus> = {};
 
   // Group compliance_summary entries by framework prefix
-  const groups: Record<string, AIScanReport["compliance_summary"]> = {};
+  const groups: Record<string, DeepScanReport["compliance_summary"]> = {};
   for (const entry of report.compliance_summary) {
     const prefix = FRAMEWORK_PREFIXES.find((p) =>
       entry.framework.startsWith(p)

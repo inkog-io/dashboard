@@ -17,20 +17,20 @@ import Link from "next/link";
 
 import { createAPIClient, InkogAPIError, type InkogAPI } from "@/lib/api";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { addPendingAIScan, removePendingAIScan } from "@/lib/pending-ai-scans";
+import { addPendingDeepScan, removePendingDeepScan } from "@/lib/pending-deep-scans";
 
-type AIScanStatus = "idle" | "uploading" | "processing" | "completed" | "failed";
+type DeepScanStatus = "idle" | "uploading" | "processing" | "completed" | "failed";
 
-export default function AIChecksPage() {
+export default function DeepChecksPage() {
   const { getToken } = useAuth();
   const router = useRouter();
-  const { canAccessAIScan, isLoading: userLoading } = useCurrentUser();
+  const { canAccessDeepScan, isLoading: userLoading } = useCurrentUser();
 
   const [api, setApi] = useState<InkogAPI | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [agentName, setAgentName] = useState("");
   const [isDragging, setIsDragging] = useState(false);
-  const [status, setStatus] = useState<AIScanStatus>("idle");
+  const [status, setStatus] = useState<DeepScanStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [scanId, setScanId] = useState<string | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
@@ -41,10 +41,10 @@ export default function AIChecksPage() {
 
   // Redirect non-admins
   useEffect(() => {
-    if (!userLoading && !canAccessAIScan) {
+    if (!userLoading && !canAccessDeepScan) {
       router.push("/dashboard");
     }
-  }, [canAccessAIScan, userLoading, router]);
+  }, [canAccessDeepScan, userLoading, router]);
 
   // Clean up polling on unmount
   useEffect(() => {
@@ -81,17 +81,17 @@ export default function AIChecksPage() {
   const pollStatus = useCallback(async (id: string) => {
     if (!api) return;
     try {
-      const data = await api.admin.getAIScanStatus(id);
+      const data = await api.admin.getDeepScanStatus(id);
       if (data.status === "completed") {
         if (pollRef.current) clearInterval(pollRef.current);
-        removePendingAIScan(id);
+        removePendingDeepScan(id);
         // Redirect to the polished results page
         router.push(`/dashboard/results/${id}`);
       } else if (data.status === "failed") {
         if (pollRef.current) clearInterval(pollRef.current);
-        removePendingAIScan(id);
+        removePendingDeepScan(id);
         setStatus("failed");
-        setError("AI analysis failed. Please try again.");
+        setError("Deep analysis failed. Please try again.");
       }
     } catch (err) {
       // Don't stop polling on transient errors
@@ -105,11 +105,11 @@ export default function AIChecksPage() {
     setError(null);
 
     try {
-      const data = await api.admin.triggerAIScan(file, agentName || "AI Security Scan");
-      const resolvedName = agentName || "AI Security Scan";
+      const data = await api.admin.triggerDeepScan(file, agentName || "Security Scan");
+      const resolvedName = agentName || "Security Scan";
       setScanId(data.scan_id);
       setStatus("processing");
-      addPendingAIScan({
+      addPendingDeepScan({
         scanId: data.scan_id,
         agentName: resolvedName,
         startedAt: new Date().toISOString(),
@@ -124,7 +124,7 @@ export default function AIChecksPage() {
       if (err instanceof InkogAPIError) {
         setError(err.message);
       } else {
-        setError("Failed to start AI scan");
+        setError("Failed to start deep scan");
       }
     }
   }, [api, file, agentName, pollStatus]);
@@ -146,7 +146,7 @@ export default function AIChecksPage() {
     );
   }
 
-  if (!canAccessAIScan) return null;
+  if (!canAccessDeepScan) return null;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -161,10 +161,10 @@ export default function AIChecksPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Bot className="h-6 w-6" />
-            AI Security Checks
+            Inkog Deep Checks
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Upload a repository archive for deep AI-powered security analysis
+            Upload a repository archive for deep security analysis
           </p>
         </div>
       </div>
@@ -242,7 +242,7 @@ export default function AIChecksPage() {
                 className="w-full py-3 bg-foreground text-background font-medium rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-opacity"
               >
                 <Bot className="h-5 w-5" />
-                Run AI Security Analysis
+                Run Deep Security Analysis
               </button>
             </div>
           )}
@@ -262,12 +262,12 @@ export default function AIChecksPage() {
           <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mx-auto" />
           <div>
             <h3 className="text-lg font-semibold">
-              {status === "uploading" ? "Uploading repository..." : "AI Analysis in Progress"}
+              {status === "uploading" ? "Uploading repository..." : "Deep Analysis in Progress"}
             </h3>
             <p className="text-muted-foreground text-sm mt-1">
               {status === "uploading"
                 ? "Sending your repository to the analysis server..."
-                : "The AI agent is analyzing your code against 30+ detection rules. This can take up to 1-2 hours."}
+                : "Inkog Deep is analyzing your code against 30+ detection rules. This can take up to 1-2 hours."}
             </p>
           </div>
           {scanId && (

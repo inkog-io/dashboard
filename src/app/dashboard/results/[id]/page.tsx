@@ -54,7 +54,7 @@ import { FindingsToolbar, type SeverityFilter, type TypeFilter } from "@/compone
 import { StrengthsSection } from "@/components/dashboard/StrengthsSection";
 import { ScanDiffView } from "@/components/ScanDiffView";
 import { GroupedFindings } from "@/components/GroupedFindings";
-import { AIScanResultsView, type AIScanReport } from "@/components/AIScanResultsView";
+import { DeepScanResultsView, type DeepScanReport } from "@/components/DeepScanResultsView";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
@@ -124,7 +124,7 @@ export default function ScanResultsPage() {
     fetchScan();
   }, [api, params.id]);
 
-  const isAIScan = scan?.scan_policy === "ai-checks";
+  const isDeepScan = scan?.scan_policy === "deep-checks";
 
   // Compute type counts from findings using shared utility
   const typeCounts = useMemo(() => {
@@ -325,9 +325,9 @@ export default function ScanResultsPage() {
               <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                 {scan.agent_name && scan.agent_name !== "unnamed-agent" && scan.agent_name !== "unnamed" ? scan.agent_name : "Scan Results"}
               </h1>
-              {isAIScan && (
+              {isDeepScan && (
                 <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
-                  Inkog AI
+                  Inkog Deep
                 </span>
               )}
               <span className="text-sm text-gray-500 dark:text-gray-400 font-mono">
@@ -402,11 +402,11 @@ export default function ScanResultsPage() {
         </div>
       </div>
 
-      {/* AI Scan Results — dedicated view */}
-      {isAIScan ? (
+      {/* Deep Scan Results — dedicated view */}
+      {isDeepScan ? (
         scan.findings && typeof scan.findings === "object" && "findings" in (scan.findings as object) ? (
-          <AIScanResultsView
-            report={scan.findings as unknown as AIScanReport}
+          <DeepScanResultsView
+            report={scan.findings as unknown as DeepScanReport}
             scanMeta={{
               agent_name: scan.agent_name,
               created_at: scan.created_at,
@@ -423,7 +423,7 @@ export default function ScanResultsPage() {
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-8 text-center">
             <AlertCircle className="h-10 w-10 text-amber-500 mx-auto mb-3" />
             <p className="text-lg font-medium text-amber-800 dark:text-amber-200">
-              AI scan results are unavailable
+              Deep scan results are unavailable
             </p>
             <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
               This scan may still be processing or its results are incomplete. Try again later.

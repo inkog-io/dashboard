@@ -1,18 +1,18 @@
-const STORAGE_KEY = "inkog-pending-ai-scans";
+const STORAGE_KEY = "inkog-pending-deep-scans";
 const MAX_AGE_MS = 4 * 60 * 60 * 1000; // 4 hours
 
-export interface PendingAIScan {
+export interface PendingDeepScan {
   scanId: string;
   agentName: string;
   startedAt: string;
 }
 
-/** Read pending AI scans from localStorage, auto-pruning entries older than 4 hours. */
-export function getPendingAIScans(): PendingAIScan[] {
+/** Read pending deep scans from localStorage, auto-pruning entries older than 4 hours. */
+export function getPendingDeepScans(): PendingDeepScan[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    const parsed: PendingAIScan[] = JSON.parse(raw);
+    const parsed: PendingDeepScan[] = JSON.parse(raw);
     const now = Date.now();
     const fresh = parsed.filter(
       (s) => now - new Date(s.startedAt).getTime() < MAX_AGE_MS
@@ -28,17 +28,17 @@ export function getPendingAIScans(): PendingAIScan[] {
   }
 }
 
-/** Add a pending AI scan (deduplicates by scanId). */
-export function addPendingAIScan(scan: PendingAIScan): void {
-  const scans = getPendingAIScans();
+/** Add a pending deep scan (deduplicates by scanId). */
+export function addPendingDeepScan(scan: PendingDeepScan): void {
+  const scans = getPendingDeepScans();
   if (scans.some((s) => s.scanId === scan.scanId)) return;
   scans.push(scan);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(scans));
 }
 
-/** Remove a pending AI scan by scanId. */
-export function removePendingAIScan(scanId: string): void {
-  const scans = getPendingAIScans();
+/** Remove a pending deep scan by scanId. */
+export function removePendingDeepScan(scanId: string): void {
+  const scans = getPendingDeepScans();
   const filtered = scans.filter((s) => s.scanId !== scanId);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }

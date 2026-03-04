@@ -6,10 +6,10 @@ import { X, MapPin, Shield, AlertTriangle } from "lucide-react";
 import { CodeSnippetDisplay } from "@/components/CodeSnippetDisplay";
 
 // ---------------------------------------------------------------------------
-// Types (mirrors AIScanResultsView)
+// Types (mirrors DeepScanResultsView)
 // ---------------------------------------------------------------------------
 
-export interface AIScanFinding {
+export interface DeepScanFinding {
   finding_number: number;
   title: string;
   detection_id: string;
@@ -31,8 +31,8 @@ export interface AIScanFinding {
   compliance_mappings: { framework: string; reference: string }[];
 }
 
-interface AIScanFindingPanelProps {
-  finding: AIScanFinding | null;
+interface DeepScanFindingPanelProps {
+  finding: DeepScanFinding | null;
   onClose: () => void;
 }
 
@@ -92,7 +92,7 @@ const FP_RISK_BADGE: Record<string, string> = {
 // Component
 // ---------------------------------------------------------------------------
 
-export function AIScanFindingPanel({ finding, onClose }: AIScanFindingPanelProps) {
+export function DeepScanFindingPanel({ finding, onClose }: DeepScanFindingPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const open = finding !== null;
 

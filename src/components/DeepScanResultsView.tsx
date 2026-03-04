@@ -17,14 +17,14 @@ import {
 import { CodeSnippetDisplay } from "@/components/CodeSnippetDisplay";
 import { StrengthsSection } from "@/components/dashboard/StrengthsSection";
 import { GovernanceScore } from "@/components/GovernanceScore";
-import { AIScanFindingPanel } from "@/components/AIScanFindingPanel";
-import { deriveStrengths, deriveGovernanceData } from "@/lib/ai-scan-utils";
+import { DeepScanFindingPanel } from "@/components/DeepScanFindingPanel";
+import { deriveStrengths, deriveGovernanceData } from "@/lib/deep-scan-utils";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export interface AIScanReport {
+export interface DeepScanReport {
   report: {
     agent_name: string;
     date: string;
@@ -54,7 +54,7 @@ export interface AIScanReport {
     clean: number;
     na: number;
   };
-  findings: AIScanFinding[];
+  findings: DeepScanFinding[];
   clean_detections: {
     detection_id: string;
     rule_name: string;
@@ -73,7 +73,7 @@ export interface AIScanReport {
   };
 }
 
-export interface AIScanFinding {
+export interface DeepScanFinding {
   finding_number: number;
   title: string;
   detection_id: string;
@@ -95,8 +95,8 @@ export interface AIScanFinding {
   compliance_mappings: { framework: string; reference: string }[];
 }
 
-export interface AIScanResultsViewProps {
-  report: AIScanReport;
+export interface DeepScanResultsViewProps {
+  report: DeepScanReport;
   scanMeta: {
     agent_name: string;
     created_at: string;
@@ -164,9 +164,9 @@ const SEVERITY_ORDER: Record<SeverityKey, number> = {
 // Component
 // ---------------------------------------------------------------------------
 
-export function AIScanResultsView({ report, scanMeta }: AIScanResultsViewProps) {
+export function DeepScanResultsView({ report, scanMeta }: DeepScanResultsViewProps) {
   const [severityFilter, setSeverityFilter] = useState<SeverityKey | "ALL">("ALL");
-  const [selectedFinding, setSelectedFinding] = useState<AIScanFinding | null>(null);
+  const [selectedFinding, setSelectedFinding] = useState<DeepScanFinding | null>(null);
   const [showCleanDetections, setShowCleanDetections] = useState(false);
   const [showMethodology, setShowMethodology] = useState(false);
 
@@ -398,7 +398,7 @@ export function AIScanResultsView({ report, scanMeta }: AIScanResultsViewProps) 
       )}
 
       {/* ── 9. Finding Detail Panel ── */}
-      <AIScanFindingPanel
+      <DeepScanFindingPanel
         finding={selectedFinding}
         onClose={() => setSelectedFinding(null)}
       />
@@ -521,7 +521,7 @@ function FindingCard({
   finding,
   onClick,
 }: {
-  finding: AIScanFinding;
+  finding: DeepScanFinding;
   onClick: () => void;
 }) {
   const sev = SEVERITY_CONFIG[finding.severity];

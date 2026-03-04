@@ -83,13 +83,13 @@ export default function AdminPage() {
 
     setUpdatingUserId(userId);
     try {
-      let newRoles: ('admin' | 'user' | 'aiscan')[];
+      let newRoles: ('admin' | 'user' | 'deepscan')[];
       if (currentRoles.includes(roleToToggle)) {
         // Remove role
-        newRoles = currentRoles.filter((r) => r !== roleToToggle) as ('admin' | 'user' | 'aiscan')[];
+        newRoles = currentRoles.filter((r) => r !== roleToToggle) as ('admin' | 'user' | 'deepscan')[];
       } else {
         // Add role
-        newRoles = [...currentRoles, roleToToggle] as ('admin' | 'user' | 'aiscan')[];
+        newRoles = [...currentRoles, roleToToggle] as ('admin' | 'user' | 'deepscan')[];
       }
       // Ensure "user" is always present
       if (!newRoles.includes("user")) {
@@ -204,12 +204,12 @@ export default function AdminPage() {
                               Admin
                             </span>
                           )}
-                          {user.roles?.includes("aiscan") && (
+                          {user.roles?.includes("deepscan") && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
-                              AI Scan
+                              Deep Scan
                             </span>
                           )}
-                          {!user.roles?.includes("admin") && !user.roles?.includes("aiscan") && (
+                          {!user.roles?.includes("admin") && !user.roles?.includes("deepscan") && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                               User
                             </span>
@@ -248,9 +248,9 @@ export default function AdminPage() {
                                 {user.roles?.includes("admin") ? "Remove Admin" : "Make Admin"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => toggleRole(user.id, user.roles || [], "aiscan")}
+                                onClick={() => toggleRole(user.id, user.roles || [], "deepscan")}
                               >
-                                {user.roles?.includes("aiscan") ? "Remove AI Scan" : "Grant AI Scan"}
+                                {user.roles?.includes("deepscan") ? "Remove Deep Scan" : "Grant Deep Scan"}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
