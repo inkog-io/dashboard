@@ -530,49 +530,61 @@ export default function HistoryPage() {
                             )}
                           </span>
                         </TableCell>
-                        <TableCell className="dark:text-gray-300">
-                          {row.data.files_scanned}
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium dark:text-gray-200">
-                            {row.data.findings_count}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`font-medium ${
-                              row.data.risk_score >= 80
-                                ? "text-red-600 dark:text-red-400"
-                                : row.data.risk_score >= 50
-                                ? "text-orange-600 dark:text-orange-400"
-                                : row.data.risk_score >= 30
-                                ? "text-amber-600 dark:text-amber-400"
-                                : "text-green-600 dark:text-green-400"
-                            }`}
-                          >
-                            {row.data.risk_score}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`font-medium ${
-                              (row.data.governance_score ?? 0) >= 80
-                                ? "text-green-600 dark:text-green-400"
-                                : (row.data.governance_score ?? 0) >= 50
-                                ? "text-amber-600 dark:text-amber-400"
-                                : "text-red-600 dark:text-red-400"
-                            }`}
-                          >
-                            {row.data.governance_score ?? "--"}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-gray-500 dark:text-gray-400">
-                          {row.data.duration_ms === 0
-                            ? "--"
-                            : row.data.duration_ms >= 1000
-                            ? `${(row.data.duration_ms / 1000).toFixed(1)}s`
-                            : `${row.data.duration_ms}ms`}
-                        </TableCell>
+                        {row.data.findings_count === -1 ? (
+                          <>
+                            <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                            <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                            <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                            <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                            <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                          </>
+                        ) : (
+                          <>
+                            <TableCell className="dark:text-gray-300">
+                              {row.data.files_scanned}
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-medium dark:text-gray-200">
+                                {row.data.findings_count}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={`font-medium ${
+                                  row.data.risk_score >= 80
+                                    ? "text-red-600 dark:text-red-400"
+                                    : row.data.risk_score >= 50
+                                    ? "text-orange-600 dark:text-orange-400"
+                                    : row.data.risk_score >= 30
+                                    ? "text-amber-600 dark:text-amber-400"
+                                    : "text-green-600 dark:text-green-400"
+                                }`}
+                              >
+                                {row.data.risk_score}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={`font-medium ${
+                                  (row.data.governance_score ?? 0) >= 80
+                                    ? "text-green-600 dark:text-green-400"
+                                    : (row.data.governance_score ?? 0) >= 50
+                                    ? "text-amber-600 dark:text-amber-400"
+                                    : "text-red-600 dark:text-red-400"
+                                }`}
+                              >
+                                {row.data.governance_score ?? "--"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-gray-500 dark:text-gray-400">
+                              {row.data.duration_ms === 0
+                                ? "--"
+                                : row.data.duration_ms >= 1000
+                                ? `${(row.data.duration_ms / 1000).toFixed(1)}s`
+                                : `${row.data.duration_ms}ms`}
+                            </TableCell>
+                          </>
+                        )}
                         <TableCell>
                           {getScanStatusBadge(row.data)}
                         </TableCell>
