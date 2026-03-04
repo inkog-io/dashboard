@@ -523,9 +523,13 @@ export default function HistoryPage() {
                         <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                           <span className="inline-flex items-center gap-1.5">
                             {row.data.agent_name || <span className="text-gray-400 italic">Unnamed</span>}
-                            {row.data.scan_policy === "deep-checks" && (
+                            {row.data.scan_policy === "deep-checks" ? (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
                                 Inkog Deep
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                Inkog Core
                               </span>
                             )}
                           </span>
