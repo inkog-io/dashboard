@@ -204,12 +204,12 @@ export default function AdminPage() {
                               Admin
                             </span>
                           )}
-                          {user.roles?.includes("deepscan") && (
+                          {(user.roles?.includes("deepscan") || user.roles?.includes("aiscan")) && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
                               Deep Scan
                             </span>
                           )}
-                          {!user.roles?.includes("admin") && !user.roles?.includes("deepscan") && (
+                          {!user.roles?.includes("admin") && !user.roles?.includes("deepscan") && !user.roles?.includes("aiscan") && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                               User
                             </span>

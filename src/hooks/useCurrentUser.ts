@@ -50,7 +50,7 @@ export function useCurrentUser(): CurrentUserState {
   return {
     user,
     isAdmin: user?.roles?.includes("admin") ?? false,
-    canAccessDeepScan: (user?.roles?.includes("admin") || user?.roles?.includes("deepscan")) ?? false,
+    canAccessDeepScan: (user?.roles?.includes("admin") || user?.roles?.includes("deepscan") || user?.roles?.includes("aiscan")) ?? false,
     isLoading,
     error,
     refresh: fetchUser,
