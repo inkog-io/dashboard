@@ -1404,9 +1404,14 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
           method: 'PATCH',
           body: JSON.stringify({ roles }),
         }),
+    },
 
-      /** Trigger an Inkog Deep scan (admin only) */
-      triggerDeepScan: async (file: File, agentName: string) => {
+    /**
+     * Deep Scan API
+     */
+    deepScan: {
+      /** Trigger an Inkog Deep scan */
+      trigger: async (file: File, agentName: string) => {
         const token = await getToken();
         if (!token) {
           throw new InkogAPIError('Not authenticated', 'not_authenticated', 401);
@@ -1416,7 +1421,7 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
         formData.append('file', file);
         formData.append('agent_name', agentName);
 
-        const response = await fetchWithRetry(`${API_BASE_URL}/v1/admin/deep-scan`, {
+        const response = await fetchWithRetry(`${API_BASE_URL}/v1/scan/deep`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1438,9 +1443,9 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
       },
 
       /** Check deep scan status */
-      getDeepScanStatus: (scanId: string) =>
+      getStatus: (scanId: string) =>
         request<{ scan_id: string; status: 'processing' | 'completed' | 'failed'; scan: Scan }>(
-          `/v1/admin/deep-scan/${scanId}`,
+          `/v1/scan/deep/${scanId}`,
         ),
     },
   };

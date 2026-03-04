@@ -177,7 +177,7 @@ export default function HistoryPage() {
       let changed = false;
       for (const pending of current) {
         try {
-          const data = await api.admin.getDeepScanStatus(pending.scanId);
+          const data = await api.deepScan.getStatus(pending.scanId);
           if (data.status === "completed" || data.status === "failed") {
             removePendingDeepScan(pending.scanId);
             changed = true;

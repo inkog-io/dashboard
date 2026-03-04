@@ -81,7 +81,7 @@ export default function DeepChecksPage() {
   const pollStatus = useCallback(async (id: string) => {
     if (!api) return;
     try {
-      const data = await api.admin.getDeepScanStatus(id);
+      const data = await api.deepScan.getStatus(id);
       if (data.status === "completed") {
         if (pollRef.current) clearInterval(pollRef.current);
         removePendingDeepScan(id);
@@ -105,7 +105,7 @@ export default function DeepChecksPage() {
     setError(null);
 
     try {
-      const data = await api.admin.triggerDeepScan(file, agentName || "Security Scan");
+      const data = await api.deepScan.trigger(file, agentName || "Security Scan");
       const resolvedName = agentName || "Security Scan";
       setScanId(data.scan_id);
       setStatus("processing");
@@ -267,7 +267,7 @@ export default function DeepChecksPage() {
             <p className="text-muted-foreground text-sm mt-1">
               {status === "uploading"
                 ? "Sending your repository to the analysis server..."
-                : "Inkog Deep is analyzing your code against 30+ detection rules. This can take up to 1-2 hours."}
+                : "Inkog Deep is analyzing your code against 30+ detection rules. This can take up to 10 minutes depending on code size."}
             </p>
           </div>
           {scanId && (
