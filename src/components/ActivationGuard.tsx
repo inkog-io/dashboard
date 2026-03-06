@@ -39,6 +39,7 @@ export function ActivationGuard({ children }: ActivationGuardProps) {
         "/dashboard/api-keys",
         "/dashboard/results", // Allow viewing results
         "/dashboard/integrations", // Settings page - always accessible
+        "/dashboard/skills", // Skill scanner page
       ];
 
       const shouldBypass = bypassRoutes.some(route => pathname.startsWith(route));
