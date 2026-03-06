@@ -198,6 +198,77 @@ export interface RevokeKeyResponse {
   message: string;
 }
 
+// =============================================================================
+// Skill Scan Types
+// =============================================================================
+
+export interface SkillFinding {
+  id: string;
+  pattern_id: string;
+  category: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  title: string;
+  description: string;
+  file?: string;
+  line?: number;
+  code_snippet?: string;
+  remediation: string;
+  detection_layer: 'static' | 'ir' | 'ai';
+  tool_name?: string;
+  owasp_agentic?: string;
+  owasp_mcp?: string;
+  confidence: number;
+}
+
+export interface SkillToolAnalysis {
+  name: string;
+  description?: string;
+  risk_level: 'safe' | 'moderate' | 'dangerous';
+  risk_reasons?: string[];
+  has_input_validation: boolean;
+  has_rate_limiting: boolean;
+  has_access_control: boolean;
+  attack_vectors?: string[];
+}
+
+export interface SkillPermissions {
+  file_access: boolean;
+  network_access: boolean;
+  code_execution: boolean;
+  database_access: boolean;
+  environment_access: boolean;
+  scope: 'minimal' | 'moderate' | 'extensive' | 'unrestricted';
+}
+
+export interface SkillScanResult {
+  id: string;
+  format: number;
+  name: string;
+  source: string;
+  findings: SkillFinding[];
+  permissions: SkillPermissions;
+  tool_analyses: SkillToolAnalysis[];
+  risk_score: number;
+  security_score: number;
+  overall_risk: 'critical' | 'high' | 'medium' | 'low';
+  analyzability: number;
+  files_scanned: number;
+  lines_of_code: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+}
+
+export interface SkillScanResponse {
+  success: boolean;
+  scan_id: string;
+  status: string;
+  result?: SkillScanResult;
+  error?: string;
+  ai_status?: string;
+}
+
 export interface Scan {
   id: string;
   user_id: string;
@@ -1446,6 +1517,32 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
       getStatus: (scanId: string) =>
         request<{ scan_id: string; status: 'processing' | 'completed' | 'failed'; scan: Scan }>(
           `/v1/scan/deep/${scanId}`,
+        ),
+    },
+
+    /** Skill scanning endpoints */
+    skills: {
+      /** Submit a skill package for scanning */
+      scan: (data: { files?: Record<string, string>; mcp_server?: string; repository_url?: string }) =>
+        request<SkillScanResponse>('/v1/scan/skills', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }),
+
+      /** Scan an MCP server by name or URL */
+      scanMCP: (serverName: string) =>
+        request<SkillScanResponse>('/v1/scan/skills/mcp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ server_name: serverName }),
+        }),
+
+      /** Trigger AI deep analysis on existing scan */
+      triggerAI: (scanId: string) =>
+        request<{ success: boolean; scan_id: string; ai_status: string }>(
+          `/v1/scan/skills/${scanId}/ai`,
+          { method: 'POST' },
         ),
     },
   };
