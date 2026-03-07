@@ -63,8 +63,15 @@ export default function SkillScanResultPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // For now, results are passed inline from the scan response
-    // TODO: Fetch from API when persistence is added
+    // Load results from sessionStorage (passed from scan page)
+    const cached = sessionStorage.getItem(`skill-scan-${id}`);
+    if (cached) {
+      try {
+        setResult(JSON.parse(cached));
+      } catch {
+        // ignore parse errors
+      }
+    }
     setLoading(false);
   }, [id]);
 

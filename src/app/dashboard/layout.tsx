@@ -15,7 +15,7 @@ export default async function DashboardLayout({
     redirect("/sign-in");
   }
 
-  const userEmail = user.emailAddresses[0]?.emailAddress;
+  const userEmail = user.emailAddresses?.[0]?.emailAddress ?? "";
 
   return (
     <DashboardShell userEmail={userEmail}>
