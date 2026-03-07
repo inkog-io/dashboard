@@ -7,7 +7,6 @@ import {
   Bot,
   Eye,
   Trash2,
-  MoreHorizontal,
   AlertTriangle,
   CheckCircle2,
   AlertCircle,
@@ -16,6 +15,7 @@ import {
   Key,
   Terminal,
   Upload,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -105,11 +105,22 @@ export function AgentList({
   onRename,
 }: AgentListProps) {
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const filteredAgents = searchQuery.trim()
+    ? agents.filter((a) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          a.name.toLowerCase().includes(q) ||
+          (a.path && a.path.toLowerCase().includes(q))
+        );
+      })
+    : agents;
 
   const handleRowClick = (agent: Agent) => {
     if (editingId) return; // Don't navigate while editing
@@ -262,6 +273,19 @@ export function AgentList({
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
+      {agents.length > 3 && (
+        <div className="p-3 border-b border-border">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search agents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
+        </div>
+      )}
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
@@ -273,7 +297,14 @@ export function AgentList({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {agents.map((agent) => (
+          {filteredAgents.length === 0 && searchQuery.trim() && (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                No agents matching &ldquo;{searchQuery}&rdquo;
+              </TableCell>
+            </TableRow>
+          )}
+          {filteredAgents.map((agent) => (
             <TableRow
               key={agent.id}
               onClick={() => handleRowClick(agent)}

@@ -2,7 +2,6 @@
 
 import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
-import { CommandPalette, useCommandPalette } from "./CommandPalette";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { useSidebarState } from "@/hooks/useSidebarState";
@@ -15,7 +14,6 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children, userEmail }: DashboardShellProps) {
   const { isCollapsed, toggleCollapsed } = useSidebarState();
-  const { open: commandOpen, setOpen: setCommandOpen } = useCommandPalette();
 
   return (
     <OrganizationProvider>
@@ -25,7 +23,6 @@ export function DashboardShell({ children, userEmail }: DashboardShellProps) {
           isCollapsed={isCollapsed}
           onToggle={toggleCollapsed}
           userEmail={userEmail}
-          onCommandPaletteOpen={() => setCommandOpen(true)}
         />
       </div>
 
@@ -46,9 +43,6 @@ export function DashboardShell({ children, userEmail }: DashboardShellProps) {
           {children}
         </div>
       </main>
-
-      {/* Command Palette */}
-      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
 
       {/* Offline Banner */}
       <OfflineBanner />

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { UserButton } from "@clerk/nextjs";
-import { ChevronsLeft, ChevronsRight, Command } from "lucide-react";
+import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { SidebarNav } from "./SidebarNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { OrgSwitcher } from "@/components/OrgSwitcher";
@@ -19,14 +19,12 @@ interface SidebarProps {
   isCollapsed: boolean;
   onToggle: () => void;
   userEmail?: string;
-  onCommandPaletteOpen?: () => void;
 }
 
 export function Sidebar({
   isCollapsed,
   onToggle,
   userEmail,
-  onCommandPaletteOpen,
 }: SidebarProps) {
   return (
     <TooltipProvider>
@@ -61,38 +59,6 @@ export function Sidebar({
         <div className="px-3 pt-4">
           <OrgSwitcher isCollapsed={isCollapsed} />
         </div>
-
-        {/* Command Palette Trigger */}
-        {onCommandPaletteOpen && (
-          <div className="px-3 pt-2">
-            {isCollapsed ? (
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={onCommandPaletteOpen}
-                    className="w-full flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
-                  >
-                    <Command className="h-5 w-5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  Search <kbd className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded">Cmd K</kbd>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <button
-                onClick={onCommandPaletteOpen}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground bg-muted hover:bg-accent rounded-lg border border-border transition-colors"
-              >
-                <Command className="h-4 w-4" />
-                <span className="flex-1 text-left">Search...</span>
-                <kbd className="text-xs text-muted-foreground bg-background px-1.5 py-0.5 rounded border border-border">
-                  Cmd K
-                </kbd>
-              </button>
-            )}
-          </div>
-        )}
 
         {/* Navigation - scrollable */}
         <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
