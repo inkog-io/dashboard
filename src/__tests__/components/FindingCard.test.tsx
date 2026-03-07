@@ -223,8 +223,8 @@ describe('FindingCard', () => {
       render(<FindingCard finding={calibratedFinding} onClick={mockOnClick} />);
 
       const confidenceBadge = screen.getByText('60%');
-      expect(confidenceBadge).toHaveClass('bg-gray-100');
-      expect(confidenceBadge).toHaveClass('text-gray-500');
+      expect(confidenceBadge).toHaveClass('bg-muted');
+      expect(confidenceBadge).toHaveClass('text-muted-foreground');
     });
   });
 

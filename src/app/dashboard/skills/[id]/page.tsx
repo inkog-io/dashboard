@@ -236,7 +236,7 @@ function PermissionCard({ permissions }: { permissions: SkillPermissions }) {
                 className={`flex flex-col items-center p-3 rounded-lg border ${
                   p.enabled
                     ? "border-yellow-300 bg-yellow-50 text-yellow-700"
-                    : "border-gray-200 bg-gray-50 text-gray-400"
+                    : "border-border bg-muted text-muted-foreground"
                 }`}
               >
                 <Icon className="h-5 w-5 mb-1" />

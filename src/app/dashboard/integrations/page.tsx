@@ -194,7 +194,7 @@ function StatusBadge({ status }: { status: string }) {
     pending: {
       icon: Clock,
       color:
-        "text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/50",
+        "text-muted-foreground bg-muted",
       label: "Pending",
     },
   };
@@ -217,10 +217,10 @@ function StatusBadge({ status }: { status: string }) {
 
 function PendingBadge() {
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/50">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-muted-foreground bg-muted">
       <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute h-full w-full rounded-full bg-gray-400 opacity-75" />
-        <span className="relative rounded-full h-2 w-2 bg-gray-500" />
+        <span className="animate-ping absolute h-full w-full rounded-full bg-muted-foreground opacity-75" />
+        <span className="relative rounded-full h-2 w-2 bg-muted-foreground" />
       </span>
       Awaiting first scan
     </span>

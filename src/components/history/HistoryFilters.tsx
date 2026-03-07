@@ -71,7 +71,7 @@ export function HistoryFilters({ onFiltersChange, loading }: HistoryFiltersProps
       <div className="flex items-center gap-3">
         {/* Search Input */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search scans..."
@@ -80,10 +80,10 @@ export function HistoryFilters({ onFiltersChange, loading }: HistoryFiltersProps
             disabled={loading}
             className={cn(
               "w-full pl-9 pr-4 py-2 text-sm rounded-lg border",
-              "bg-white dark:bg-gray-800",
-              "border-gray-200 dark:border-gray-700",
-              "text-gray-900 dark:text-gray-100",
-              "placeholder:text-gray-400 dark:placeholder:text-gray-500",
+              "bg-card",
+              "border-border",
+              "text-foreground",
+              "placeholder:text-muted-foreground",
               "focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
@@ -91,7 +91,7 @@ export function HistoryFilters({ onFiltersChange, loading }: HistoryFiltersProps
           {filters.search && (
             <button
               onClick={() => updateFilter("search", "")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="h-4 w-4" />
             </button>
@@ -105,7 +105,7 @@ export function HistoryFilters({ onFiltersChange, loading }: HistoryFiltersProps
             "inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors",
             showFilters || hasActiveFilters
               ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400"
-              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              : "bg-card border-border text-foreground hover:bg-accent"
           )}
         >
           <Filter className="h-4 w-4" />
@@ -121,7 +121,7 @@ export function HistoryFilters({ onFiltersChange, loading }: HistoryFiltersProps
         {(hasActiveFilters || filters.search) && (
           <button
             onClick={clearAll}
-            className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            className="text-sm text-muted-foreground hover:text-foreground"
           >
             Clear all
           </button>
@@ -130,11 +130,11 @@ export function HistoryFilters({ onFiltersChange, loading }: HistoryFiltersProps
 
       {/* Expandable Filters Panel */}
       {showFilters && (
-        <div className="flex flex-wrap items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="flex flex-wrap items-center gap-3 p-4 bg-surface rounded-lg border border-border">
           {/* Date Range */}
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-500 dark:text-gray-400">From</span>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">From</span>
             <input
               type="date"
               value={filters.dateFrom}
@@ -142,14 +142,14 @@ export function HistoryFilters({ onFiltersChange, loading }: HistoryFiltersProps
               disabled={loading}
               className={cn(
                 "px-2 py-1.5 text-sm rounded border",
-                "bg-white dark:bg-gray-700",
-                "border-gray-200 dark:border-gray-600",
-                "text-gray-900 dark:text-gray-100",
+                "bg-card",
+                "border-border",
+                "text-foreground",
                 "focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
                 "disabled:opacity-50"
               )}
             />
-            <span className="text-sm text-gray-500 dark:text-gray-400">to</span>
+            <span className="text-sm text-muted-foreground">to</span>
             <input
               type="date"
               value={filters.dateTo}
@@ -157,9 +157,9 @@ export function HistoryFilters({ onFiltersChange, loading }: HistoryFiltersProps
               disabled={loading}
               className={cn(
                 "px-2 py-1.5 text-sm rounded border",
-                "bg-white dark:bg-gray-700",
-                "border-gray-200 dark:border-gray-600",
-                "text-gray-900 dark:text-gray-100",
+                "bg-card",
+                "border-border",
+                "text-foreground",
                 "focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
                 "disabled:opacity-50"
               )}
@@ -168,16 +168,16 @@ export function HistoryFilters({ onFiltersChange, loading }: HistoryFiltersProps
 
           {/* Severity Filter */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500 dark:text-gray-400">Severity</span>
+            <span className="text-sm text-muted-foreground">Severity</span>
             <select
               value={filters.severity}
               onChange={(e) => updateFilter("severity", e.target.value)}
               disabled={loading}
               className={cn(
                 "px-2 py-1.5 text-sm rounded border",
-                "bg-white dark:bg-gray-700",
-                "border-gray-200 dark:border-gray-600",
-                "text-gray-900 dark:text-gray-100",
+                "bg-card",
+                "border-border",
+                "text-foreground",
                 "focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
                 "disabled:opacity-50"
               )}
@@ -194,7 +194,7 @@ export function HistoryFilters({ onFiltersChange, loading }: HistoryFiltersProps
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="ml-auto text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 flex items-center gap-1"
+              className="ml-auto text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
             >
               <X className="h-3.5 w-3.5" />
               Clear filters

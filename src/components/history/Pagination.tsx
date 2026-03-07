@@ -60,10 +60,10 @@ export function Pagination({
   return (
     <div className="flex items-center justify-between px-2 py-3">
       {/* Results count */}
-      <div className="text-sm text-gray-500 dark:text-gray-400">
-        Showing <span className="font-medium text-gray-900 dark:text-gray-100">{startItem}</span> to{" "}
-        <span className="font-medium text-gray-900 dark:text-gray-100">{endItem}</span> of{" "}
-        <span className="font-medium text-gray-900 dark:text-gray-100">{totalItems}</span> results
+      <div className="text-sm text-muted-foreground">
+        Showing <span className="font-medium text-foreground">{startItem}</span> to{" "}
+        <span className="font-medium text-foreground">{endItem}</span> of{" "}
+        <span className="font-medium text-foreground">{totalItems}</span> results
       </div>
 
       {/* Pagination controls */}
@@ -75,8 +75,8 @@ export function Pagination({
           className={cn(
             "p-2 rounded-lg transition-colors",
             page <= 1 || loading
-              ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-              : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+              ? "text-muted-foreground/50 cursor-not-allowed"
+              : "text-muted-foreground hover:bg-accent hover:text-foreground"
           )}
           aria-label="Previous page"
         >
@@ -89,7 +89,7 @@ export function Pagination({
             pageNum === "..." ? (
               <span
                 key={`ellipsis-${idx}`}
-                className="px-2 py-1 text-sm text-gray-400 dark:text-gray-500"
+                className="px-2 py-1 text-sm text-muted-foreground"
               >
                 ...
               </span>
@@ -101,8 +101,8 @@ export function Pagination({
                 className={cn(
                   "min-w-[2rem] h-8 px-2 text-sm font-medium rounded-lg transition-colors",
                   pageNum === page
-                    ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900"
-                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100",
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
                   loading && "opacity-50 cursor-not-allowed"
                 )}
               >
@@ -119,8 +119,8 @@ export function Pagination({
           className={cn(
             "p-2 rounded-lg transition-colors",
             page >= totalPages || loading
-              ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-              : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+              ? "text-muted-foreground/50 cursor-not-allowed"
+              : "text-muted-foreground hover:bg-accent hover:text-foreground"
           )}
           aria-label="Next page"
         >

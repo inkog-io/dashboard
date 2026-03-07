@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 export function PublicHeader() {
   return (
-    <header className="h-14 border-b border-border bg-background px-6 flex items-center justify-between">
+    <header className="h-14 border-b border-border bg-background/80 backdrop-blur-lg px-6 flex items-center justify-between sticky top-0 z-40">
       <Link href="/" className="flex items-center gap-2.5 text-foreground">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
           <Image
@@ -18,7 +18,7 @@ export function PublicHeader() {
             className="w-8 h-8"
           />
         </div>
-        <span className="font-semibold text-lg">Inkog</span>
+        <span className="font-display font-semibold text-lg">Inkog</span>
       </Link>
 
       <div className="flex items-center gap-3">

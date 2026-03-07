@@ -31,9 +31,9 @@ export function StepIndicator({ steps, currentStep, className }: StepIndicatorPr
                 <div
                   className={cn(
                     "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors",
-                    isCompleted && "bg-gray-900 text-white",
-                    isCurrent && "bg-gray-900 text-white ring-2 ring-gray-900 ring-offset-2",
-                    isPending && "bg-gray-200 text-gray-500"
+                    isCompleted && "bg-foreground text-background",
+                    isCurrent && "bg-foreground text-background ring-2 ring-foreground ring-offset-2",
+                    isPending && "bg-muted text-muted-foreground"
                   )}
                 >
                   {isCompleted ? (
@@ -47,9 +47,9 @@ export function StepIndicator({ steps, currentStep, className }: StepIndicatorPr
                 <span
                   className={cn(
                     "ml-2 hidden text-sm font-medium md:block",
-                    isCompleted && "text-gray-900",
-                    isCurrent && "text-gray-900",
-                    isPending && "text-gray-400"
+                    isCompleted && "text-foreground",
+                    isCurrent && "text-foreground",
+                    isPending && "text-muted-foreground"
                   )}
                 >
                   {step.label}
@@ -61,7 +61,7 @@ export function StepIndicator({ steps, currentStep, className }: StepIndicatorPr
                 <div
                   className={cn(
                     "ml-2 h-0.5 w-8 md:ml-4 md:w-16",
-                    index < currentStep ? "bg-gray-900" : "bg-gray-200"
+                    index < currentStep ? "bg-foreground" : "bg-muted"
                   )}
                 />
               )}

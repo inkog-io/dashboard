@@ -76,7 +76,7 @@ function DiffStatusBadge({ status }: { status: 'new' | 'fixed' | 'unchanged' }) 
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground">
       <Minus className="h-3 w-3" />
       UNCHANGED
     </span>
@@ -88,9 +88,9 @@ function DiffSummaryCard({ summary }: { summary: DiffSummary }) {
   const isImprovement = !isRegression && ((summary.fixed_by_severity?.CRITICAL || 0) > 0 || (summary.fixed_by_severity?.HIGH || 0) > 0);
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4">
+    <div className="bg-card rounded-lg border border-border p-4 mb-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <h3 className="text-lg font-semibold text-foreground">
           Diff Summary
         </h3>
         {isRegression && (
@@ -120,22 +120,22 @@ function DiffSummaryCard({ summary }: { summary: DiffSummary }) {
           </div>
           <div className="text-sm text-green-600 dark:text-green-400">Fixed Findings</div>
         </div>
-        <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">
+        <div className="text-center p-3 bg-muted rounded-lg">
+          <div className="text-2xl font-bold text-muted-foreground">
             {summary.total_unchanged}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Unchanged</div>
+          <div className="text-sm text-muted-foreground">Unchanged</div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between pt-3 border-t border-border">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400">Risk Score:</span>
-          <span className="font-medium text-gray-700 dark:text-gray-300">
+          <span className="text-sm text-muted-foreground">Risk Score:</span>
+          <span className="font-medium text-foreground">
             {summary.base_risk_score}
           </span>
-          <span className="text-gray-400">→</span>
-          <span className="font-medium text-gray-700 dark:text-gray-300">
+          <span className="text-muted-foreground">→</span>
+          <span className="font-medium text-foreground">
             {summary.head_risk_score}
           </span>
         </div>
@@ -151,7 +151,7 @@ function DiffSummaryCard({ summary }: { summary: DiffSummary }) {
                 ? 'text-red-500'
                 : summary.risk_delta < 0
                 ? 'text-green-500'
-                : 'text-gray-500'
+                : 'text-muted-foreground'
             }`}
           >
             {summary.risk_delta > 0 ? '+' : ''}
@@ -176,7 +176,7 @@ function DiffFindingRow({
 }) {
   return (
     <div
-      className={`border-b border-gray-100 dark:border-gray-800 last:border-0 ${
+      className={`border-b border-border last:border-0 ${
         status === 'new'
           ? 'bg-red-50/50 dark:bg-red-900/10'
           : status === 'fixed'
@@ -186,29 +186,29 @@ function DiffFindingRow({
     >
       <button
         onClick={onToggle}
-        className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+        className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-accent transition-colors"
       >
         {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         ) : (
-          <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         )}
         <DiffStatusBadge status={status} />
         <SeverityBadge severity={finding.severity} />
-        <span className="font-medium text-gray-900 dark:text-gray-100 truncate flex-1">
+        <span className="font-medium text-foreground truncate flex-1">
           {finding.pattern_id.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
         </span>
-        <span className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+        <span className="flex items-center gap-1 text-sm text-muted-foreground">
           <FileCode className="h-4 w-4" />
           {finding.file}:{finding.line}
         </span>
       </button>
       {isExpanded && (
         <div className="px-4 pb-4 pl-11">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+          <p className="text-sm text-muted-foreground mb-2">
             {finding.message}
           </p>
-          <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span>Category: {finding.category}</span>
             {finding.owasp_category && <span>OWASP: {finding.owasp_category}</span>}
             <span>Confidence: {Math.round(finding.confidence * 100)}%</span>
@@ -265,14 +265,14 @@ export function ScanDiffView({ diff }: ScanDiffViewProps) {
       id: 'unchanged',
       label: 'Unchanged',
       count: diff.summary.total_unchanged,
-      color: 'text-gray-600 dark:text-gray-400',
+      color: 'text-muted-foreground',
     },
   ];
 
   return (
     <div className="space-y-4">
       {/* Scan Comparison Header */}
-      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Clock className="h-4 w-4" />
         <span>Comparing:</span>
         {diff.base_scan_id ? (
@@ -294,7 +294,7 @@ export function ScanDiffView({ diff }: ScanDiffViewProps) {
       <DiffSummaryCard summary={diff.summary} />
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700">
+      <div className="border-b border-border">
         <nav className="flex -mb-px">
           {tabs.map((tab) => (
             <button
@@ -303,7 +303,7 @@ export function ScanDiffView({ diff }: ScanDiffViewProps) {
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
                   ? `border-indigo-500 ${tab.color}`
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
               }`}
             >
               {tab.label} ({tab.count})
@@ -313,9 +313,9 @@ export function ScanDiffView({ diff }: ScanDiffViewProps) {
       </div>
 
       {/* Findings List */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-card rounded-lg border border-border overflow-hidden">
         {currentFindings.length === 0 ? (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+          <div className="p-8 text-center text-muted-foreground">
             No {activeTab} findings
           </div>
         ) : (

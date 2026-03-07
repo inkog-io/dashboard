@@ -385,8 +385,8 @@ def recursive_tool(depth=0):
             <div
               className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
                 isDragging
-                  ? "border-gray-900 bg-gray-50"
-                  : "border-gray-200 hover:border-gray-300"
+                  ? "border-foreground bg-muted"
+                  : "border-border hover:border-border"
               }`}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -398,8 +398,8 @@ def recursive_tool(depth=0):
               }}
               onDrop={handleDrop}
             >
-              <Upload className="h-10 w-10 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4">
+              <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">
                 Drag & drop your agent files here
               </p>
               <input
@@ -413,18 +413,18 @@ def recursive_tool(depth=0):
               <div className="flex items-center gap-3 justify-center">
                 <label
                   htmlFor="file-input"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 cursor-pointer transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 cursor-pointer transition-colors"
                 >
                   Select Files
                 </label>
                 <button
                   onClick={loadDemoExample}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent transition-colors"
                 >
                   Try Demo
                 </button>
               </div>
-              <p className="text-xs text-gray-400 mt-4">
+              <p className="text-xs text-muted-foreground mt-4">
                 Python, JavaScript, TypeScript, Go, Java, Ruby, JSON, YAML
               </p>
             </div>
@@ -432,19 +432,19 @@ def recursive_tool(depth=0):
 
       {/* Selected Files */}
       {files.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5">
           {/* Scanning Progress UI */}
           {scanning ? (
             <div className="py-4">
               <div className="flex items-center gap-3 mb-4">
                 <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                <span className="font-medium text-gray-900 dark:text-gray-100">
+                <span className="font-medium text-foreground">
                   Scanning {agentName || 'files'}...
                 </span>
               </div>
 
               {/* Progress Bar */}
-              <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-4">
+              <div className="h-2 bg-muted rounded-full overflow-hidden mb-4">
                 <div
                   className="h-full bg-blue-600 transition-all duration-300 ease-out"
                   style={{ width: `${scanProgress}%` }}
@@ -465,9 +465,9 @@ def recursive_tool(depth=0):
                       ) : isCurrent ? (
                         <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
                       ) : (
-                        <div className="h-4 w-4 rounded-full border-2 border-gray-300 dark:border-gray-600" />
+                        <div className="h-4 w-4 rounded-full border-2 border-border" />
                       )}
-                      <span className={isComplete ? "text-gray-500 dark:text-gray-400" : isCurrent ? "text-gray-900 dark:text-gray-100 font-medium" : "text-gray-400 dark:text-gray-500"}>
+                      <span className={isComplete ? "text-muted-foreground" : isCurrent ? "text-foreground font-medium" : "text-muted-foreground"}>
                         {phase.label}
                       </span>
                     </div>
@@ -479,7 +479,7 @@ def recursive_tool(depth=0):
             <>
               {/* Agent Name - At top, prominent */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label className="block text-sm font-medium text-foreground mb-1.5">
                   Agent Name
                 </label>
                 <input
@@ -487,7 +487,7 @@ def recursive_tool(depth=0):
                   placeholder="e.g., customer-support-bot"
                   value={agentName}
                   onChange={handleAgentNameChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 {agentNameAutoDetected && (
                   <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
@@ -500,12 +500,12 @@ def recursive_tool(depth=0):
               {/* File List */}
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <h3 className="text-sm font-medium text-foreground">
                     Selected Files ({files.length})
                   </h3>
                   <button
                     onClick={clearFiles}
-                    className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    className="text-xs text-muted-foreground hover:text-foreground"
                   >
                     Clear all
                   </button>
@@ -514,18 +514,18 @@ def recursive_tool(depth=0):
                   {files.map((file, index) => (
                     <li
                       key={index}
-                      className="flex items-center justify-between py-1.5 px-2.5 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm"
+                      className="flex items-center justify-between py-1.5 px-2.5 bg-muted rounded-lg text-sm"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <FileCode className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <span className="text-gray-700 dark:text-gray-300 truncate">{file.name}</span>
-                        <span className="text-xs text-gray-400 flex-shrink-0">
+                        <FileCode className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-foreground truncate">{file.name}</span>
+                        <span className="text-xs text-muted-foreground flex-shrink-0">
                           ({(file.size / 1024).toFixed(1)} KB)
                         </span>
                       </div>
                       <button
                         onClick={() => removeFile(index)}
-                        className="text-gray-400 hover:text-red-500 ml-2 flex-shrink-0"
+                        className="text-muted-foreground hover:text-red-500 ml-2 flex-shrink-0"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -539,7 +539,7 @@ def recursive_tool(depth=0):
                 className={`border-2 border-dashed rounded-lg py-2 text-center transition-colors cursor-pointer mb-4 ${
                   isDragging
                     ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                    : "border-border hover:border-border"
                 }`}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -561,7 +561,7 @@ def recursive_tool(depth=0):
                 />
                 <label
                   htmlFor="file-input-more"
-                  className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   <Plus className="h-4 w-4" />
                   Add more files
@@ -570,7 +570,7 @@ def recursive_tool(depth=0):
 
               {/* Policy Selector */}
               <div className="mb-4">
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">
                   Scan Policy
                 </label>
                 <PolicySelector value={scanPolicy} onChange={setScanPolicy} />
@@ -580,7 +580,7 @@ def recursive_tool(depth=0):
               <button
                 onClick={runScan}
                 disabled={scanning}
-                className="w-full py-3 bg-black dark:bg-white text-white dark:text-black font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-3 bg-black dark:bg-white text-white dark:text-black font-medium rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Shield className="h-5 w-5" />
                 Start Scan
@@ -610,10 +610,10 @@ def recursive_tool(depth=0):
                 <Bot className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                <h2 className="text-xl font-semibold text-foreground">
                   {agentName || 'Scan Results'}
                 </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   {result.files_scanned} files scanned • {result.findings_count} findings • {result.scan_duration}
                 </p>
               </div>
@@ -630,7 +630,7 @@ def recursive_tool(depth=0):
                 setSearchQuery("");
                 setFrameworkFilter(null);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
             >
               <Plus className="h-4 w-4" />
               New Scan
@@ -638,34 +638,34 @@ def recursive_tool(depth=0):
           </div>
 
           {/* Summary Stats */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="bg-card rounded-xl border border-border shadow-sm p-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-foreground">
                   {result.files_scanned}
                 </p>
-                <p className="text-xs text-gray-500 uppercase">Files Scanned</p>
+                <p className="text-xs text-muted-foreground uppercase">Files Scanned</p>
               </div>
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-foreground">
                   {result.findings_count}
                 </p>
-                <p className="text-xs text-gray-500 uppercase">Total Findings</p>
+                <p className="text-xs text-muted-foreground uppercase">Total Findings</p>
               </div>
               <div className="text-center p-3 bg-red-50 rounded-lg">
                 <p className="text-2xl font-bold text-red-600">
                   {result.critical_count}
                 </p>
-                <p className="text-xs text-gray-500 uppercase">Critical</p>
+                <p className="text-xs text-muted-foreground uppercase">Critical</p>
               </div>
               <div className="text-center p-3 bg-orange-50 rounded-lg">
                 <p className="text-2xl font-bold text-orange-600">
                   {result.high_count}
                 </p>
-                <p className="text-xs text-gray-500 uppercase">High</p>
+                <p className="text-xs text-muted-foreground uppercase">High</p>
               </div>
             </div>
-            <div className="mt-4 text-sm text-gray-500 text-center">
+            <div className="mt-4 text-sm text-muted-foreground text-center">
               Scanned {result.lines_of_code.toLocaleString()} lines of code in{" "}
               {result.scan_duration || "0ms"}
             </div>
@@ -680,12 +680,12 @@ def recursive_tool(depth=0):
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold mb-1">Integrate with your workflow</h3>
-                  <p className="text-sm text-gray-300 mb-4">
+                  <p className="text-sm text-white/70 mb-4">
                     Set up the CLI to scan on every commit, or add to your CI/CD pipeline for automated security checks.
                   </p>
                   <Link
                     href="/dashboard/onboarding"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"
                   >
                     Set up CLI
                     <ArrowRight className="h-4 w-4" />
@@ -775,10 +775,10 @@ def recursive_tool(depth=0):
             <div className="flex items-start gap-3">
               <Terminal className="h-5 w-5 text-indigo-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-gray-900">
+                <p className="font-medium text-foreground">
                   Want full project scanning with governance validation?
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   The CLI scans entire directories, validates AGENTS.md constraints,
                   and integrates with CI/CD pipelines.
                 </p>
@@ -795,8 +795,8 @@ def recursive_tool(depth=0):
 
           {/* Findings Section */}
           {result.findings.length > 0 ? (
-            <div id="findings-section" className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden scroll-mt-4">
-              <div className="px-5 border-b border-gray-100 dark:border-gray-800">
+            <div id="findings-section" className="bg-card rounded-xl border border-border shadow-sm overflow-hidden scroll-mt-4">
+              <div className="px-5 border-b border-border">
                 <FindingsToolbar
                   totalCount={result.findings_count}
                   criticalCount={result.critical_count}
@@ -839,14 +839,14 @@ def recursive_tool(depth=0):
                   onFindingClick={(finding) => setSelectedFinding(finding)}
                 />
               ) : (
-                <div className="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
+                <div className="px-5 py-8 text-center text-muted-foreground">
                   No findings match your filters
                 </div>
               )}
 
               {/* Results count */}
               {filteredFindings.length > 0 && (
-                <div className="px-5 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                <div className="px-5 py-3 bg-muted border-t border-border text-xs text-muted-foreground">
                   Showing {filteredFindings.length} of {result.findings_count}{" "}
                   findings
                 </div>

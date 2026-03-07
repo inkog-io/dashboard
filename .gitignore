@@ -36,3 +36,4 @@ next-env.d.ts
 
 # Claude Code instructions (may contain sensitive info)
 CLAUDE.md
+.mcp.json

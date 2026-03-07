@@ -32,7 +32,7 @@ export function Sidebar({
     <TooltipProvider>
       <aside
         className={cn(
-          "fixed left-0 top-0 h-full bg-background border-r border-border flex flex-col z-30 transition-all duration-300",
+          "fixed left-0 top-0 h-full bg-surface border-r border-border flex flex-col z-30 transition-all duration-300 backdrop-blur-lg",
           isCollapsed ? "w-16" : "w-60"
         )}
       >
@@ -52,7 +52,7 @@ export function Sidebar({
               />
             </div>
             {!isCollapsed && (
-              <span className="font-semibold text-lg text-foreground">Inkog</span>
+              <span className="font-display font-semibold text-lg text-foreground">Inkog</span>
             )}
           </Link>
         </div>

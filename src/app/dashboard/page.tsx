@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
+  const [dismissedEmptyBanner, setDismissedEmptyBanner] = useState(false);
 
   // Initialize API client
   useEffect(() => {
@@ -146,15 +147,17 @@ export default function DashboardPage() {
   };
 
   const getGovernanceContext = (score: number): string => {
+    if (score === 0 && agents.length === 0) return "Run your first scan";
     if (score >= 80) return "Compliant with EU AI Act";
     if (score >= 50) return "Partial compliance - Review controls";
     return "Missing required controls";
   };
 
   // Use enhanced stats from backend, with fallbacks
+  const showEmptyStateBanner = agents.length === 0 && !loading && !error && !dismissedEmptyBanner;
   const riskScore = stats?.risk_score_avg ?? summary?.average_risk_score ?? 0;
   const criticalCount = stats?.critical_unresolved ?? recentScans[0]?.critical_count ?? 0;
-  const governanceScore = stats?.governance_score_avg ?? 100;
+  const governanceScore = stats?.governance_score_avg ?? 0;
 
   // Agent-centric metrics
   const criticalAgents = agents.filter(a => a.health_status === 'critical').length;
@@ -178,7 +181,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between animate-stagger-1">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Welcome back, {firstName}!</p>
@@ -192,16 +195,20 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Setup Complete Banner */}
-      {showWelcomeBanner && (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-green-100 rounded-lg">
+      {/* Welcome / Empty State Banner */}
+      {(showWelcomeBanner || showEmptyStateBanner) && (
+        <div className="bg-gradient-to-r from-green-50 dark:from-green-950/30 to-emerald-50 dark:to-emerald-950/30 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-start gap-3">
+          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
             <Sparkles className="h-5 w-5 text-green-600" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-green-900">Setup complete!</h3>
-            <p className="text-sm text-green-700 mt-0.5">
-              You&apos;re all set. Run your first scan to start monitoring your AI agents for security vulnerabilities.
+            <h3 className="font-semibold text-green-900 dark:text-green-100">
+              {showWelcomeBanner ? "Setup complete!" : "Get started"}
+            </h3>
+            <p className="text-sm text-green-700 dark:text-green-300 mt-0.5">
+              {showWelcomeBanner
+                ? "You're all set. Run your first scan to start monitoring your AI agents for security vulnerabilities."
+                : "Scan your first AI agent to discover security vulnerabilities and compliance gaps."}
             </p>
             <Link
               href="/dashboard/scan"
@@ -213,8 +220,11 @@ export default function DashboardPage() {
             </Link>
           </div>
           <button
-            onClick={() => setShowWelcomeBanner(false)}
-            className="p-1 text-green-400 hover:text-green-600 transition-colors"
+            onClick={() => {
+              setShowWelcomeBanner(false);
+              setDismissedEmptyBanner(true);
+            }}
+            className="p-1 text-green-400 dark:text-green-600 hover:text-green-600 dark:hover:text-green-400 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -230,7 +240,7 @@ export default function DashboardPage() {
       )}
 
       {/* Security Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-stagger-2">
         <SecurityMetricCard
           title="Agents Monitored"
           value={agents.length}
@@ -271,7 +281,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Agents Section */}
-      <div>
+      <div className="animate-stagger-3">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-muted-foreground" />
@@ -296,33 +306,33 @@ export default function DashboardPage() {
 
       {/* Summary Stats (if available) */}
       {summary && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-muted rounded-lg p-4 text-center">
-            <p className="text-2xl font-semibold text-foreground">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-stagger-4">
+          <div className="bg-card border border-border rounded-xl p-4 text-center hover:border-primary/20 transition-colors">
+            <p className="text-2xl font-semibold text-foreground font-display">
               {summary.total_scans}
             </p>
             <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">
               Total Scans
             </p>
           </div>
-          <div className="bg-muted rounded-lg p-4 text-center">
-            <p className="text-2xl font-semibold text-foreground">
+          <div className="bg-card border border-border rounded-xl p-4 text-center hover:border-primary/20 transition-colors">
+            <p className="text-2xl font-semibold text-foreground font-display">
               {summary.total_files_scanned.toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">
               Files Analyzed
             </p>
           </div>
-          <div className="bg-muted rounded-lg p-4 text-center">
-            <p className="text-2xl font-semibold text-foreground">
+          <div className="bg-card border border-border rounded-xl p-4 text-center hover:border-primary/20 transition-colors">
+            <p className="text-2xl font-semibold text-foreground font-display">
               {summary.total_findings}
             </p>
             <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">
               Issues Found
             </p>
           </div>
-          <div className="bg-muted rounded-lg p-4 text-center">
-            <p className="text-2xl font-semibold text-foreground">
+          <div className="bg-card border border-border rounded-xl p-4 text-center hover:border-primary/20 transition-colors">
+            <p className="text-2xl font-semibold text-foreground font-display">
               {Math.round(summary.average_risk_score)}
             </p>
             <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">

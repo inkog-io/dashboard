@@ -144,7 +144,7 @@ function SeverityBadge({ severity }: SeverityBadgeProps) {
     <span
       className={cn(
         "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
-        SEVERITY_COLORS[severity] || "text-gray-600 bg-gray-100"
+        SEVERITY_COLORS[severity] || "text-muted-foreground bg-muted"
       )}
     >
       {severity}

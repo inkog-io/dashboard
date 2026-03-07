@@ -78,7 +78,7 @@ export function CodeSnippetDisplay({ code, file, highlightLine }: CodeSnippetDis
   // If no line numbers in snippet, just use raw code
   if (!hasLineNumbers) {
     return (
-      <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+      <div className="rounded-lg overflow-hidden border border-border bg-surface">
         <SyntaxHighlighter
           language={language}
           style={oneLight}
@@ -105,17 +105,17 @@ export function CodeSnippetDisplay({ code, file, highlightLine }: CodeSnippetDis
   const cleanCode = parsedLines.map((l) => l.content).join("\n");
 
   return (
-    <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+    <div className="rounded-lg overflow-hidden border border-border bg-surface">
       <div className="relative">
         {/* Line numbers column */}
-        <div className={`absolute left-0 top-0 bottom-0 ${lineNumWidth} bg-gray-100 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col py-4 text-right pr-3 select-none`}>
+        <div className={`absolute left-0 top-0 bottom-0 ${lineNumWidth} bg-muted border-r border-border flex flex-col py-4 text-right pr-3 select-none`}>
           {parsedLines.map((line, idx) => {
             const isHighlighted = effectiveHighlightLine && line.lineNumber === effectiveHighlightLine;
             return (
               <span
                 key={idx}
                 className={`text-xs leading-6 font-mono ${
-                  isHighlighted ? "text-red-600 dark:text-red-400 font-semibold" : "text-gray-400"
+                  isHighlighted ? "text-red-600 dark:text-red-400 font-semibold" : "text-muted-foreground"
                 }`}
               >
                 {line.lineNumber ?? ""}

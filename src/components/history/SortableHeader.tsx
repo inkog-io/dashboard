@@ -39,10 +39,10 @@ export function SortableHeader({
       onClick={handleClick}
       className={cn(
         "inline-flex items-center gap-1 text-left font-medium transition-colors",
-        "hover:text-gray-900 dark:hover:text-gray-100",
+        "hover:text-foreground",
         isActive
-          ? "text-gray-900 dark:text-gray-100"
-          : "text-gray-500 dark:text-gray-400",
+          ? "text-foreground"
+          : "text-muted-foreground",
         className
       )}
     >

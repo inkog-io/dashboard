@@ -62,7 +62,7 @@ function GitHubSetupContent() {
   }, [installationId, isSignedIn, getToken]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-surface p-4">
       <div className="max-w-lg w-full space-y-8 text-center">
         {/* Success icon */}
         <div className="flex justify-center">
@@ -73,10 +73,10 @@ function GitHubSetupContent() {
 
         {/* Heading */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-3xl font-bold text-foreground">
             {isUpdate ? "Settings Updated" : "Installation Complete"}
           </h1>
-          <p className="mt-3 text-gray-600 dark:text-gray-400">
+          <p className="mt-3 text-muted-foreground">
             {isUpdate
               ? "Your Inkog Scanner configuration has been updated."
               : "Inkog Scanner is now active on your repositories. Every pull request will be automatically scanned for security vulnerabilities."}
@@ -85,7 +85,7 @@ function GitHubSetupContent() {
 
         {/* Link status banner */}
         {linkStatus === "linking" && (
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin" />
             Linking to your account...
           </div>
@@ -128,7 +128,7 @@ function GitHubSetupContent() {
 
         {/* What happens next */}
         <div className="space-y-3 text-left">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">
             What happens next
           </p>
 
@@ -138,10 +138,10 @@ function GitHubSetupContent() {
                 <GitPullRequest className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                <h3 className="font-semibold text-foreground">
                   Open a Pull Request
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   Push a branch and open a PR. Inkog will automatically run a
                   security scan and post results as a check run and PR comment.
                 </p>
@@ -155,10 +155,10 @@ function GitHubSetupContent() {
                 <Shield className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                <h3 className="font-semibold text-foreground">
                   Review Findings
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   If issues are found, they appear inline on the PR with
                   severity, file location, and remediation guidance.
                 </p>
@@ -172,10 +172,10 @@ function GitHubSetupContent() {
                 <BarChart3 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                <h3 className="font-semibold text-foreground">
                   Track in Dashboard
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   View scan history, trends, and compliance reports across all
                   your repositories.
                 </p>
@@ -206,7 +206,7 @@ function GitHubSetupContent() {
 
         {/* Installation ID */}
         {installationId && (
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground">
             Installation ID: {installationId}
           </p>
         )}
@@ -219,8 +219,8 @@ export default function GitHubSetupPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-          <div className="w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse" />
+        <div className="min-h-screen flex items-center justify-center bg-surface">
+          <div className="w-20 h-20 rounded-full bg-muted animate-pulse" />
         </div>
       }
     >

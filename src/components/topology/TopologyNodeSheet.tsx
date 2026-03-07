@@ -136,14 +136,14 @@ export function TopologyNodeSheet({
             <div
               className={cn(
                 'p-2 rounded-lg',
-                node.isGhost ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-gray-800'
+                node.isGhost ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted'
               )}
             >
               {isSuperNode ? (
-                <Files className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                <Files className="h-5 w-5 text-foreground" />
               ) : (
                 <Icon
-                  className={cn('h-5 w-5', node.isGhost ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300')}
+                  className={cn('h-5 w-5', node.isGhost ? 'text-red-600 dark:text-red-400' : 'text-foreground')}
                 />
               )}
             </div>
@@ -162,7 +162,7 @@ export function TopologyNodeSheet({
                 )}
               </SheetDescription>
               {node.type === 'ToolCall' && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {['eval', 'exec', 'compile', 'system', 'popen', 'os.system', 'subprocess'].some(fn =>
                     node.label.toLowerCase().includes(fn)
                   )
@@ -179,7 +179,7 @@ export function TopologyNodeSheet({
           {/* Risk Level Badge */}
           {!node.isGhost && (
             <div>
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Risk Level</h4>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">Risk Level</h4>
               <span className={cn('px-3 py-1 rounded-full text-sm font-medium', riskStyle.badge)}>
                 {node.riskLevel}
               </span>
@@ -205,12 +205,12 @@ export function TopologyNodeSheet({
           {/* Risk Reasons */}
           {node.riskReasons && node.riskReasons.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Risk Factors</h4>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">Risk Factors</h4>
               <ul className="space-y-2">
                 {node.riskReasons.map((reason, idx) => (
                   <li
                     key={idx}
-                    className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300 bg-amber-50 dark:bg-amber-900/20 p-2 rounded"
+                    className="flex items-start gap-2 text-sm text-foreground bg-amber-50 dark:bg-amber-900/20 p-2 rounded"
                   >
                     <AlertTriangle className="h-4 w-4 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                     <span>{reason}</span>
@@ -223,19 +223,19 @@ export function TopologyNodeSheet({
           {/* Merged Nodes (for SuperNodes) */}
           {isSuperNode && node.mergedNodes && (
             <div>
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">
                 Merged Sources ({node.mergedCount})
               </h4>
               <div className="space-y-1 max-h-[200px] overflow-y-auto">
                 {node.mergedNodes.map((merged) => (
                   <div
                     key={merged.id}
-                    className="flex items-center gap-2 text-sm p-2 bg-gray-50 dark:bg-gray-800 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="flex items-center gap-2 text-sm p-2 bg-muted rounded hover:bg-accent"
                   >
-                    <ChevronRight className="h-3 w-3 text-gray-400 dark:text-gray-500" />
-                    <span className="truncate flex-1 text-gray-700 dark:text-gray-300">{merged.label}</span>
+                    <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                    <span className="truncate flex-1 text-foreground">{merged.label}</span>
                     {merged.location?.file && (
-                      <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
+                      <span className="text-xs text-muted-foreground font-mono">
                         {merged.location.file.split('/').pop()}
                         {merged.location.line && `:${merged.location.line}`}
                       </span>
@@ -249,7 +249,7 @@ export function TopologyNodeSheet({
           {/* Related Findings */}
           {relatedFindings.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">
                 Related Findings ({relatedFindings.length})
               </h4>
               <div className="space-y-2">
@@ -305,7 +305,7 @@ export function TopologyNodeSheet({
 
           {/* No Findings */}
           {!node.isGhost && relatedFindings.length === 0 && (
-            <div className="text-center py-6 text-gray-400 dark:text-gray-500">
+            <div className="text-center py-6 text-muted-foreground">
               <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No findings associated with this node</p>
             </div>
@@ -454,7 +454,7 @@ class AuditCallback(BaseCallbackHandler):
           </li>
         ))}
       </ul>
-      <pre className="text-xs bg-white/50 dark:bg-gray-900/50 p-3 rounded border border-blue-200 dark:border-blue-800 overflow-x-auto font-mono text-gray-800 dark:text-gray-200">
+      <pre className="text-xs bg-card/50 p-3 rounded border border-blue-200 dark:border-blue-800 overflow-x-auto font-mono text-foreground">
         {rem.code}
       </pre>
     </div>

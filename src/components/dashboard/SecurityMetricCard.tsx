@@ -72,7 +72,7 @@ export function SecurityMetricCard({
 
   return (
     <div className={cn(
-      "rounded-xl border border-border p-5 shadow-sm transition-shadow hover:shadow-md",
+      "rounded-xl border border-border p-5 shadow-sm transition-all duration-200 hover:shadow-glow-sm hover:border-primary/30",
       styles.bg
     )}>
       <div className="flex items-start justify-between">
@@ -108,10 +108,10 @@ export function SecurityMetricCard({
           <div className="h-8 w-20 bg-muted animate-pulse rounded" />
         ) : (
           <p className={cn(
-            "font-semibold text-foreground",
+            "font-semibold text-foreground font-display",
             String(value).length > 10
               ? "text-base"
-              : "text-2xl font-mono"
+              : "text-2xl"
           )}>{value}</p>
         )}
         <div className="flex items-center gap-1.5 mt-1">

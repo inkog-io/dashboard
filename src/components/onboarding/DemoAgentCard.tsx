@@ -47,10 +47,10 @@ export function DemoAgentCard({
       onClick={onClick}
       className={cn(
         "relative flex flex-col items-start gap-3 rounded-xl border-2 p-5 text-left transition-all",
-        "hover:border-gray-400 hover:shadow-md",
+        "hover:border-muted-foreground hover:shadow-md",
         selected
-          ? "border-gray-900 bg-gray-50 shadow-md"
-          : "border-gray-200 bg-white",
+          ? "border-foreground bg-surface shadow-md"
+          : "border-border bg-card",
         className
       )}
     >
@@ -59,8 +59,8 @@ export function DemoAgentCard({
       </div>
 
       <div className="space-y-1.5">
-        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-        <p className="text-xs text-gray-500 leading-relaxed">{description}</p>
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
       </div>
 
       {vulnerabilities.length > 0 && (
@@ -68,7 +68,7 @@ export function DemoAgentCard({
           {vulnerabilities.map((vuln) => (
             <span
               key={vuln}
-              className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600"
+              className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
             >
               {vuln}
             </span>

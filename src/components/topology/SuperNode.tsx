@@ -58,7 +58,7 @@ const SuperNode = memo(({ data }: NodeProps<SuperNodeData>) => {
       <Handle
         type="target"
         position={Position.Top}
-        className="!bg-gray-400 !w-2 !h-2"
+        className="!bg-muted-foreground !w-2 !h-2"
       />
 
       <div className="flex items-center gap-2">
@@ -89,7 +89,7 @@ const SuperNode = memo(({ data }: NodeProps<SuperNodeData>) => {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!bg-gray-400 !w-2 !h-2"
+        className="!bg-muted-foreground !w-2 !h-2"
       />
     </div>
   );

@@ -78,7 +78,7 @@ const CONFIDENCE_BADGE: Record<string, string> = {
   HIGH: "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800",
   MEDIUM:
     "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800",
-  LOW: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700",
+  LOW: "bg-muted text-muted-foreground border-border",
 };
 
 const FP_RISK_BADGE: Record<string, string> = {
@@ -132,23 +132,23 @@ export function DeepScanFindingPanel({ finding, onClose }: DeepScanFindingPanelP
       {/* Panel */}
       <div
         ref={panelRef}
-        className={`fixed inset-y-0 right-0 w-full max-w-xl bg-white dark:bg-gray-900 shadow-2xl z-[60] transition-transform duration-300 ease-out overflow-hidden flex flex-col ${
+        className={`fixed inset-y-0 right-0 w-full max-w-xl bg-card shadow-2xl z-[60] transition-transform duration-300 ease-out overflow-hidden flex flex-col ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* ── Header ── */}
-        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+        <div className="flex-shrink-0 px-6 py-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`px-2.5 py-1 text-xs font-semibold rounded-md border ${sev.badge}`}>
               {finding.severity}
             </span>
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
               {finding.category}
             </span>
           </div>
           <button
             onClick={onClose}
-            className="p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="p-2 -mr-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
             aria-label="Close panel"
           >
             <X className="w-5 h-5" />
@@ -160,10 +160,10 @@ export function DeepScanFindingPanel({ finding, onClose }: DeepScanFindingPanelP
           <div className="px-6 py-6 space-y-8">
             {/* Title + detection_id */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
+              <h2 className="text-xl font-semibold text-foreground mb-1">
                 {finding.title}
               </h2>
-              <p className="text-xs font-mono text-gray-400 dark:text-gray-500">
+              <p className="text-xs font-mono text-muted-foreground">
                 {finding.detection_id}
               </p>
             </div>
@@ -171,7 +171,7 @@ export function DeepScanFindingPanel({ finding, onClose }: DeepScanFindingPanelP
             {/* Explanation */}
             <div>
               <SectionLabel>Explanation</SectionLabel>
-              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              <p className="text-sm text-foreground leading-relaxed">
                 {finding.explanation}
               </p>
             </div>
@@ -181,12 +181,12 @@ export function DeepScanFindingPanel({ finding, onClose }: DeepScanFindingPanelP
               <div>
                 <SectionLabel>Location</SectionLabel>
                 <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+                  <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div className="space-y-1">
                     {finding.affected_files.map((af, i) => (
                       <code
                         key={i}
-                        className="block text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono text-gray-800 dark:text-gray-200"
+                        className="block text-sm bg-muted px-2 py-1 rounded font-mono text-foreground"
                       >
                         {af.file_path}:{af.line_numbers}
                       </code>
@@ -203,7 +203,7 @@ export function DeepScanFindingPanel({ finding, onClose }: DeepScanFindingPanelP
                 <div className="space-y-4">
                   {finding.proof.map((p, i) => (
                     <div key={i}>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mb-1.5">
+                      <p className="text-xs text-muted-foreground font-mono mb-1.5">
                         {p.file_path}:{p.start_line}-{p.end_line}
                       </p>
                       <CodeSnippetDisplay code={p.code_snippet} file={p.file_path} />
@@ -229,7 +229,7 @@ export function DeepScanFindingPanel({ finding, onClose }: DeepScanFindingPanelP
                 </span>
               </div>
               {finding.false_positive_rationale && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 leading-relaxed">
+                <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
                   {finding.false_positive_rationale}
                 </p>
               )}
@@ -270,8 +270,8 @@ export function DeepScanFindingPanel({ finding, onClose }: DeepScanFindingPanelP
         </div>
 
         {/* ── Footer ── */}
-        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex-shrink-0 px-6 py-4 border-t border-border bg-muted">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="font-mono">{finding.detection_id}</span>
             <span>Finding #{finding.finding_number}</span>
           </div>
@@ -296,7 +296,7 @@ function SectionLabel({
   return (
     <p
       className={`text-xs font-semibold uppercase tracking-wider mb-1.5 ${
-        className || "text-gray-500 dark:text-gray-400"
+        className || "text-muted-foreground"
       }`}
     >
       {children}

@@ -40,20 +40,20 @@ interface TypeButtonProps {
 function FilterButton({ label, count, isSelected, onClick, variant }: FilterButtonProps) {
   const colors = {
     all: isSelected
-      ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-gray-900 dark:border-gray-100"
-      : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
+      ? "bg-foreground text-background border-foreground"
+      : "bg-card text-foreground border-border hover:border-muted-foreground",
     critical: isSelected
       ? "bg-red-600 text-white border-red-600"
-      : "bg-white dark:bg-gray-800 text-red-700 dark:text-red-400 border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-500",
+      : "bg-card text-red-700 dark:text-red-400 border-border hover:border-red-300 dark:hover:border-red-500",
     high: isSelected
       ? "bg-orange-500 text-white border-orange-500"
-      : "bg-white dark:bg-gray-800 text-orange-700 dark:text-orange-400 border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-500",
+      : "bg-card text-orange-700 dark:text-orange-400 border-border hover:border-orange-300 dark:hover:border-orange-500",
     medium: isSelected
       ? "bg-amber-500 text-white border-amber-500"
-      : "bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-400 border-gray-200 dark:border-gray-700 hover:border-amber-300 dark:hover:border-amber-500",
+      : "bg-card text-amber-700 dark:text-amber-400 border-border hover:border-amber-300 dark:hover:border-amber-500",
     low: isSelected
       ? "bg-blue-500 text-white border-blue-500"
-      : "bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-400 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-500",
+      : "bg-card text-blue-700 dark:text-blue-400 border-border hover:border-blue-300 dark:hover:border-blue-500",
   };
 
   const icons = {
@@ -73,7 +73,7 @@ function FilterButton({ label, count, isSelected, onClick, variant }: FilterButt
       <span>{label}</span>
       <span
         className={`ml-1 px-1.5 py-0.5 text-xs rounded-md ${
-          isSelected ? "bg-white/20" : "bg-gray-100 dark:bg-gray-700"
+          isSelected ? "bg-white/20" : "bg-muted"
         }`}
       >
         {count}
@@ -89,7 +89,7 @@ function TypeButton({ label, count, isSelected, onClick, icon }: TypeButtonProps
       className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${
         isSelected
           ? "bg-indigo-600 text-white"
-          : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750"
+          : "bg-card text-foreground border border-border hover:bg-accent"
       }`}
     >
       {icon}
@@ -98,7 +98,7 @@ function TypeButton({ label, count, isSelected, onClick, icon }: TypeButtonProps
         className={`ml-1 px-2 py-0.5 text-xs rounded-full ${
           isSelected
             ? "bg-white/20 text-white"
-            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+            : "bg-muted text-muted-foreground"
         }`}
       >
         {count}
@@ -200,13 +200,13 @@ export function FindingsToolbar({
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search findings..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full sm:w-64 pl-9 pr-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-shadow placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full sm:w-64 pl-9 pr-4 py-2 text-sm bg-card text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow placeholder:text-muted-foreground"
           />
         </div>
       </div>

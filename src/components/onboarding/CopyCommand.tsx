@@ -24,16 +24,16 @@ export function CopyCommand({ command, label, onCopy, className }: CopyCommandPr
   return (
     <div className={cn("space-y-1", className)}>
       {label && (
-        <label className="text-xs font-medium text-gray-500">{label}</label>
+        <label className="text-xs font-medium text-muted-foreground">{label}</label>
       )}
-      <div className="flex items-center gap-2 rounded-lg bg-gray-100 p-3">
-        <code className="flex-1 text-sm font-mono text-gray-800 break-all">
+      <div className="flex items-center gap-2 rounded-lg bg-muted p-3">
+        <code className="flex-1 text-sm font-mono text-foreground break-all">
           {command}
         </code>
         <button
           type="button"
           onClick={handleCopy}
-          className="flex-shrink-0 rounded-md p-1.5 text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors"
+          className="flex-shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
           title={copied ? "Copied!" : "Copy to clipboard"}
         >
           {copied ? (

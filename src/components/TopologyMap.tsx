@@ -122,7 +122,7 @@ function TopologyCustomNode({ data }: { data: CustomNodeData }) {
       className="relative cursor-pointer hover:shadow-lg transition-shadow"
       onClick={data.onClick}
     >
-      <Handle type="target" position={Position.Top} className="!bg-gray-400 !w-2 !h-2" />
+      <Handle type="target" position={Position.Top} className="!bg-muted-foreground !w-2 !h-2" />
 
       <div
         className="px-4 py-2.5 rounded-lg shadow-md border-2 min-w-[100px]"
@@ -148,7 +148,7 @@ function TopologyCustomNode({ data }: { data: CustomNodeData }) {
         <div className="absolute -top-1 -right-1 bg-red-500 rounded-full w-2.5 h-2.5 shadow" />
       )}
 
-      <Handle type="source" position={Position.Bottom} className="!bg-gray-400 !w-2 !h-2" />
+      <Handle type="source" position={Position.Bottom} className="!bg-muted-foreground !w-2 !h-2" />
     </div>
   );
 }
@@ -787,9 +787,9 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
 
   if (!topology || topology.nodes.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Agent Topology</h3>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">No topology data available for this scan.</p>
+      <div className="bg-card rounded-xl border border-border shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-4">Agent Topology</h3>
+        <p className="text-muted-foreground text-sm">No topology data available for this scan.</p>
       </div>
     );
   }
@@ -803,11 +803,11 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
   ].filter(Boolean).length;
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="px-5 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Agent Topology</h3>
+          <h3 className="text-lg font-semibold text-foreground">Agent Topology</h3>
           {missingControlCount > 0 && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-full">
               <AlertTriangle className="h-3 w-3" />
@@ -820,21 +820,21 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
         <div className="flex items-center gap-2">
           <button
             onClick={handleMermaidExport}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted hover:bg-accent rounded-lg transition-colors"
           >
             <FileCode className="h-3.5 w-3.5" />
             Mermaid
           </button>
           <button
             onClick={handleSVGExport}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted hover:bg-accent rounded-lg transition-colors"
           >
             <Download className="h-3.5 w-3.5" />
             SVG
           </button>
           <button
             onClick={handlePNGExport}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted hover:bg-accent rounded-lg transition-colors"
           >
             <Image className="h-3.5 w-3.5" />
             PNG
@@ -851,7 +851,7 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
       )}
 
       {/* ReactFlow Canvas */}
-      <div className="h-[400px] bg-zinc-50 dark:bg-zinc-900/50">
+      <div className="h-[400px] bg-surface">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -864,10 +864,10 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
           maxZoom={2}
           proOptions={{ hideAttribution: true }}
         >
-          <Controls className="!shadow-lg !border !border-gray-200 dark:!border-gray-700 !rounded-lg !bg-white dark:!bg-gray-800" />
-          <Background color="#e5e7eb" gap={20} className="dark:!bg-gray-950" />
+          <Controls className="!shadow-lg !border !border-border !rounded-lg !bg-card" />
+          <Background color="hsl(var(--border))" gap={20} className="dark:!bg-background" />
           <MiniMap
-            className="!bg-white dark:!bg-gray-800 !border !border-gray-200 dark:!border-gray-700 !rounded-lg !shadow-sm"
+            className="!bg-card !border !border-border !rounded-lg !shadow-sm"
             nodeColor={(node) => {
               if (node.type === 'ghostNode') return '#ef4444';
               const colors = riskColors[node.data?.riskLevel] || riskColors.SAFE;
@@ -878,7 +878,7 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
       </div>
 
       {/* Complete Legend */}
-      <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-400 justify-between">
+      <div className="px-5 py-3 border-t border-border flex flex-wrap items-center gap-4 text-xs text-muted-foreground justify-between">
         <div className="flex items-center gap-4 flex-wrap">
           {/* Risk colors - complete set */}
           <div className="flex items-center gap-1.5">
@@ -901,12 +901,12 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
             <div className="w-3 h-3 rounded bg-red-100 dark:bg-red-900/50 border-2 border-red-500" />
             <span>Critical</span>
           </div>
-          <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-border">
             <div className="w-3 h-3 rounded border-2 border-dashed border-red-400" />
             <span>Missing Control</span>
           </div>
           {/* Edge types */}
-          <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-border">
             <div className="w-4 h-0 border-t-2 border-dashed border-green-500" />
             <span>Guards</span>
           </div>
@@ -915,7 +915,7 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
             <span>Should Guard</span>
           </div>
         </div>
-        <span className="text-gray-400 dark:text-gray-500">
+        <span className="text-muted-foreground">
           Click nodes for details
         </span>
       </div>

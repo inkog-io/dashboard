@@ -92,8 +92,8 @@ export function InkogMdStatus({
     missing: {
       icon: XCircle,
       label: 'No INKOG.md',
-      color: 'text-gray-500 dark:text-gray-400',
-      bgColor: 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700',
+      color: 'text-muted-foreground',
+      bgColor: 'bg-muted border-border',
       description: 'Add an INKOG.md file to declare governance policies',
     },
     invalid: {
@@ -143,19 +143,19 @@ export function InkogMdStatus({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg shadow dark:shadow-gray-800 overflow-hidden">
+    <div className="bg-card rounded-lg shadow-sm overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+        className="w-full flex items-center justify-between p-4 hover:bg-accent transition-colors"
       >
         <div className="flex items-center gap-3">
           <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
           <div className="text-left">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            <h3 className="text-sm font-semibold text-foreground">
               INKOG.md Governance
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-muted-foreground">
               {config.description}
             </p>
           </div>
@@ -171,7 +171,7 @@ export function InkogMdStatus({
                   r="40"
                   fill="none"
                   stroke="currentColor"
-                  className="text-gray-200 dark:text-gray-700"
+                  className="text-border"
                   strokeWidth="12"
                 />
                 <circle
@@ -198,23 +198,23 @@ export function InkogMdStatus({
             {config.label}
           </span>
           {isExpanded ? (
-            <ChevronDown className="w-4 h-4 text-gray-400" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
           ) : (
-            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           )}
         </div>
       </button>
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-4">
+        <div className="border-t border-border p-4 space-y-4">
           {!hasManifest ? (
             <div className="text-center py-4">
-              <FileText className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              <FileText className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground mb-2">
                 No INKOG.md found in this project
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Create an INKOG.md file in your project root to declare governance policies.{' '}
                 <a
                   href="https://docs.inkog.dev/governance/inkog-md"
@@ -247,54 +247,54 @@ export function InkogMdStatus({
               {/* Manifest Sections */}
               <div className="grid grid-cols-2 gap-4">
                 {/* Capabilities */}
-                <div className="border border-gray-200 dark:border-gray-700 rounded-md p-3">
+                <div className="border border-border rounded-md p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Wrench className="w-4 h-4 text-blue-500" />
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <h4 className="text-sm font-medium text-foreground">
                       Capabilities
                     </h4>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       ({manifest.capabilities.length})
                     </span>
                   </div>
                   {manifest.capabilities.length > 0 ? (
                     <ul className="space-y-1">
                       {manifest.capabilities.slice(0, 5).map((cap, idx) => (
-                        <li key={idx} className="text-xs text-gray-600 dark:text-gray-400">
-                          <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
+                        <li key={idx} className="text-xs text-muted-foreground">
+                          <code className="bg-muted px-1 rounded">
                             {cap.name}
                           </code>
                           {cap.description && (
-                            <span className="text-gray-500 ml-1">{cap.description}</span>
+                            <span className="text-muted-foreground ml-1">{cap.description}</span>
                           )}
                         </li>
                       ))}
                       {manifest.capabilities.length > 5 && (
-                        <li className="text-xs text-gray-500">
+                        <li className="text-xs text-muted-foreground">
                           +{manifest.capabilities.length - 5} more
                         </li>
                       )}
                     </ul>
                   ) : (
-                    <p className="text-xs text-gray-500">None declared</p>
+                    <p className="text-xs text-muted-foreground">None declared</p>
                   )}
                 </div>
 
                 {/* Limitations */}
-                <div className="border border-gray-200 dark:border-gray-700 rounded-md p-3">
+                <div className="border border-border rounded-md p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Shield className="w-4 h-4 text-orange-500" />
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <h4 className="text-sm font-medium text-foreground">
                       Limitations
                     </h4>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       ({manifest.limitations.length})
                     </span>
                   </div>
                   {manifest.limitations.length > 0 ? (
                     <ul className="space-y-1">
                       {manifest.limitations.slice(0, 3).map((lim, idx) => (
-                        <li key={idx} className="text-xs text-gray-600 dark:text-gray-400">
+                        <li key={idx} className="text-xs text-muted-foreground">
                           <span className="text-orange-600 dark:text-orange-400">
                             [{lim.type}]
                           </span>{' '}
@@ -303,27 +303,27 @@ export function InkogMdStatus({
                         </li>
                       ))}
                       {manifest.limitations.length > 3 && (
-                        <li className="text-xs text-gray-500">
+                        <li className="text-xs text-muted-foreground">
                           +{manifest.limitations.length - 3} more
                         </li>
                       )}
                     </ul>
                   ) : (
-                    <p className="text-xs text-gray-500">None declared</p>
+                    <p className="text-xs text-muted-foreground">None declared</p>
                   )}
                 </div>
 
                 {/* Human Oversight */}
-                <div className="border border-gray-200 dark:border-gray-700 rounded-md p-3">
+                <div className="border border-border rounded-md p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Eye className="w-4 h-4 text-purple-500" />
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <h4 className="text-sm font-medium text-foreground">
                       Human Oversight
                     </h4>
                   </div>
                   {manifest.human_oversight.require_approval.length > 0 ? (
                     <div className="space-y-1">
-                      <p className="text-xs text-gray-500">Require approval for:</p>
+                      <p className="text-xs text-muted-foreground">Require approval for:</p>
                       <div className="flex flex-wrap gap-1">
                         {manifest.human_oversight.require_approval.map((action, idx) => (
                           <span
@@ -336,25 +336,25 @@ export function InkogMdStatus({
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-500">No approval gates defined</p>
+                    <p className="text-xs text-muted-foreground">No approval gates defined</p>
                   )}
                 </div>
 
                 {/* Data Handling */}
-                <div className="border border-gray-200 dark:border-gray-700 rounded-md p-3">
+                <div className="border border-border rounded-md p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Database className="w-4 h-4 text-green-500" />
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <h4 className="text-sm font-medium text-foreground">
                       Data Handling
                     </h4>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       ({manifest.data_handling.length})
                     </span>
                   </div>
                   {manifest.data_handling.length > 0 ? (
                     <ul className="space-y-1">
                       {manifest.data_handling.map((policy, idx) => (
-                        <li key={idx} className="text-xs text-gray-600 dark:text-gray-400">
+                        <li key={idx} className="text-xs text-muted-foreground">
                           <span className="font-medium">{policy.category}</span>:{' '}
                           <span className="text-green-600 dark:text-green-400">
                             {policy.action}
@@ -363,7 +363,7 @@ export function InkogMdStatus({
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-xs text-gray-500">No policies defined</p>
+                    <p className="text-xs text-muted-foreground">No policies defined</p>
                   )}
                 </div>
               </div>

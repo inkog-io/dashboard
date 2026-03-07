@@ -58,12 +58,12 @@ function NavItemComponent({
         "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
         "hover:bg-muted",
         isActive
-          ? "bg-muted text-foreground border-l-2 border-foreground -ml-[2px] pl-[14px]"
+          ? "bg-primary/10 text-primary border-l-2 border-primary -ml-[2px] pl-[14px]"
           : "text-muted-foreground",
         isCollapsed && "justify-center px-2"
       )}
     >
-      <Icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-foreground")} />
+      <Icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-primary")} />
       {!isCollapsed && (
         <span className="flex items-center gap-2">
           {item.label}

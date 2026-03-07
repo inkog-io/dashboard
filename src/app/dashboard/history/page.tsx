@@ -313,10 +313,10 @@ export default function HistoryPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-2xl font-bold text-foreground">
             Scan History
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-muted-foreground mt-1">
             View and analyze your security scan results
           </p>
         </div>
@@ -336,46 +336,46 @@ export default function HistoryPage() {
       {/* Summary Stats */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <Card className="dark:bg-card dark:border-border">
             <CardContent className="pt-6">
               <div className="flex items-center gap-2">
-                <FileSearch className="h-5 w-5 text-gray-400" />
-                <span className="text-sm text-gray-500 dark:text-gray-400">Total Scans</span>
+                <FileSearch className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Total Scans</span>
               </div>
-              <p className="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
+              <p className="mt-2 text-2xl font-semibold text-foreground">
                 {summary.total_scans}
               </p>
             </CardContent>
           </Card>
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <Card className="dark:bg-card dark:border-border">
             <CardContent className="pt-6">
               <div className="flex items-center gap-2">
-                <History className="h-5 w-5 text-gray-400" />
-                <span className="text-sm text-gray-500 dark:text-gray-400">Files Scanned</span>
+                <History className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Files Scanned</span>
               </div>
-              <p className="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
+              <p className="mt-2 text-2xl font-semibold text-foreground">
                 {summary.total_files_scanned.toLocaleString()}
               </p>
             </CardContent>
           </Card>
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <Card className="dark:bg-card dark:border-border">
             <CardContent className="pt-6">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-gray-400" />
-                <span className="text-sm text-gray-500 dark:text-gray-400">Total Findings</span>
+                <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Total Findings</span>
               </div>
-              <p className="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
+              <p className="mt-2 text-2xl font-semibold text-foreground">
                 {summary.total_findings}
               </p>
             </CardContent>
           </Card>
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <Card className="dark:bg-card dark:border-border">
             <CardContent className="pt-6">
               <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-gray-400" />
-                <span className="text-sm text-gray-500 dark:text-gray-400">Avg Risk Score</span>
+                <Clock className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Avg Risk Score</span>
               </div>
-              <p className="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
+              <p className="mt-2 text-2xl font-semibold text-foreground">
                 {summary.average_risk_score.toFixed(1)}
               </p>
             </CardContent>
@@ -387,28 +387,28 @@ export default function HistoryPage() {
       <HistoryFilters onFiltersChange={handleFiltersChange} loading={loading} />
 
       {/* Scan History Table */}
-      <Card className="dark:bg-gray-800 dark:border-gray-700">
+      <Card className="dark:bg-card dark:border-border">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+          <CardTitle className="flex items-center gap-2 text-foreground">
             <History className="h-5 w-5" />
             Recent Scans
           </CardTitle>
-          <CardDescription className="dark:text-gray-400">
+          <CardDescription className="dark:text-muted-foreground">
             Click a scan to view detailed results
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100" />
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
             </div>
           ) : visibleScans.length === 0 && visiblePendingScans.length === 0 ? (
             <div className="text-center py-8">
-              <History className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+              <History className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-2 text-sm font-semibold text-foreground">
                 No scans found
               </h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {filters.search || filters.dateFrom || filters.dateTo || filters.severity
                   ? "Try adjusting your filters"
                   : "Run your first scan to see results here."}
@@ -416,16 +416,16 @@ export default function HistoryPage() {
               {!filters.search && !filters.dateFrom && !filters.dateTo && !filters.severity && (
                 <div className="mt-4 space-y-3">
                   <div className="flex items-center justify-center gap-2">
-                    <Terminal className="h-4 w-4 text-gray-500" />
-                    <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded text-sm text-gray-800 dark:text-gray-200">
+                    <Terminal className="h-4 w-4 text-muted-foreground" />
+                    <code className="bg-muted px-3 py-2 rounded text-sm text-foreground">
                       inkog scan ./your-agent
                     </code>
                   </div>
-                  <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                     <span>or</span>
                     <Link
                       href="/dashboard/scan"
-                      className="inline-flex items-center gap-1.5 text-gray-900 dark:text-gray-100 hover:underline font-medium"
+                      className="inline-flex items-center gap-1.5 text-foreground hover:underline font-medium"
                     >
                       <Upload className="h-3.5 w-3.5" />
                       upload files directly
@@ -438,8 +438,8 @@ export default function HistoryPage() {
             <>
               <Table>
                 <TableHeader>
-                  <TableRow className="dark:border-gray-700">
-                    <TableHead className="dark:text-gray-400">
+                  <TableRow className="dark:border-border">
+                    <TableHead className="dark:text-muted-foreground">
                       <SortableHeader
                         label="Date"
                         sortKey="date"
@@ -448,9 +448,9 @@ export default function HistoryPage() {
                         onSort={handleSort}
                       />
                     </TableHead>
-                    <TableHead className="dark:text-gray-400">Agent</TableHead>
-                    <TableHead className="dark:text-gray-400">Files</TableHead>
-                    <TableHead className="dark:text-gray-400">
+                    <TableHead className="dark:text-muted-foreground">Agent</TableHead>
+                    <TableHead className="dark:text-muted-foreground">Files</TableHead>
+                    <TableHead className="dark:text-muted-foreground">
                       <SortableHeader
                         label="Findings"
                         sortKey="findings_count"
@@ -459,7 +459,7 @@ export default function HistoryPage() {
                         onSort={handleSort}
                       />
                     </TableHead>
-                    <TableHead className="dark:text-gray-400">
+                    <TableHead className="dark:text-muted-foreground">
                       <SortableHeader
                         label="Risk Score"
                         sortKey="risk_score"
@@ -468,7 +468,7 @@ export default function HistoryPage() {
                         onSort={handleSort}
                       />
                     </TableHead>
-                    <TableHead className="dark:text-gray-400">
+                    <TableHead className="dark:text-muted-foreground">
                       <SortableHeader
                         label="Governance"
                         sortKey="governance_score"
@@ -477,8 +477,8 @@ export default function HistoryPage() {
                         onSort={handleSort}
                       />
                     </TableHead>
-                    <TableHead className="dark:text-gray-400">Duration</TableHead>
-                    <TableHead className="dark:text-gray-400">Status</TableHead>
+                    <TableHead className="dark:text-muted-foreground">Duration</TableHead>
+                    <TableHead className="dark:text-muted-foreground">Status</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
@@ -487,22 +487,22 @@ export default function HistoryPage() {
                     row.kind === "pending" ? (
                       <TableRow
                         key={`pending-${row.data.scanId}`}
-                        className="dark:border-gray-700 bg-blue-50/50 dark:bg-blue-900/10"
+                        className="dark:border-border bg-blue-50/50 dark:bg-blue-900/10"
                       >
-                        <TableCell className="text-gray-600 dark:text-gray-400">
+                        <TableCell className="text-muted-foreground">
                           {formatDate(row.data.startedAt)}
                         </TableCell>
-                        <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                        <TableCell className="font-medium text-foreground">
                           <span className="inline-flex items-center gap-1.5">
                             <Bot className="h-4 w-4" />
                             {row.data.agentName}
                           </span>
                         </TableCell>
-                        <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
-                        <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
-                        <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
-                        <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
-                        <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                        <TableCell className="text-muted-foreground">--</TableCell>
+                        <TableCell className="text-muted-foreground">--</TableCell>
+                        <TableCell className="text-muted-foreground">--</TableCell>
+                        <TableCell className="text-muted-foreground">--</TableCell>
+                        <TableCell className="text-muted-foreground">--</TableCell>
                         <TableCell>
                           <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -514,15 +514,15 @@ export default function HistoryPage() {
                     ) : (
                       <TableRow
                         key={row.data.id}
-                        className="dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer group"
+                        className="dark:border-border hover:bg-accent cursor-pointer group"
                         onClick={() => router.push(`/dashboard/results/${row.data.id}`)}
                       >
-                        <TableCell className="text-gray-600 dark:text-gray-400">
+                        <TableCell className="text-muted-foreground">
                           {formatDate(row.data.created_at)}
                         </TableCell>
-                        <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                        <TableCell className="font-medium text-foreground">
                           <span className="inline-flex items-center gap-1.5">
-                            {row.data.agent_name || <span className="text-gray-400 italic">Unnamed</span>}
+                            {row.data.agent_name || <span className="text-muted-foreground italic">Unnamed</span>}
                             {row.data.scan_policy === "deep-checks" ? (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
                                 Inkog Deep
@@ -536,19 +536,19 @@ export default function HistoryPage() {
                         </TableCell>
                         {row.data.findings_count === -1 ? (
                           <>
-                            <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
-                            <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
-                            <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
-                            <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
-                            <TableCell className="text-gray-400 dark:text-gray-500">--</TableCell>
+                            <TableCell className="text-muted-foreground">--</TableCell>
+                            <TableCell className="text-muted-foreground">--</TableCell>
+                            <TableCell className="text-muted-foreground">--</TableCell>
+                            <TableCell className="text-muted-foreground">--</TableCell>
+                            <TableCell className="text-muted-foreground">--</TableCell>
                           </>
                         ) : (
                           <>
-                            <TableCell className="dark:text-gray-300">
+                            <TableCell className="dark:text-foreground">
                               {row.data.files_scanned}
                             </TableCell>
                             <TableCell>
-                              <span className="font-medium dark:text-gray-200">
+                              <span className="font-medium dark:text-foreground">
                                 {row.data.findings_count}
                               </span>
                             </TableCell>
@@ -580,7 +580,7 @@ export default function HistoryPage() {
                                 {row.data.governance_score ?? "--"}
                               </span>
                             </TableCell>
-                            <TableCell className="text-gray-500 dark:text-gray-400">
+                            <TableCell className="text-muted-foreground">
                               {row.data.duration_ms === 0
                                 ? "--"
                                 : row.data.duration_ms >= 1000
@@ -600,13 +600,13 @@ export default function HistoryPage() {
                                   e.stopPropagation();
                                   setDeleteScanId(row.data.id);
                                 }}
-                                className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                                 title="Delete scan"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             )}
-                            <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
+                            <ChevronRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground" />
                           </div>
                         </TableCell>
                       </TableRow>
@@ -615,7 +615,7 @@ export default function HistoryPage() {
               </Table>
 
               {/* Pagination */}
-              <div className="border-t border-gray-200 dark:border-gray-700 mt-4">
+              <div className="border-t border-border mt-4">
                 <Pagination
                   page={pagination.page}
                   pageSize={pagination.page_size}

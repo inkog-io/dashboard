@@ -40,7 +40,7 @@ function SeverityBadge({ severity }: { severity: string }) {
 
 function FindingPreview({ finding }: { finding: Finding }) {
   return (
-    <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+    <div className="flex items-start gap-3 p-3 rounded-lg bg-surface hover:bg-accent transition-colors">
       <div className="flex-shrink-0 mt-0.5">
         {finding.severity === "CRITICAL" || finding.severity === "HIGH" ? (
           <AlertCircle className="w-4 h-4 text-red-600" />
@@ -52,12 +52,12 @@ function FindingPreview({ finding }: { finding: Finding }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-gray-900 truncate">
+          <span className="text-sm font-medium text-foreground truncate">
             {finding.pattern || finding.message.split(".")[0]}
           </span>
           <SeverityBadge severity={finding.severity} />
         </div>
-        <p className="mt-1 text-xs text-gray-500 line-clamp-1">
+        <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
           {finding.file}:{finding.line}
         </p>
       </div>
@@ -95,35 +95,35 @@ export function QuickScanResults({
           <RiskIcon className={cn("w-8 h-8", riskLevel.color)} />
         </div>
 
-        <h2 className="text-2xl font-bold text-gray-900">
+        <h2 className="text-2xl font-bold text-foreground">
           Scan Complete
         </h2>
-        <p className="mt-1 text-gray-500">
+        <p className="mt-1 text-muted-foreground">
           {agentName}
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="text-center p-4 rounded-xl bg-gray-50">
+        <div className="text-center p-4 rounded-xl bg-surface">
           <div className={cn("text-3xl font-bold", riskLevel.color)}>
             {result.risk_score}
           </div>
-          <div className="text-xs text-gray-500 mt-1">Risk Score</div>
+          <div className="text-xs text-muted-foreground mt-1">Risk Score</div>
         </div>
-        <div className="text-center p-4 rounded-xl bg-gray-50">
-          <div className="text-3xl font-bold text-gray-900">
+        <div className="text-center p-4 rounded-xl bg-surface">
+          <div className="text-3xl font-bold text-foreground">
             {result.findings_count}
           </div>
-          <div className="text-xs text-gray-500 mt-1">
+          <div className="text-xs text-muted-foreground mt-1">
             {result.findings_count === 1 ? "Finding" : "Findings"}
           </div>
         </div>
-        <div className="text-center p-4 rounded-xl bg-gray-50">
-          <div className="text-3xl font-bold text-gray-900">
+        <div className="text-center p-4 rounded-xl bg-surface">
+          <div className="text-3xl font-bold text-foreground">
             {result.governance_score || 0}%
           </div>
-          <div className="text-xs text-gray-500 mt-1">Governance</div>
+          <div className="text-xs text-muted-foreground mt-1">Governance</div>
         </div>
       </div>
 
@@ -133,7 +133,7 @@ export function QuickScanResults({
           {result.critical_count > 0 && (
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-red-500" />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 {result.critical_count} Critical
               </span>
             </div>
@@ -141,7 +141,7 @@ export function QuickScanResults({
           {result.high_count > 0 && (
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-orange-500" />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 {result.high_count} High
               </span>
             </div>
@@ -149,7 +149,7 @@ export function QuickScanResults({
           {result.medium_count > 0 && (
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-amber-500" />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 {result.medium_count} Medium
               </span>
             </div>
@@ -157,7 +157,7 @@ export function QuickScanResults({
           {result.low_count > 0 && (
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 {result.low_count} Low
               </span>
             </div>
@@ -168,7 +168,7 @@ export function QuickScanResults({
       {/* Top Findings Preview */}
       {topFindings.length > 0 && (
         <div className="mb-8">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">
+          <h3 className="text-sm font-medium text-foreground mb-3">
             Top Findings
           </h3>
           <div className="space-y-2">
@@ -179,7 +179,7 @@ export function QuickScanResults({
           {result.findings.length > 3 && (
             <button
               onClick={onViewFullReport}
-              className="w-full mt-2 text-sm text-gray-500 hover:text-gray-700 py-2"
+              className="w-full mt-2 text-sm text-muted-foreground hover:text-foreground py-2"
             >
               +{result.findings.length - 3} more findings
             </button>
@@ -206,10 +206,10 @@ export function QuickScanResults({
               : "text-red-600"
           )} />
           <div>
-            <div className="text-sm font-medium text-gray-900">
+            <div className="text-sm font-medium text-foreground">
               EU AI Act Readiness
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-muted-foreground">
               Article 14 compliance assessment
             </div>
           </div>
@@ -241,7 +241,7 @@ export function QuickScanResults({
         </Button>
         <Button
           onClick={onContinue}
-          className="flex-1 bg-gray-900 hover:bg-gray-800"
+          className="flex-1 bg-foreground text-background hover:bg-foreground/90"
         >
           Continue to Dashboard
           <ArrowRight className="w-4 h-4 ml-2" />

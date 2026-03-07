@@ -252,7 +252,7 @@ export default function PublicScanPage() {
                     <button
                       key={url}
                       onClick={() => handleScan(url)}
-                      className="px-3 py-1.5 rounded-md bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs font-mono border border-amber-200 dark:border-amber-700 transition-colors text-foreground"
+                      className="px-3 py-1.5 rounded-md bg-card hover:bg-accent text-xs font-mono border border-amber-200 dark:border-amber-700 transition-colors text-foreground"
                     >
                       {url.replace("https://github.com/", "")}
                     </button>

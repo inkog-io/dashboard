@@ -112,12 +112,12 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
       {/* Panel - z-[60] to appear above Sheet content (z-50) */}
       <div
         ref={panelRef}
-        className={`fixed right-0 top-0 h-full w-full max-w-xl bg-white dark:bg-gray-900 shadow-2xl z-[60] transform transition-transform duration-300 ease-out overflow-hidden flex flex-col ${
+        className={`fixed right-0 top-0 h-full w-full max-w-xl bg-card shadow-2xl z-[60] transform transition-transform duration-300 ease-out overflow-hidden flex flex-col ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+        <div className="flex-shrink-0 px-6 py-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span
               className={`px-2.5 py-1 text-xs font-semibold rounded-md border ${colors.bg} ${colors.text} ${colors.border}`}
@@ -125,14 +125,14 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
               {finding.severity}
             </span>
             {finding.cwe && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+              <span className="text-xs text-muted-foreground font-mono">
                 {finding.cwe}
               </span>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="p-2 -mr-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
             aria-label="Close panel"
           >
             <X className="w-5 h-5" />
@@ -144,25 +144,25 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
           <div className="px-6 py-6 space-y-8">
             {/* Title and Message */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              <h2 className="text-xl font-semibold text-foreground mb-2">
                 {title}
               </h2>
               {shortDesc && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                <p className="text-sm text-muted-foreground mb-3">
                   {shortDesc}
                 </p>
               )}
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                 {finding.message}
               </p>
             </div>
 
             {/* Location */}
             <div className="flex items-start gap-3">
-              <MapPin className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+              <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
               <div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Location</span>
-                <code className="block mt-1 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono text-gray-800 dark:text-gray-200">
+                <span className="text-sm font-medium text-foreground">Location</span>
+                <code className="block mt-1 text-sm bg-muted px-2 py-1 rounded font-mono text-foreground">
                   {finding.file}:{finding.line}
                   {finding.column > 0 && `:${finding.column}`}
                 </code>
@@ -172,7 +172,7 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
             {/* Code Snippet */}
             {finding.code_snippet && (
               <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Code</h3>
+                <h3 className="text-sm font-medium text-foreground mb-3">Code</h3>
                 <CodeSnippetDisplay
                   code={finding.code_snippet}
                   file={finding.file}
@@ -186,14 +186,14 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
               <div className="flex items-start gap-3">
                 <AlertTriangle className={`w-5 h-5 ${colors.icon} flex-shrink-0 mt-0.5`} />
                 <div>
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100">{tier.label}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{tier.description}</p>
+                  <h3 className="font-medium text-foreground">{tier.label}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{tier.description}</p>
                   {finding.input_tainted && finding.taint_source && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                    <p className="text-sm text-muted-foreground mt-2">
                       <span className="font-medium">Taint source:</span> {finding.taint_source}
                     </p>
                   )}
-                  <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="mt-2 text-sm text-muted-foreground">
                     Confidence: {Math.round((finding.confidence || 0) * 100)}%
                     {finding.calibrated_confidence !== undefined && (
                       <span className="ml-2">
@@ -212,7 +212,7 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
                             ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                             : finding.calibration_reliability === 'moderate'
                             ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                            : 'bg-muted text-muted-foreground'
                         }`}
                       >
                         {finding.calibration_reliability.replace('_', ' ')} reliability
@@ -226,7 +226,7 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
             {/* Explanation Trace */}
             {finding.explanation_trace && (
               <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4" />
                   Analysis Trace
                 </h3>
@@ -239,7 +239,7 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
             {/* Remediation */}
             {(finding.remediation_steps?.length || finding.remediation_code) && (
               <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                   <Shield className="w-4 h-4" />
                   How to Fix
                   {finding.fix_difficulty && (
@@ -256,7 +256,7 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
                   {finding.remediation_steps && finding.remediation_steps.length > 0 && (
                     <ul className="space-y-2">
                       {finding.remediation_steps.map((step, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <li key={idx} className="flex items-start gap-2 text-sm text-foreground">
                           <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400 flex-shrink-0 mt-0.5" />
                           <span>{step}</span>
                         </li>
@@ -265,8 +265,8 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
                   )}
                   {finding.remediation_code && (
                     <div className={`${finding.remediation_steps?.length ? 'mt-4 pt-4 border-t border-green-200 dark:border-green-900' : ''}`}>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Example fix:</p>
-                      <pre className="text-xs bg-white/50 dark:bg-gray-900/50 p-3 rounded border border-green-200 dark:border-green-900 overflow-x-auto font-mono text-gray-800 dark:text-gray-200">
+                      <p className="text-xs text-muted-foreground mb-2">Example fix:</p>
+                      <pre className="text-xs bg-card/50 p-3 rounded border border-green-200 dark:border-green-900 overflow-x-auto font-mono text-foreground">
                         {finding.remediation_code}
                       </pre>
                     </div>
@@ -278,7 +278,7 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
             {/* Compliance Mapping */}
             {complianceItems.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                <h3 className="text-sm font-medium text-foreground mb-3">
                   Compliance & Standards
                 </h3>
                 <div className="flex flex-wrap gap-2">
@@ -289,14 +289,14 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
                           href={item.href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-md transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-muted hover:bg-accent text-foreground text-xs rounded-md transition-colors"
                         >
                           <span className="font-medium">{item.label}:</span>
                           <span>{item.value}</span>
-                          <ExternalLink className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                          <ExternalLink className="w-3 h-3 text-muted-foreground" />
                         </a>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded-md">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-muted text-foreground text-xs rounded-md">
                           <span className="font-medium">{item.label}:</span>
                           <span>{item.value}</span>
                         </span>
@@ -310,8 +310,8 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex-shrink-0 px-6 py-4 border-t border-border bg-muted">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Pattern ID: {finding.pattern_id}</span>
             <span>Finding ID: {finding.id?.slice(0, 8) || "N/A"}</span>
           </div>

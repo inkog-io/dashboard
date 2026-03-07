@@ -90,16 +90,16 @@ export function PolicySelector({ value, onChange, className }: PolicySelectorPro
     <div className={cn("relative", className)}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm bg-card border border-border rounded-lg hover:border-muted-foreground transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-gray-500 dark:text-gray-400">{selected.icon}</span>
-          <span className="font-medium text-gray-900 dark:text-gray-100">{selected.name}</span>
-          <span className="text-xs text-gray-400 dark:text-gray-500">({selected.tiers})</span>
+          <span className="text-muted-foreground">{selected.icon}</span>
+          <span className="font-medium text-foreground">{selected.name}</span>
+          <span className="text-xs text-muted-foreground">({selected.tiers})</span>
         </div>
         <ChevronDown
           className={cn(
-            "w-4 h-4 text-gray-400 transition-transform",
+            "w-4 h-4 text-muted-foreground transition-transform",
             isOpen && "rotate-180"
           )}
         />
@@ -114,19 +114,19 @@ export function PolicySelector({ value, onChange, className }: PolicySelectorPro
           />
 
           {/* Dropdown */}
-          <div className="absolute z-20 top-full left-0 right-0 mt-1 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+          <div className="absolute z-20 top-full left-0 right-0 mt-1 py-1 bg-card border border-border rounded-lg shadow-lg">
             {POLICY_OPTIONS.map((option) => (
               <button
                 key={option.id}
                 onClick={() => handleSelect(option.id)}
                 className={cn(
-                  "w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors text-left",
+                  "w-full flex items-start gap-3 px-4 py-3 hover:bg-accent transition-colors text-left",
                   selectedPolicy === option.id && "bg-indigo-50 dark:bg-indigo-950"
                 )}
               >
                 <span
                   className={cn(
-                    "mt-0.5 text-gray-400 dark:text-gray-500",
+                    "mt-0.5 text-muted-foreground",
                     selectedPolicy === option.id && "text-indigo-600 dark:text-indigo-400"
                   )}
                 >
@@ -136,20 +136,20 @@ export function PolicySelector({ value, onChange, className }: PolicySelectorPro
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "font-medium text-gray-900 dark:text-gray-100",
+                        "font-medium text-foreground",
                         selectedPolicy === option.id && "text-indigo-600 dark:text-indigo-400"
                       )}
                     >
                       {option.name}
                     </span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       {option.tiers}
                     </span>
                     {selectedPolicy === option.id && (
                       <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400 ml-auto" />
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {option.description}
                   </p>
                 </div>

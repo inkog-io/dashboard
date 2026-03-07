@@ -81,7 +81,7 @@ export function GroupedFindings({ findings, onFindingClick }: GroupedFindingsPro
   };
 
   return (
-    <div className="divide-y divide-gray-100 dark:divide-gray-800">
+    <div className="divide-y divide-border">
       {groups.map((group) => {
         const isMultiple = group.findings.length > 1;
         const isExpanded = expandedGroups.has(group.key);
@@ -100,20 +100,20 @@ export function GroupedFindings({ findings, onFindingClick }: GroupedFindingsPro
 
         // Multiple findings - render collapsible group
         return (
-          <div key={group.key} className="bg-white dark:bg-gray-900">
+          <div key={group.key} className="bg-card">
             {/* Group Header */}
             <button
               onClick={() => toggleGroup(group.key)}
-              className="w-full text-left px-5 py-3 flex items-center justify-between gap-3 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors duration-150 focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-800"
+              className="w-full text-left px-5 py-3 flex items-center justify-between gap-3 hover:bg-accent transition-colors duration-150 focus:outline-none focus:bg-accent"
             >
               <div className="flex items-center gap-3">
                 {isExpanded ? (
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 )}
 
-                <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono text-sm text-gray-700 dark:text-gray-300">
+                <code className="bg-muted px-2 py-1 rounded font-mono text-sm text-foreground">
                   {group.file}:{group.line}
                 </code>
 
@@ -127,7 +127,7 @@ export function GroupedFindings({ findings, onFindingClick }: GroupedFindingsPro
 
             {/* Expanded findings */}
             {isExpanded && (
-              <div className="border-l-2 border-gray-200 dark:border-gray-700 ml-7">
+              <div className="border-l-2 border-border ml-7">
                 {group.findings.map((finding, index) => (
                   <FindingCard
                     key={finding.id || `${group.key}-${index}`}

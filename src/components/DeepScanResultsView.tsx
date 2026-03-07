@@ -148,7 +148,7 @@ const SEVERITY_CONFIG = {
 const CONFIDENCE_BADGE = {
   HIGH: "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800",
   MEDIUM: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800",
-  LOW: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700",
+  LOW: "bg-muted text-muted-foreground border-border",
 } as const;
 
 type SeverityKey = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
@@ -185,7 +185,7 @@ export function DeepScanResultsView({ report, scanMeta }: DeepScanResultsViewPro
   return (
     <div className="space-y-6">
       {/* ── 1. Summary Stats ── */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+      <div className="bg-card rounded-xl border border-border shadow-sm p-6">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <StatCell label="Files Scanned" value={scanMeta.files_scanned} />
           <StatCell label="Total Findings" value={scanMeta.findings_count} />
@@ -194,7 +194,7 @@ export function DeepScanResultsView({ report, scanMeta }: DeepScanResultsViewPro
           <StatCell label="Risk Score" value={scanMeta.risk_score} className="bg-violet-50 dark:bg-violet-900/20" valueClassName="text-violet-600 dark:text-violet-400" />
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground">
           <span title="Rules that produced a Finding or Clean result. Rules marked N/A were not applicable to this agent's architecture (e.g., SQL injection on an agent with no database access). All rules were evaluated.">{report.report.detection_rules_applied} / {report.report.detection_rules_total} detection rules applied</span>
           <span className="hidden sm:inline">&middot;</span>
           <span>{report.report.total_clean} clean detections</span>
@@ -202,10 +202,10 @@ export function DeepScanResultsView({ report, scanMeta }: DeepScanResultsViewPro
       </div>
 
       {/* ── 2. Agent Profile ── */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-border flex items-center gap-2">
           <Cpu className="h-4 w-4 text-violet-500" />
-          <h2 className="font-semibold text-gray-900 dark:text-gray-100">Agent Profile</h2>
+          <h2 className="font-semibold text-foreground">Agent Profile</h2>
         </div>
         <div className="p-6 space-y-5">
           {/* Row 1: Framework / Language / Multi-Agent */}
@@ -224,7 +224,7 @@ export function DeepScanResultsView({ report, scanMeta }: DeepScanResultsViewPro
           {/* High-Risk Operations */}
           {report.agent_profile.high_risk_operations.length > 0 && (
             <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">High-Risk Operations</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">High-Risk Operations</p>
               <div className="flex flex-wrap gap-2">
                 {report.agent_profile.high_risk_operations.map((op, i) => (
                   <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800">
@@ -267,13 +267,13 @@ export function DeepScanResultsView({ report, scanMeta }: DeepScanResultsViewPro
       />
 
       {/* ── 5. Findings ── */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-violet-500" />
-            <h2 className="font-semibold text-gray-900 dark:text-gray-100">
+            <h2 className="font-semibold text-foreground">
               Findings
-              <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
                 ({filteredFindings.length}{severityFilter !== "ALL" ? ` of ${report.findings.length}` : ""})
               </span>
             </h2>
@@ -300,7 +300,7 @@ export function DeepScanResultsView({ report, scanMeta }: DeepScanResultsViewPro
         </div>
 
         {/* Finding cards */}
-        <div className="divide-y divide-gray-100 dark:divide-gray-800">
+        <div className="divide-y divide-border">
           {filteredFindings.map((finding) => (
             <FindingCard
               key={finding.finding_number}
@@ -309,7 +309,7 @@ export function DeepScanResultsView({ report, scanMeta }: DeepScanResultsViewPro
             />
           ))}
           {filteredFindings.length === 0 && (
-            <div className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+            <div className="px-6 py-12 text-center text-muted-foreground">
               {report.findings.length === 0 ? (
                 <div className="flex flex-col items-center gap-2">
                   <CheckCircle2 className="h-8 w-8 text-green-500" />
@@ -332,14 +332,14 @@ export function DeepScanResultsView({ report, scanMeta }: DeepScanResultsViewPro
           title="Clean Detections"
           count={report.clean_detections.length}
         >
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+          <div className="divide-y divide-border">
             {report.clean_detections.map((cd, i) => (
               <div key={i} className="px-6 py-3 flex items-start gap-3 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                 <div>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{cd.rule_name}</span>
-                  <span className="text-gray-400 mx-1.5">&middot;</span>
-                  <span className="text-gray-500 dark:text-gray-400">{cd.reason}</span>
+                  <span className="font-medium text-foreground">{cd.rule_name}</span>
+                  <span className="text-muted-foreground mx-1.5">&middot;</span>
+                  <span className="text-muted-foreground">{cd.reason}</span>
                 </div>
               </div>
             ))}
@@ -349,19 +349,19 @@ export function DeepScanResultsView({ report, scanMeta }: DeepScanResultsViewPro
 
       {/* ── 7. Compliance Summary ── */}
       {report.compliance_summary.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-violet-500" />
-            <h2 className="font-semibold text-gray-900 dark:text-gray-100">Compliance Summary</h2>
+            <h2 className="font-semibold text-foreground">Compliance Summary</h2>
           </div>
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {report.compliance_summary.map((cs, i) => (
-              <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50">
-                <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{cs.framework}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <div key={i} className="border border-border rounded-lg p-4 bg-muted">
+                <p className="font-medium text-sm text-foreground">{cs.framework}</p>
+                <p className="text-xs text-muted-foreground mt-1">
                   {cs.relevant_findings.length} relevant finding{cs.relevant_findings.length !== 1 ? "s" : ""}
                   {cs.relevant_findings.length > 0 && (
-                    <span className="ml-1 text-gray-400 dark:text-gray-500">
+                    <span className="ml-1 text-muted-foreground">
                       (#{cs.relevant_findings.join(", #")})
                     </span>
                   )}
@@ -412,9 +412,9 @@ export function DeepScanResultsView({ report, scanMeta }: DeepScanResultsViewPro
 
 function StatCell({ label, value, className, valueClassName }: { label: string; value: number; className?: string; valueClassName?: string }) {
   return (
-    <div className={`text-center p-3 rounded-lg ${className || "bg-gray-50 dark:bg-gray-700/50"}`}>
-      <p className={`text-2xl font-bold ${valueClassName || "text-gray-900 dark:text-gray-100"}`}>{value}</p>
-      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{label}</p>
+    <div className={`text-center p-3 rounded-lg ${className || "bg-muted"}`}>
+      <p className={`text-2xl font-bold ${valueClassName || "text-foreground"}`}>{value}</p>
+      <p className="text-xs text-muted-foreground uppercase">{label}</p>
     </div>
   );
 }
@@ -422,8 +422,8 @@ function StatCell({ label, value, className, valueClassName }: { label: string; 
 function ProfileField({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">{label}</p>
-      <p className="text-sm text-gray-900 dark:text-gray-100">{value}</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
+      <p className="text-sm text-foreground">{value}</p>
     </div>
   );
 }
@@ -431,11 +431,11 @@ function ProfileField({ label, value }: { label: string; value: string }) {
 function SubtleList({ label, items }: { label: string; items: string[] }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1.5">{label}</p>
       <ul className="space-y-1">
         {items.map((item, i) => (
-          <li key={i} className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-            <span className="h-1 w-1 rounded-full bg-gray-400 dark:bg-gray-600 flex-shrink-0" />
+          <li key={i} className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <span className="h-1 w-1 rounded-full bg-muted-foreground flex-shrink-0" />
             {item}
           </li>
         ))}
@@ -462,8 +462,8 @@ function FilterPill({
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
         active
-          ? "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-gray-900 dark:border-gray-100"
-          : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
+          ? "bg-foreground text-background border-foreground"
+          : "bg-card text-muted-foreground border-border hover:border-muted-foreground"
       }`}
     >
       {dotColor && <span className={`h-2 w-2 rounded-full ${dotColor}`} />}
@@ -489,17 +489,17 @@ function CollapsibleSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full px-6 py-4 flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+        className="w-full px-6 py-4 flex items-center gap-2 hover:bg-accent transition-colors"
       >
         {icon}
-        <h2 className="font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+        <h2 className="font-semibold text-foreground">{title}</h2>
         {count !== undefined && (
-          <span className="text-sm font-normal text-gray-500 dark:text-gray-400">({count})</span>
+          <span className="text-sm font-normal text-muted-foreground">({count})</span>
         )}
-        <span className="ml-auto text-gray-400">
+        <span className="ml-auto text-muted-foreground">
           {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </span>
       </button>
@@ -511,8 +511,8 @@ function CollapsibleSection({
 function MethodologyField({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">{label}</p>
-      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{value}</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
+      <p className="text-sm text-foreground leading-relaxed">{value}</p>
     </div>
   );
 }
@@ -527,9 +527,9 @@ function FindingCard({
   const sev = SEVERITY_CONFIG[finding.severity];
 
   return (
-    <button onClick={onClick} className="w-full px-6 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+    <button onClick={onClick} className="w-full px-6 py-4 text-left hover:bg-accent transition-colors">
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 text-gray-400">
+        <span className="mt-0.5 text-muted-foreground">
           <ChevronRight className="h-4 w-4" />
         </span>
 
@@ -541,8 +541,8 @@ function FindingCard({
         {/* Title + tags */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center flex-wrap gap-2">
-            <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{finding.title}</span>
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+            <span className="font-medium text-sm text-foreground">{finding.title}</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border">
               {finding.category}
             </span>
             <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${CONFIDENCE_BADGE[finding.confidence]}`}>
@@ -553,7 +553,7 @@ function FindingCard({
           {/* Affected files */}
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {finding.affected_files.map((af, i) => (
-              <span key={i} className="inline-flex items-center gap-1 text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              <span key={i} className="inline-flex items-center gap-1 text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                 <FileCode className="h-3 w-3" />
                 {af.file_path}:{af.line_numbers}
               </span>
@@ -567,7 +567,7 @@ function FindingCard({
 
 function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <p className={`text-xs font-semibold uppercase tracking-wider mb-1.5 ${className || "text-gray-500 dark:text-gray-400"}`}>
+    <p className={`text-xs font-semibold uppercase tracking-wider mb-1.5 ${className || "text-muted-foreground"}`}>
       {children}
     </p>
   );

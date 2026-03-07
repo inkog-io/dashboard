@@ -18,7 +18,7 @@ export function Skeleton({ className }: SkeletonProps) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-md bg-gray-200 dark:bg-gray-700",
+        "animate-pulse rounded-md bg-muted",
         className
       )}
     />
@@ -55,7 +55,7 @@ export function SkeletonText({
  */
 export function SkeletonMetricCard() {
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-800">
+    <div className="rounded-xl border border-border p-5 bg-card">
       <div className="flex items-start justify-between">
         <Skeleton className="h-10 w-10 rounded-lg" />
         <Skeleton className="h-6 w-16 rounded-full" />
@@ -74,7 +74,7 @@ export function SkeletonMetricCard() {
  */
 export function SkeletonFindingCard() {
   return (
-    <div className="px-5 py-4 flex items-center gap-4 border-b border-gray-100 dark:border-gray-800">
+    <div className="px-5 py-4 flex items-center gap-4 border-b border-border">
       <Skeleton className="h-4 w-4 rounded-full flex-shrink-0" />
       <Skeleton className="h-6 w-16 rounded-md flex-shrink-0" />
       <div className="flex-1 space-y-2">
@@ -120,7 +120,7 @@ export function SkeletonScanSummary() {
  */
 export function SkeletonTableRow() {
   return (
-    <tr className="border-b border-gray-100 dark:border-gray-800">
+    <tr className="border-b border-border">
       <td className="py-4 px-4">
         <Skeleton className="h-4 w-32" />
       </td>
@@ -145,11 +145,11 @@ export function SkeletonTableRow() {
  */
 export function SkeletonHistoryTable({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="rounded-xl border border-border overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+            <tr className="bg-muted border-b border-border">
               <th className="py-3 px-4 text-left">
                 <Skeleton className="h-4 w-16" />
               </th>
@@ -183,7 +183,7 @@ export function SkeletonHistoryTable({ rows = 5 }: { rows?: number }) {
  */
 export function SkeletonApiKeyCard() {
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-800">
+    <div className="rounded-xl border border-border p-5 bg-card">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Skeleton className="h-10 w-10 rounded-lg" />
@@ -207,7 +207,7 @@ export function SkeletonApiKeyCard() {
  */
 export function SkeletonTopologyMap() {
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 h-[400px] flex items-center justify-center">
+    <div className="rounded-xl border border-border bg-card h-[400px] flex items-center justify-center">
       <div className="text-center space-y-4">
         <Skeleton className="h-16 w-16 rounded-full mx-auto" />
         <Skeleton className="h-4 w-32 mx-auto" />
@@ -245,7 +245,7 @@ export function SkeletonDashboardPage() {
           <SkeletonHistoryTable rows={5} />
         </div>
         <div>
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-800 space-y-4">
+          <div className="rounded-xl border border-border p-5 bg-card space-y-4">
             <Skeleton className="h-6 w-32" />
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -273,8 +273,8 @@ export function SkeletonScanResults() {
       <SkeletonScanSummary />
 
       {/* Findings */}
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
-        <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-700">
+      <div className="rounded-xl border border-border overflow-hidden bg-card">
+        <div className="px-5 py-3 border-b border-border">
           <Skeleton className="h-5 w-32" />
         </div>
         {Array.from({ length: 5 }).map((_, i) => (

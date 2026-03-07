@@ -82,7 +82,7 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left px-5 py-4 flex items-center justify-between gap-4 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors duration-150 focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-800 group border-l-2 ${
+      className={`w-full text-left px-5 py-4 flex items-center justify-between gap-4 hover:bg-accent transition-colors duration-150 focus:outline-none focus:bg-accent group border-l-2 ${
         isGovernance ? "border-l-violet-500" :
         finding.severity === "CRITICAL" ? "border-l-red-500" :
         finding.severity === "HIGH" ? "border-l-orange-500" :
@@ -111,7 +111,7 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
         <div className="min-w-0 flex-1">
           {/* Title Row */}
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+            <h3 className="text-sm font-medium text-foreground truncate">
               {title}
             </h3>
             {/* Finding Type Badge */}
@@ -127,8 +127,8 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
           </div>
 
           {/* File and metadata */}
-          <div className="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-            <code className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded font-mono text-gray-700 dark:text-gray-300">
+          <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+            <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-foreground">
               {finding.file}:{finding.line}
             </code>
             {/* Calibration indicator */}
@@ -139,7 +139,7 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
                     ? 'bg-green-50 text-green-600'
                     : finding.calibration_reliability === 'moderate'
                     ? 'bg-blue-50 text-blue-600'
-                    : 'bg-gray-100 text-gray-500'
+                    : 'bg-muted text-muted-foreground'
                 }`}
                 title={`Calibrated: ${Math.round(finding.calibrated_confidence * 100)}% (${finding.calibration_samples} samples)`}
               >
@@ -169,12 +169,12 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
               </span>
             )}
             {complianceTag && (
-              <span className="text-gray-500 dark:text-gray-400">
+              <span className="text-muted-foreground">
                 {complianceTag}
               </span>
             )}
             {!isGovernance && finding.risk_tier && tierLabels[finding.risk_tier] && (
-              <span className="text-gray-500 dark:text-gray-400">
+              <span className="text-muted-foreground">
                 {tierLabels[finding.risk_tier]}
               </span>
             )}
@@ -212,7 +212,7 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
 
       {/* Arrow */}
       <ChevronRight
-        className="w-5 h-5 text-gray-300 group-hover:text-gray-400 flex-shrink-0 transition-colors duration-150"
+        className="w-5 h-5 text-muted-foreground group-hover:text-muted-foreground flex-shrink-0 transition-colors duration-150"
       />
     </button>
   );

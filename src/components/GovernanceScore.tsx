@@ -147,7 +147,7 @@ export function GovernanceScore({
   ];
 
   return (
-    <div className="bg-card rounded-lg shadow p-6 border border-border">
+    <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
       <h3 className="text-lg font-semibold mb-4 text-foreground">
         Governance Score
       </h3>
@@ -179,7 +179,7 @@ export function GovernanceScore({
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-2xl font-bold ${getScoreColor(displayScore)}`}>
+            <span className={`text-2xl font-bold font-display ${getScoreColor(displayScore)}`}>
               {displayScore}
             </span>
           </div>

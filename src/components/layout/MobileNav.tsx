@@ -47,7 +47,7 @@ export function MobileNav({ userEmail }: MobileNavProps) {
   };
 
   return (
-    <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-background border-b border-border z-40 flex items-center justify-between px-4">
+    <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-lg border-b border-border z-40 flex items-center justify-between px-4">
       {/* Logo */}
       <Link href="/dashboard" className="flex items-center gap-2">
         <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">

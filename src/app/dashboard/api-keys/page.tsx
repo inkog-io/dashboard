@@ -191,8 +191,8 @@ export default function APIKeysPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">API Keys</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl font-bold text-foreground">API Keys</h1>
+          <p className="text-muted-foreground mt-1">
             Manage your API keys for CLI authentication
           </p>
         </div>
@@ -224,15 +224,15 @@ export default function APIKeysPage() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
             </div>
           ) : keys.length === 0 ? (
             <div className="text-center py-8">
-              <Key className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900">
+              <Key className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-2 text-sm font-semibold text-foreground">
                 No API keys yet
               </h3>
-              <p className="mt-1 text-sm text-gray-500 max-w-md mx-auto">
+              <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
                 Create an API key to use Inkog in production with the CLI, MCP Server, GitHub Actions, or the API directly.
               </p>
               <div className="mt-6">
@@ -258,14 +258,14 @@ export default function APIKeysPage() {
                   <TableRow key={key.id}>
                     <TableCell className="font-medium">{key.name}</TableCell>
                     <TableCell>
-                      <code className="bg-gray-100 px-2 py-1 rounded text-sm">
+                      <code className="bg-muted px-2 py-1 rounded text-sm">
                         {key.key_prefix}
                       </code>
                     </TableCell>
-                    <TableCell className="text-gray-500">
+                    <TableCell className="text-muted-foreground">
                       {formatDate(key.created_at)}
                     </TableCell>
-                    <TableCell className="text-gray-500">
+                    <TableCell className="text-muted-foreground">
                       {formatDate(key.last_used_at)}
                     </TableCell>
                     <TableCell className="text-right space-x-1">
@@ -348,7 +348,7 @@ export default function APIKeysPage() {
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div className="flex items-center gap-2">
-              <code className="flex-1 bg-gray-100 px-3 py-2 rounded text-sm font-mono break-all">
+              <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono break-all">
                 {newKey}
               </code>
               <Button variant="outline" size="icon" onClick={handleCopyKey}>
@@ -367,47 +367,47 @@ export default function APIKeysPage() {
             {/* Quick Start Instructions */}
             <div className="border-t pt-4">
               <div className="flex items-center gap-2 mb-3">
-                <Terminal className="h-4 w-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-900">Quick Start</span>
+                <Terminal className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">Quick Start</span>
               </div>
               <div className="space-y-2">
-                <div className="flex items-center gap-2 bg-gray-100 rounded px-3 py-2">
-                  <code className="flex-1 text-xs font-mono text-gray-800">
+                <div className="flex items-center gap-2 bg-muted rounded px-3 py-2">
+                  <code className="flex-1 text-xs font-mono text-foreground">
                     export INKOG_API_KEY=&quot;{newKey?.slice(0, 20)}...&quot;
                   </code>
                   <button
                     type="button"
                     onClick={() => handleCopyCommand(`export INKOG_API_KEY="${newKey}"`, "env")}
-                    className="p-1 rounded hover:bg-gray-200 transition-colors"
+                    className="p-1 rounded hover:bg-accent transition-colors"
                     title="Copy command"
                   >
                     {copiedCommand === "env" ? (
                       <Check className="h-3.5 w-3.5 text-green-600" />
                     ) : (
-                      <Copy className="h-3.5 w-3.5 text-gray-500" />
+                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                     )}
                   </button>
                 </div>
-                <div className="flex items-center gap-2 bg-gray-100 rounded px-3 py-2">
-                  <code className="flex-1 text-xs font-mono text-gray-800">
+                <div className="flex items-center gap-2 bg-muted rounded px-3 py-2">
+                  <code className="flex-1 text-xs font-mono text-foreground">
                     inkog scan ./my-agent
                   </code>
                   <button
                     type="button"
                     onClick={() => handleCopyCommand("inkog scan ./my-agent", "scan")}
-                    className="p-1 rounded hover:bg-gray-200 transition-colors"
+                    className="p-1 rounded hover:bg-accent transition-colors"
                     title="Copy command"
                   >
                     {copiedCommand === "scan" ? (
                       <Check className="h-3.5 w-3.5 text-green-600" />
                     ) : (
-                      <Copy className="h-3.5 w-3.5 text-gray-500" />
+                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                     )}
                   </button>
                 </div>
               </div>
-              <p className="mt-2 text-xs text-gray-500">
-                Install CLI: <code className="bg-gray-100 px-1 rounded">go install github.com/inkog-io/inkog/cmd/inkog@latest</code>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Install CLI: <code className="bg-muted px-1 rounded">go install github.com/inkog-io/inkog/cmd/inkog@latest</code>
               </p>
             </div>
           </div>
@@ -436,12 +436,12 @@ export default function APIKeysPage() {
           </DialogHeader>
           {keyToRevoke && (
             <div className="py-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 <strong>Name:</strong> {keyToRevoke.name}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 <strong>Key:</strong>{" "}
-                <code className="bg-gray-100 px-1 rounded">
+                <code className="bg-muted px-1 rounded">
                   {keyToRevoke.key_prefix}
                 </code>
               </p>
@@ -481,12 +481,12 @@ export default function APIKeysPage() {
           </DialogHeader>
           {keyToRotate && (
             <div className="py-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 <strong>Name:</strong> {keyToRotate.name}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 <strong>Current Key:</strong>{" "}
-                <code className="bg-gray-100 px-1 rounded">
+                <code className="bg-muted px-1 rounded">
                   {keyToRotate.key_prefix}
                 </code>
               </p>

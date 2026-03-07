@@ -57,12 +57,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // Default fallback UI
       return (
-        <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg border border-gray-200 min-h-[200px]">
+        <div className="flex flex-col items-center justify-center p-8 bg-surface rounded-lg border border-border min-h-[200px]">
           <AlertTriangle className="w-12 h-12 text-amber-500 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-lg font-medium text-foreground mb-2">
             Something went wrong
           </h3>
-          <p className="text-sm text-gray-500 mb-4 text-center max-w-md">
+          <p className="text-sm text-muted-foreground mb-4 text-center max-w-md">
             This component encountered an error. The rest of the application
             continues to work normally.
           </p>

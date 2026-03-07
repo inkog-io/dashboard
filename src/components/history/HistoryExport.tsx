@@ -101,8 +101,8 @@ export function HistoryExport({ scans, loading }: HistoryExportProps) {
         className={cn(
           "inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors",
           disabled
-            ? "bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            ? "bg-muted border-border text-muted-foreground cursor-not-allowed"
+            : "bg-card border-border text-foreground hover:bg-accent"
         )}
         title={scans.length === 0 ? "No data to export" : "Export to CSV"}
       >
@@ -116,7 +116,7 @@ export function HistoryExport({ scans, loading }: HistoryExportProps) {
 
       {/* Scan count badge */}
       {scans.length > 0 && (
-        <span className="text-xs text-gray-500 dark:text-gray-400">
+        <span className="text-xs text-muted-foreground">
           {scans.length} {scans.length === 1 ? "scan" : "scans"}
         </span>
       )}

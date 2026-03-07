@@ -269,8 +269,8 @@ export default function ScanResultsPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <Loader2 className="h-10 w-10 text-gray-400 animate-spin mb-4" />
-        <p className="text-gray-500">Loading scan results...</p>
+        <Loader2 className="h-10 w-10 text-muted-foreground animate-spin mb-4" />
+        <p className="text-muted-foreground">Loading scan results...</p>
       </div>
     );
   }
@@ -316,13 +316,13 @@ export default function ScanResultsPage() {
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back
           </Button>
-          <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
+          <div className="h-6 w-px bg-border" />
           <div>
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
                 <Bot className="h-5 w-5 text-violet-600 dark:text-violet-400" />
               </div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              <h1 className="text-xl font-semibold text-foreground">
                 {scan.agent_name && scan.agent_name !== "unnamed-agent" && scan.agent_name !== "unnamed" ? scan.agent_name : "Scan Results"}
               </h1>
               {isDeepScan ? (
@@ -334,11 +334,11 @@ export default function ScanResultsPage() {
                   Inkog Core
                 </span>
               )}
-              <span className="text-sm text-gray-500 dark:text-gray-400 font-mono">
+              <span className="text-sm text-muted-foreground font-mono">
                 #{scan.scan_number}
               </span>
             </div>
-            <div className="flex items-center gap-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" />
                 {format(new Date(scan.created_at), "MMM d, yyyy 'at' h:mm a")}
@@ -437,37 +437,37 @@ export default function ScanResultsPage() {
       ) : (
         <>
           {/* Summary Stats */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+          <div className="bg-card rounded-xl border border-border shadow-sm p-6">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-foreground">
                   {scan.files_scanned}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Files Scanned</p>
+                <p className="text-xs text-muted-foreground uppercase">Files Scanned</p>
               </div>
-              <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-foreground">
                   {scan.findings_count}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Total Findings</p>
+                <p className="text-xs text-muted-foreground uppercase">Total Findings</p>
               </div>
               <div className="text-center p-3 bg-red-50 dark:bg-red-900/30 rounded-lg">
                 <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                   {scan.critical_count}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Critical</p>
+                <p className="text-xs text-muted-foreground uppercase">Critical</p>
               </div>
               <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
                 <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                   {scan.high_count}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">High</p>
+                <p className="text-xs text-muted-foreground uppercase">High</p>
               </div>
               <div className="text-center p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
                 <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">
                   {scan.governance_score}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Compliance</p>
+                <p className="text-xs text-muted-foreground uppercase">Compliance</p>
               </div>
             </div>
             {scan.framework_mapping && Object.keys(scan.framework_mapping).length > 0 && (
@@ -485,7 +485,7 @@ export default function ScanResultsPage() {
                 ))}
               </div>
             )}
-            <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+            <div className="mt-4 text-sm text-muted-foreground text-center">
               Scanned {scan.lines_of_code.toLocaleString()} lines of code in {scan.duration_ms}ms
               {scan.scan_policy && (
                 <span className="ml-2">
@@ -508,7 +508,7 @@ export default function ScanResultsPage() {
 
           {/* Diff View - replaces regular findings when active */}
           {showDiff && diffData && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <div className="bg-card rounded-xl border border-border shadow-sm p-6">
               <ScanDiffView diff={diffData} onClose={() => setShowDiff(false)} />
             </div>
           )}
@@ -571,8 +571,8 @@ export default function ScanResultsPage() {
 
           {/* Findings Section - hidden when diff view is active */}
           {!showDiff && scan.findings && Array.isArray(scan.findings) && scan.findings.length > 0 ? (
-            <div id="findings-section" className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden scroll-mt-4">
-              <div className="px-5 border-b border-gray-100 dark:border-gray-800">
+            <div id="findings-section" className="bg-card rounded-xl border border-border shadow-sm overflow-hidden scroll-mt-4">
+              <div className="px-5 border-b border-border">
                 <FindingsToolbar
                   totalCount={scan.findings_count}
                   criticalCount={scan.critical_count}
@@ -633,14 +633,14 @@ export default function ScanResultsPage() {
                   onFindingClick={(finding) => setSelectedFinding(finding)}
                 />
               ) : (
-                <div className="px-5 py-8 text-center text-gray-500 dark:text-gray-400">
+                <div className="px-5 py-8 text-center text-muted-foreground">
                   No findings match your filters
                 </div>
               )}
 
               {/* Results count */}
               {filteredFindings.length > 0 && (
-                <div className="px-5 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                <div className="px-5 py-3 bg-muted border-t border-border text-xs text-muted-foreground">
                   Showing {filteredFindings.length} of {scan.findings_count} findings
                 </div>
               )}

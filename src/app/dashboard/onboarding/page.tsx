@@ -117,7 +117,7 @@ function MCPSetupInstructions({
   return (
     <div className="space-y-4">
       <div>
-        <h4 className="text-sm font-medium text-gray-900 mb-2">1. Add to Claude Desktop config</h4>
+        <h4 className="text-sm font-medium text-foreground mb-2">1. Add to Claude Desktop config</h4>
         <div className="relative">
           <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
             <pre className="text-sm text-gray-100">{mcpConfig}</pre>
@@ -130,32 +130,32 @@ function MCPSetupInstructions({
             {configCopied ? (
               <Check className="h-4 w-4 text-green-400" />
             ) : (
-              <Copy className="h-4 w-4 text-gray-400" />
+              <Copy className="h-4 w-4 text-muted-foreground" />
             )}
           </button>
         </div>
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-muted-foreground">
           Config location: ~/Library/Application Support/Claude/claude_desktop_config.json
         </p>
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           For Cursor: ~/.cursor/mcp.json
         </p>
       </div>
 
       <div>
-        <h4 className="text-sm font-medium text-gray-900 mb-2">2. Restart your editor</h4>
-        <p className="text-sm text-gray-600">
+        <h4 className="text-sm font-medium text-foreground mb-2">2. Restart your editor</h4>
+        <p className="text-sm text-muted-foreground">
           Quit and reopen Claude Desktop or Cursor to load the Inkog MCP server.
         </p>
       </div>
 
       <div>
-        <h4 className="text-sm font-medium text-gray-900 mb-2">3. Ask Claude to scan</h4>
+        <h4 className="text-sm font-medium text-foreground mb-2">3. Ask Claude to scan</h4>
         <CopyCommand
           command="Scan my agent code for security vulnerabilities"
           onCopy={() => onCopy("source", "Scan my agent code")}
         />
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-muted-foreground">
           Claude will use Inkog tools to analyze your code and report findings.
         </p>
       </div>
@@ -182,37 +182,37 @@ function GitHubSetupInstructions({
   return (
     <div className="space-y-4">
       <div>
-        <h4 className="text-sm font-medium text-gray-900 mb-2">1. Add secret to your repository</h4>
-        <p className="text-sm text-gray-600 mb-2">
+        <h4 className="text-sm font-medium text-foreground mb-2">1. Add secret to your repository</h4>
+        <p className="text-sm text-muted-foreground mb-2">
           Go to your repo → Settings → Secrets and variables → Actions → New repository secret
         </p>
-        <div className="bg-gray-100 rounded-lg p-3 space-y-3">
+        <div className="bg-muted rounded-lg p-3 space-y-3">
           <div>
-            <span className="text-xs font-medium text-gray-500 block mb-1">Name:</span>
-            <code className="text-sm bg-white px-2 py-1 rounded border block">INKOG_API_KEY</code>
+            <span className="text-xs font-medium text-muted-foreground block mb-1">Name:</span>
+            <code className="text-sm bg-card px-2 py-1 rounded border block">INKOG_API_KEY</code>
           </div>
           <div>
-            <span className="text-xs font-medium text-gray-500 block mb-1">Value (click to copy):</span>
+            <span className="text-xs font-medium text-muted-foreground block mb-1">Value (click to copy):</span>
             <button
               onClick={handleCopyApiKey}
-              className="w-full flex items-center justify-between bg-white px-2 py-1 rounded border hover:bg-gray-50 transition-colors text-left"
+              className="w-full flex items-center justify-between bg-card px-2 py-1 rounded border hover:bg-accent transition-colors text-left"
             >
               <code className="text-sm font-mono truncate">{displayApiKey}</code>
               {keyCopied ? (
                 <Check className="h-4 w-4 text-green-600 flex-shrink-0 ml-2" />
               ) : (
-                <Copy className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
+                <Copy className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-2" />
               )}
             </button>
           </div>
         </div>
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-muted-foreground">
           This secret keeps your API key secure - it won&apos;t appear in logs or workflow files.
         </p>
       </div>
 
       <div>
-        <h4 className="text-sm font-medium text-gray-900 mb-2">2. Add workflow file</h4>
+        <h4 className="text-sm font-medium text-foreground mb-2">2. Add workflow file</h4>
         <CopyCommand
           label="Create .github/workflows/inkog.yml"
           command={`name: Inkog Security Scan
@@ -228,7 +228,7 @@ jobs:
           api-key: \${{ secrets.INKOG_API_KEY }}`}
           onCopy={() => onCopy("source", "uses: inkog-io/action@v1")}
         />
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-muted-foreground">
           The workflow will automatically scan your code on every push and pull request.
         </p>
       </div>
@@ -394,13 +394,13 @@ export default function OnboardingPage() {
   const currentStepId = steps[currentStep]?.id;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-surface flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 py-4 px-6">
+      <header className="bg-card border-b border-border py-4 px-6">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">I</span>
+            <div className="w-8 h-8 bg-foreground rounded-lg flex items-center justify-center">
+              <span className="text-background font-bold text-sm">I</span>
             </div>
             <span className="font-semibold text-lg">Welcome to Inkog</span>
           </div>
@@ -431,27 +431,27 @@ export default function OnboardingPage() {
                   {/* Upload - Quick option */}
                   <button
                     onClick={handleUploadSelect}
-                    className="w-full p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all text-left group"
+                    className="w-full p-4 rounded-lg border border-border hover:border-border hover:bg-accent transition-all text-left group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors">
-                        <Upload className="h-5 w-5 text-gray-600" />
+                      <div className="p-2 bg-muted rounded-lg group-hover:bg-accent transition-colors">
+                        <Upload className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">Upload Files</h4>
-                        <p className="text-sm text-gray-500">Quick test in browser</p>
+                        <h4 className="font-medium text-foreground">Upload Files</h4>
+                        <p className="text-sm text-muted-foreground">Quick test in browser</p>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                      <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground transition-colors" />
                     </div>
                   </button>
 
                   {/* Divider */}
                   <div className="relative py-2">
                     <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-100" />
+                      <div className="w-full border-t border-border" />
                     </div>
                     <div className="relative flex justify-center">
-                      <span className="bg-white px-3 text-xs text-gray-400">or integrate</span>
+                      <span className="bg-card px-3 text-xs text-muted-foreground">or integrate</span>
                     </div>
                   </div>
 
@@ -523,8 +523,8 @@ export default function OnboardingPage() {
                           <Sparkles className="h-5 w-5" />
                           <span className="font-medium">Your API key is ready!</span>
                         </div>
-                        <div className="flex items-center gap-2 bg-white rounded-md border border-green-300 p-2">
-                          <code className="flex-1 text-sm font-mono text-gray-800 break-all">
+                        <div className="flex items-center gap-2 bg-card rounded-md border border-green-300 p-2">
+                          <code className="flex-1 text-sm font-mono text-foreground break-all">
                             {generatedKey}
                           </code>
                           <button
@@ -564,7 +564,7 @@ export default function OnboardingPage() {
                   {selectedMethod === "cli" && (
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">1. Install the CLI</h4>
+                        <h4 className="text-sm font-medium text-foreground mb-2">1. Install the CLI</h4>
                         <CopyCommand
                           label="Requires Go 1.21+"
                           command="go install github.com/inkog-io/inkog/cmd/inkog@latest"
@@ -573,7 +573,7 @@ export default function OnboardingPage() {
                       </div>
 
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">2. Set your API key</h4>
+                        <h4 className="text-sm font-medium text-foreground mb-2">2. Set your API key</h4>
                         <CopyCommand
                           command={`export INKOG_API_KEY="${displayApiKey}"`}
                           onCopy={() => handleCliCopy("go", `export INKOG_API_KEY="${displayApiKey}"`)}
@@ -581,7 +581,7 @@ export default function OnboardingPage() {
                       </div>
 
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">3. Scan your agent</h4>
+                        <h4 className="text-sm font-medium text-foreground mb-2">3. Scan your agent</h4>
                         <CopyCommand
                           command="inkog scan ./my-agent"
                           onCopy={() => handleCliCopy("go", "inkog scan ./my-agent")}
@@ -607,7 +607,7 @@ export default function OnboardingPage() {
                   {selectedMethod === "api" && (
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">1. Make an API request</h4>
+                        <h4 className="text-sm font-medium text-foreground mb-2">1. Make an API request</h4>
                         <CopyCommand
                           label="Example cURL request"
                           command={`curl -X POST https://api.inkog.io/v1/scan \\
@@ -619,14 +619,14 @@ export default function OnboardingPage() {
                       </div>
 
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">2. View documentation</h4>
-                        <p className="text-sm text-gray-600">
+                        <h4 className="text-sm font-medium text-foreground mb-2">2. View documentation</h4>
+                        <p className="text-sm text-muted-foreground">
                           See the{" "}
                           <a
                             href="https://docs.inkog.io/api"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-gray-900 underline hover:no-underline"
+                            className="text-foreground underline hover:no-underline"
                           >
                             API documentation
                           </a>{" "}
