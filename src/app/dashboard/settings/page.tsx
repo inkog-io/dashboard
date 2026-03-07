@@ -39,7 +39,10 @@ function SettingsContent() {
           Settings
         </h1>
         <p className="text-muted-foreground mt-1">
-          Manage API keys, integrations, and team members
+          Manage API keys, integrations, and team members.{" "}
+          <a href="https://docs.inkog.io/api" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground/60 hover:text-primary transition-colors">
+            Docs &rarr;
+          </a>
         </p>
       </div>
 

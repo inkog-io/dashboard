@@ -267,6 +267,7 @@ export default function DashboardPage() {
           variant={criticalAgents > 0 ? "danger" : warningAgents > 0 ? "warning" : "success"}
           loading={loading}
           tooltip="Total number of AI agents being monitored for security vulnerabilities."
+          docsUrl="https://docs.inkog.io/getting-started/dashboard"
         />
         <SecurityMetricCard
           title="Critical Issues"
@@ -276,6 +277,7 @@ export default function DashboardPage() {
           variant={criticalCount > 0 ? "danger" : "success"}
           loading={loading}
           tooltip="Number of CRITICAL severity findings across all agents. Fix these immediately."
+          docsUrl="https://docs.inkog.io/vulnerabilities"
         />
         <SecurityMetricCard
           title="Governance Score"
@@ -285,6 +287,7 @@ export default function DashboardPage() {
           variant={getGovernanceVariant(governanceScore)}
           loading={loading}
           tooltip="Average governance score across all agents. Based on security controls and compliance requirements."
+          docsUrl="https://docs.inkog.io/governance"
         />
         <SecurityMetricCard
           title="Avg Risk Score"
@@ -295,6 +298,7 @@ export default function DashboardPage() {
           loading={loading}
           trend={stats?.findings_trend}
           tooltip="Average risk score across all agents. Lower is better."
+          docsUrl="https://docs.inkog.io/core-concepts/scoring"
         />
       </div>
       </SkeletonCrossfade>

@@ -218,7 +218,10 @@ export function APIKeysSection() {
             Active API Keys
           </CardTitle>
           <CardDescription>
-            API keys are used to authenticate CLI requests. Keep them secret!
+            API keys are used to authenticate CLI requests. Keep them secret!{" "}
+            <a href="https://docs.inkog.io/getting-started/installation" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              Setup guide &rarr;
+            </a>
           </CardDescription>
         </CardHeader>
         <CardContent>

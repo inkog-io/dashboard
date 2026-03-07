@@ -363,7 +363,10 @@ def recursive_tool(depth=0):
           </h1>
           <p className="text-muted-foreground mt-1">
             Detect vulnerabilities and governance gaps in LangChain, CrewAI, n8n,
-            and custom AI agents
+            and custom AI agents.{" "}
+            <a href="https://docs.inkog.io/frameworks" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground/60 hover:text-primary transition-colors">
+              Supported frameworks &rarr;
+            </a>
           </p>
         </div>
         {canAccessDeepScan && (

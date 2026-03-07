@@ -616,7 +616,10 @@ export function SuppressionManager() {
         <div>
           <h2 className="text-2xl font-bold">Suppressions</h2>
           <p className="text-muted-foreground">
-            Manage finding exceptions and baselines for {currentOrg?.name}
+            Manage finding exceptions and baselines for {currentOrg?.name}.{" "}
+            <a href="https://docs.inkog.io/governance/suppressions" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground/60 hover:text-primary transition-colors">
+              Docs &rarr;
+            </a>
           </p>
         </div>
         <div className="flex items-center gap-2">

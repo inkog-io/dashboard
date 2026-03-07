@@ -154,9 +154,19 @@ export function GovernanceScore({
 
   return (
     <div className="bg-card rounded-xl shadow-card p-6 border border-border">
-      <h3 className="text-lg font-semibold mb-4 text-foreground">
-        Governance Score
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-foreground">
+          Governance Score
+        </h3>
+        <a
+          href="https://docs.inkog.io/governance"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-muted-foreground/50 hover:text-primary transition-colors"
+        >
+          How is this scored? &rarr;
+        </a>
+      </div>
 
       <div className="flex items-start gap-6">
         {/* Score Circle */}

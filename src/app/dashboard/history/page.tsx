@@ -317,7 +317,10 @@ export default function HistoryPage() {
             Scan History
           </h1>
           <p className="text-muted-foreground mt-1">
-            View and analyze your security scan results
+            View and analyze your security scan results.{" "}
+            <a href="https://docs.inkog.io/core-concepts/scoring" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground/60 hover:text-primary transition-colors">
+              Scoring guide &rarr;
+            </a>
           </p>
         </div>
         <HistoryExport scans={scans} loading={loading} />

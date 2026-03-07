@@ -91,7 +91,10 @@ export default function SkillsPage() {
           Skill Security Scanner
         </h1>
         <p className="text-muted-foreground mt-1">
-          Scan MCP servers, SKILL.md packages, and agent tool definitions for vulnerabilities
+          Scan MCP servers, SKILL.md packages, and agent tool definitions for vulnerabilities.{" "}
+          <a href="https://docs.inkog.io/tutorials/secure-mcp-server" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground/60 hover:text-primary transition-colors">
+            MCP security guide &rarr;
+          </a>
         </p>
       </div>
 

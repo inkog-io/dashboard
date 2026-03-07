@@ -21,6 +21,8 @@ interface SecurityMetricCardProps {
   trend?: number[];
   /** Tooltip explaining what this metric means */
   tooltip?: string;
+  /** Link to relevant documentation page */
+  docsUrl?: string;
 }
 
 const variantStyles: Record<MetricVariant, { bg: string; iconBg: string; iconColor: string }> = {
@@ -67,6 +69,7 @@ export function SecurityMetricCard({
   badge,
   trend,
   tooltip,
+  docsUrl,
 }: SecurityMetricCardProps) {
   const styles = variantStyles[variant];
 
@@ -121,6 +124,16 @@ export function SecurityMetricCard({
               <Info className="h-3.5 w-3.5 text-muted-foreground/50 hover:text-muted-foreground cursor-help" />
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border border-border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 w-56 z-50 pointer-events-none">
                 {tooltip}
+                {docsUrl && (
+                  <a
+                    href={docsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block mt-1.5 text-primary hover:underline pointer-events-auto"
+                  >
+                    Learn more &rarr;
+                  </a>
+                )}
                 <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-popover" />
               </div>
             </div>
