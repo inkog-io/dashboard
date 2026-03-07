@@ -575,7 +575,9 @@ function SkillFindingDetailsPanel({
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Confidence</span>
-                    <span className="font-medium">{Math.round(finding.confidence * 100)}%</span>
+                    <span className="font-medium">
+                      {finding.confidence > 0 ? `${Math.round(finding.confidence * 100)}%` : "N/A"}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Detection</span>
