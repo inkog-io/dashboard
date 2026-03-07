@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "@clerk/nextjs";
 import { useParams } from "next/navigation";
 import {
@@ -490,7 +491,9 @@ function SkillFindingDetailsPanel({
 
   const colors = finding ? severityColors[finding.severity] || severityColors.LOW : severityColors.LOW;
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && finding && (
         <>
@@ -642,6 +645,7 @@ function SkillFindingDetailsPanel({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
