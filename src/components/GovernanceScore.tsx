@@ -91,9 +91,15 @@ export function GovernanceScore({
   };
 
   const getScoreStrokeColor = (s: number) => {
-    if (s >= 80) return '#22c55e';
-    if (s >= 50) return '#eab308';
-    return '#ef4444';
+    if (typeof document === 'undefined') {
+      if (s >= 80) return '#22c55e';
+      if (s >= 50) return '#eab308';
+      return '#ef4444';
+    }
+    const style = getComputedStyle(document.documentElement);
+    const varName = s >= 80 ? '--severity-safe' : s >= 50 ? '--severity-medium' : '--severity-critical';
+    const val = style.getPropertyValue(varName).trim();
+    return val ? `hsl(${val})` : (s >= 80 ? '#22c55e' : s >= 50 ? '#eab308' : '#ef4444');
   };
 
   const toggleFramework = (framework: string) => {
@@ -147,7 +153,7 @@ export function GovernanceScore({
   ];
 
   return (
-    <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+    <div className="bg-card rounded-xl shadow-card p-6 border border-border">
       <h3 className="text-lg font-semibold mb-4 text-foreground">
         Governance Score
       </h3>

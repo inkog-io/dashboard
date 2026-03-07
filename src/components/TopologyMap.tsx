@@ -41,18 +41,40 @@ import {
 } from 'lucide-react';
 import type { TopologyMap, TopologyNode as APITopologyNode, TopologyEdge as APITopologyEdge, GovernanceStatus, Finding } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { getCSSColor } from '@/lib/css-colors';
 import GhostNode, { GhostNodeData, MissingControlType } from './topology/GhostNode';
 import SuperNode, { SuperNodeData, MergedNodeInfo } from './topology/SuperNode';
 import { TopologyNodeSheet, SelectedNodeData } from './topology/TopologyNodeSheet';
 
-// Risk level colors - professional/technical palette
-const riskColors: Record<string, { bg: string; border: string; text: string }> = {
+// Fallback risk colors for SSR; at render time these are overridden by CSS variables
+const riskColorFallbacks: Record<string, { bg: string; border: string; text: string }> = {
   SAFE: { bg: 'rgba(22, 101, 52, 0.15)', border: '#22c55e', text: '#4ade80' },
   LOW: { bg: 'rgba(30, 64, 175, 0.15)', border: '#3b82f6', text: '#60a5fa' },
   MEDIUM: { bg: 'rgba(146, 64, 14, 0.15)', border: '#f59e0b', text: '#fbbf24' },
   HIGH: { bg: 'rgba(154, 52, 18, 0.15)', border: '#f97316', text: '#fb923c' },
   CRITICAL: { bg: 'rgba(153, 27, 27, 0.15)', border: '#ef4444', text: '#f87171' },
 };
+
+const riskCSSVars: Record<string, string> = {
+  SAFE: '--severity-safe',
+  LOW: '--severity-low',
+  MEDIUM: '--severity-medium',
+  HIGH: '--severity-high',
+  CRITICAL: '--severity-critical',
+};
+
+function getRiskColors(level: string): { bg: string; border: string; text: string } {
+  const fallback = riskColorFallbacks[level] || riskColorFallbacks.LOW;
+  const cssVar = riskCSSVars[level];
+  if (!cssVar) return fallback;
+  const color = getCSSColor(cssVar, fallback.border);
+  // Derive bg (15% opacity) and text (lighter) from the resolved color
+  return {
+    bg: color.startsWith('hsl(') ? color.replace('hsl(', 'hsla(').replace(')', ', 0.15)') : fallback.bg,
+    border: color,
+    text: fallback.text, // text stays bright for readability
+  };
+}
 
 // Node type icons mapping to Lucide components
 const nodeIconMap: Record<string, React.ElementType> = {
@@ -114,7 +136,7 @@ interface CustomNodeData {
  */
 function TopologyCustomNode({ data }: { data: CustomNodeData }) {
   const Icon = nodeIconMap[data.type] || nodeIconMap.Default;
-  const colors = riskColors[data.riskLevel] || riskColors.LOW;
+  const colors = getRiskColors(data.riskLevel);
   const hasRisks = data.riskReasons && data.riskReasons.length > 0;
 
   return (
@@ -430,24 +452,25 @@ function injectGhostNodes(
     // Limit edges to avoid visual clutter (max 2 per ghost)
     const limitedTargets = targets.slice(0, 2);
 
+    const criticalColor = getCSSColor('--severity-critical', '#ef4444');
     return limitedTargets.map((target) => ({
       id: `edge-${ghostId}-${target.id}`,
       source: ghostId,
       target: target.id,
       animated: false,
       style: {
-        stroke: '#ef4444',
+        stroke: criticalColor,
         strokeWidth: 2,
         strokeDasharray: '8,4',
       },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: '#ef4444',
+        color: criticalColor,
         width: 14,
         height: 14,
       },
       label: 'should guard',
-      labelStyle: { fill: '#ef4444', fontSize: 10 },
+      labelStyle: { fill: criticalColor, fontSize: 10 },
       labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
     }));
   }
@@ -600,10 +623,9 @@ function convertToReactFlow(
       const isGuard = edge.type === 'guards';
       const isFollows = edge.type === 'follows';
 
-      // Better edge colors
-      let strokeColor = '#6366f1'; // Indigo for flow
-      if (isGuard) strokeColor = '#22c55e'; // Green for guards
-      if (isDataFlow) strokeColor = '#8b5cf6'; // Purple for data
+      let strokeColor = getCSSColor('--primary', '#6366f1');
+      if (isGuard) strokeColor = getCSSColor('--severity-safe', '#22c55e');
+      if (isDataFlow) strokeColor = getCSSColor('--brand', '#8b5cf6');
 
       return {
         id: `e${index}-${edge.from}-${edge.to}`,
@@ -787,7 +809,7 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
 
   if (!topology || topology.nodes.length === 0) {
     return (
-      <div className="bg-card rounded-xl border border-border shadow-sm p-6">
+      <div className="bg-card rounded-xl border border-border shadow-card p-6">
         <h3 className="text-lg font-semibold text-foreground mb-4">Agent Topology</h3>
         <p className="text-muted-foreground text-sm">No topology data available for this scan.</p>
       </div>
@@ -803,7 +825,7 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
   ].filter(Boolean).length;
 
   return (
-    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+    <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -869,9 +891,8 @@ export function TopologyMapVisualization({ topology, findings = [], onFindingCli
           <MiniMap
             className="!bg-card !border !border-border !rounded-lg !shadow-sm"
             nodeColor={(node) => {
-              if (node.type === 'ghostNode') return '#ef4444';
-              const colors = riskColors[node.data?.riskLevel] || riskColors.SAFE;
-              return colors.border;
+              if (node.type === 'ghostNode') return getCSSColor('--severity-critical', '#ef4444');
+              return getRiskColors(node.data?.riskLevel || 'SAFE').border;
             }}
           />
         </ReactFlow>

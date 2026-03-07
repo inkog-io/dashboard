@@ -27,6 +27,7 @@ import {
 } from "@/lib/api";
 import { SecurityMetricCard, type MetricVariant } from "@/components/dashboard/SecurityMetricCard";
 import { AgentList } from "@/components/dashboard/AgentList";
+import { SkeletonCrossfade, SkeletonMetricCard } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   const searchParams = useSearchParams();
@@ -233,14 +234,25 @@ export default function DashboardPage() {
 
       {/* Error Alert */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <p className="text-red-700">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-center gap-2">
+          <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 flex-shrink-0" />
+          <p className="text-red-700 dark:text-red-400">{error}</p>
         </div>
       )}
 
       {/* Security Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-stagger-2">
+      <SkeletonCrossfade
+        loading={loading}
+        skeleton={
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonMetricCard key={i} />
+            ))}
+          </div>
+        }
+        className="animate-stagger-2"
+      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SecurityMetricCard
           title="Agents Monitored"
           value={agents.length}
@@ -279,6 +291,7 @@ export default function DashboardPage() {
           tooltip="Average risk score across all agents. Lower is better."
         />
       </div>
+      </SkeletonCrossfade>
 
       {/* Agents Section */}
       <div className="animate-stagger-3">
@@ -308,7 +321,7 @@ export default function DashboardPage() {
       {summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-stagger-4">
           <div className="bg-card border border-border rounded-xl p-4 text-center hover:border-primary/20 transition-colors">
-            <p className="text-2xl font-semibold text-foreground font-display">
+            <p className="text-3xl tracking-tight font-semibold text-foreground font-display">
               {summary.total_scans}
             </p>
             <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">
@@ -316,7 +329,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4 text-center hover:border-primary/20 transition-colors">
-            <p className="text-2xl font-semibold text-foreground font-display">
+            <p className="text-3xl tracking-tight font-semibold text-foreground font-display">
               {summary.total_files_scanned.toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">
@@ -324,7 +337,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4 text-center hover:border-primary/20 transition-colors">
-            <p className="text-2xl font-semibold text-foreground font-display">
+            <p className="text-3xl tracking-tight font-semibold text-foreground font-display">
               {summary.total_findings}
             </p>
             <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">
@@ -332,7 +345,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4 text-center hover:border-primary/20 transition-colors">
-            <p className="text-2xl font-semibold text-foreground font-display">
+            <p className="text-3xl tracking-tight font-semibold text-foreground font-display">
               {Math.round(summary.average_risk_score)}
             </p>
             <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">

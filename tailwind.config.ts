@@ -59,6 +59,12 @@ const config: Config = {
           low: "hsl(var(--severity-low))",
           safe: "hsl(var(--severity-safe))",
         },
+        status: {
+          success: { muted: "hsl(var(--status-success-muted))" },
+          warning: { muted: "hsl(var(--status-warning-muted))" },
+          danger: { muted: "hsl(var(--status-danger-muted))" },
+          info: { muted: "hsl(var(--status-info-muted))" },
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

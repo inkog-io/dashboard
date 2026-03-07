@@ -136,9 +136,9 @@ export function FindingCard({ finding, onClick }: FindingCardProps) {
               <span
                 className={`px-1.5 py-0.5 rounded font-medium ${
                   finding.calibration_reliability === 'high' || finding.calibration_reliability === 'very_high'
-                    ? 'bg-green-50 text-green-600'
+                    ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400'
                     : finding.calibration_reliability === 'moderate'
-                    ? 'bg-blue-50 text-blue-600'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                     : 'bg-muted text-muted-foreground'
                 }`}
                 title={`Calibrated: ${Math.round(finding.calibrated_confidence * 100)}% (${finding.calibration_samples} samples)`}

@@ -72,7 +72,7 @@ export function SecurityMetricCard({
 
   return (
     <div className={cn(
-      "rounded-xl border border-border p-5 shadow-sm transition-all duration-200 hover:shadow-glow-sm hover:border-primary/30",
+      "rounded-xl border border-border p-5 shadow-card transition-all duration-200 hover:shadow-glow-sm hover:border-primary/30",
       styles.bg
     )}>
       <div className="flex items-start justify-between">
@@ -110,12 +110,12 @@ export function SecurityMetricCard({
           <p className={cn(
             "font-semibold text-foreground font-display",
             String(value).length > 10
-              ? "text-base"
-              : "text-2xl"
+              ? "text-lg"
+              : "text-3xl tracking-tight"
           )}>{value}</p>
         )}
         <div className="flex items-center gap-1.5 mt-1">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
           {tooltip && (
             <div className="relative group">
               <Info className="h-3.5 w-3.5 text-muted-foreground/50 hover:text-muted-foreground cursor-help" />

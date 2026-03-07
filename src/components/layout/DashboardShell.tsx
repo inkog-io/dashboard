@@ -42,7 +42,7 @@ export function DashboardShell({ children, userEmail }: DashboardShellProps) {
           "pt-16 lg:pt-0"
         )}
       >
-        <div className="p-6 lg:p-8">
+        <div className="p-6 lg:p-8 max-w-[1440px] mx-auto">
           {children}
         </div>
       </main>

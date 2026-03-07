@@ -750,19 +750,19 @@ def recursive_tool(depth=0):
 
           {/* Missing Governance Manifest Warning */}
           {!hasAgentsMD && (
-            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-start gap-3">
-              <FileText className="h-5 w-5 text-indigo-500 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-indigo-800">
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4 flex items-start gap-3">
+              <FileText className="h-5 w-5 text-indigo-500 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-indigo-800 dark:text-indigo-200">
                 <p className="font-medium">No Governance Manifest Found</p>
                 <p>
-                  Add an <code className="bg-indigo-100 px-1 rounded">AGENTS.md</code> to your project root to enable governance
+                  Add an <code className="bg-indigo-100 dark:bg-indigo-800/30 px-1 rounded">AGENTS.md</code> to your project root to enable governance
                   mismatch detection. This validates your declared capabilities against actual code behavior.
                 </p>
                 <a
                   href="https://docs.inkog.io/governance/agents-md"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-indigo-600 underline mt-1 inline-block hover:text-indigo-800"
+                  className="text-indigo-600 dark:text-indigo-400 underline mt-1 inline-block hover:text-indigo-800 dark:hover:text-indigo-300"
                 >
                   Learn about AGENTS.md →
                 </a>
@@ -786,7 +786,7 @@ def recursive_tool(depth=0):
             </div>
             <Link
               href="/dashboard/api-keys"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors whitespace-nowrap"
             >
               Get CLI Access
               <ArrowRight className="h-4 w-4" />

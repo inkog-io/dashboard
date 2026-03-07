@@ -26,6 +26,24 @@ export function Skeleton({ className }: SkeletonProps) {
 }
 
 /**
+ * Crossfade wrapper: shows skeleton while loading, fades in content when ready
+ */
+export function SkeletonCrossfade({
+  loading,
+  skeleton,
+  children,
+  className,
+}: {
+  loading: boolean;
+  skeleton: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  if (loading) return <>{skeleton}</>;
+  return <div className={cn("animate-crossfade", className)}>{children}</div>;
+}
+
+/**
  * Text skeleton for paragraphs and titles
  */
 export function SkeletonText({

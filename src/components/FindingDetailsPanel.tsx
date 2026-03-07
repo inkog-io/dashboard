@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, Shield, ExternalLink, AlertTriangle, CheckCircle } from "lucide-react";
 import type { Finding } from "@/lib/api";
 import { CodeSnippetDisplay } from "./CodeSnippetDisplay";
@@ -12,10 +13,10 @@ interface FindingDetailsPanelProps {
 }
 
 const severityColors: Record<string, { bg: string; text: string; border: string; icon: string }> = {
-  CRITICAL: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", icon: "text-red-500" },
-  HIGH: { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200", icon: "text-orange-500" },
-  MEDIUM: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", icon: "text-amber-500" },
-  LOW: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", icon: "text-blue-500" },
+  CRITICAL: { bg: "bg-red-50 dark:bg-red-900/20", text: "text-red-700 dark:text-red-400", border: "border-red-200 dark:border-red-800", icon: "text-red-500 dark:text-red-400" },
+  HIGH: { bg: "bg-orange-50 dark:bg-orange-900/20", text: "text-orange-700 dark:text-orange-400", border: "border-orange-200 dark:border-orange-800", icon: "text-orange-500 dark:text-orange-400" },
+  MEDIUM: { bg: "bg-amber-50 dark:bg-amber-900/20", text: "text-amber-700 dark:text-amber-400", border: "border-amber-200 dark:border-amber-800", icon: "text-amber-500 dark:text-amber-400" },
+  LOW: { bg: "bg-blue-50 dark:bg-blue-900/20", text: "text-blue-700 dark:text-blue-400", border: "border-blue-200 dark:border-blue-800", icon: "text-blue-500 dark:text-blue-400" },
 };
 
 const tierDescriptions: Record<string, { label: string; description: string }> = {
@@ -45,17 +46,6 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
-
-  // Close on click outside
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node) && open) {
-        onClose();
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open, onClose]);
 
   if (!finding) return null;
@@ -101,20 +91,27 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
   }
 
   return (
-    <>
-      {/* Backdrop - z-50 to cover Sheet overlay (z-50) */}
-      <div
-        className={`fixed inset-0 bg-black/20 z-50 transition-opacity duration-200 ${
-          open ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
+    <AnimatePresence>
+      {open && (
+      <>
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="fixed inset-0 bg-black/20 z-50"
+        onClick={onClose}
       />
 
-      {/* Panel - z-[60] to appear above Sheet content (z-50) */}
-      <div
+      {/* Panel */}
+      <motion.div
         ref={panelRef}
-        className={`fixed right-0 top-0 h-full w-full max-w-xl bg-card shadow-2xl z-[60] transform transition-transform duration-300 ease-out overflow-hidden flex flex-col ${
-          open ? "translate-x-0" : "translate-x-full"
-        }`}
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="fixed right-0 top-0 h-full w-full max-w-xl bg-card border-l border-border z-[60] overflow-hidden flex flex-col"
       >
         {/* Header */}
         <div className="flex-shrink-0 px-6 py-4 border-b border-border flex items-center justify-between">
@@ -316,7 +313,9 @@ export function FindingDetailsPanel({ finding, open, onClose }: FindingDetailsPa
             <span>Finding ID: {finding.id?.slice(0, 8) || "N/A"}</span>
           </div>
         </div>
-      </div>
+      </motion.div>
     </>
+      )}
+    </AnimatePresence>
   );
 }

@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import { NodeProps, Handle, Position } from 'reactflow';
 import { Files, Bot, Wrench, MessageSquare, Database, Package } from 'lucide-react';
+import { getCSSColor } from '@/lib/css-colors';
 
 export interface MergedNodeInfo {
   id: string;
@@ -28,14 +29,34 @@ const typeIcons: Record<string, React.ElementType> = {
   Default: Package,
 };
 
-// Risk level colors (matching main node colors)
-const riskColors: Record<string, { bg: string; border: string; text: string }> = {
+// Fallback risk colors for SSR
+const riskColorFallbacks: Record<string, { bg: string; border: string; text: string }> = {
   SAFE: { bg: '#dcfce7', border: '#22c55e', text: '#166534' },
   LOW: { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
   MEDIUM: { bg: '#fef3c7', border: '#f59e0b', text: '#92400e' },
   HIGH: { bg: '#fed7aa', border: '#f97316', text: '#9a3412' },
   CRITICAL: { bg: '#fecaca', border: '#ef4444', text: '#991b1b' },
 };
+
+const riskCSSVars: Record<string, string> = {
+  SAFE: '--severity-safe',
+  LOW: '--severity-low',
+  MEDIUM: '--severity-medium',
+  HIGH: '--severity-high',
+  CRITICAL: '--severity-critical',
+};
+
+function getRiskColors(level: string): { bg: string; border: string; text: string } {
+  const fallback = riskColorFallbacks[level] || riskColorFallbacks.LOW;
+  const cssVar = riskCSSVars[level];
+  if (!cssVar) return fallback;
+  const color = getCSSColor(cssVar, fallback.border);
+  return {
+    bg: fallback.bg,
+    border: color,
+    text: fallback.text,
+  };
+}
 
 /**
  * SuperNode represents multiple merged nodes of the same type.
@@ -44,7 +65,7 @@ const riskColors: Record<string, { bg: string; border: string; text: string }> =
  */
 const SuperNode = memo(({ data }: NodeProps<SuperNodeData>) => {
   const TypeIcon = typeIcons[data.type] || typeIcons.Default;
-  const colors = riskColors[data.riskLevel] || riskColors.LOW;
+  const colors = getRiskColors(data.riskLevel);
 
   return (
     <div

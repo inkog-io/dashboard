@@ -1,5 +1,7 @@
 "use client";
 
+import { getCSSColor } from "@/lib/css-colors";
+
 interface SparklineProps {
   data: number[];
   width?: number;
@@ -56,7 +58,11 @@ export function Sparkline({
   // Determine trend direction for color override
   const isUpward = data[data.length - 1] > data[0];
   const isDanger = color.includes("red") || color.includes("danger");
-  const effectiveColor = isDanger ? "#ef4444" : isUpward ? "#22c55e" : "#f59e0b";
+  const effectiveColor = isDanger
+    ? getCSSColor("--severity-critical", "#ef4444")
+    : isUpward
+    ? getCSSColor("--severity-safe", "#22c55e")
+    : getCSSColor("--severity-medium", "#f59e0b");
 
   return (
     <svg

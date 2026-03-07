@@ -88,7 +88,7 @@ function TypeButton({ label, count, isSelected, onClick, icon }: TypeButtonProps
       onClick={onClick}
       className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ${
         isSelected
-          ? "bg-indigo-600 text-white"
+          ? "bg-primary text-primary-foreground"
           : "bg-card text-foreground border border-border hover:bg-accent"
       }`}
     >
