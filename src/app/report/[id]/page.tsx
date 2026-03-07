@@ -303,11 +303,11 @@ export default function PublicReportPage() {
             <h1 className="text-2xl font-bold text-foreground mb-1">
               Security Report
             </h1>
-            <p className="text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
               <code className="bg-muted px-2 py-0.5 rounded text-sm font-mono break-all">
                 {report.repo_name}
               </code>
-              <span className="ml-2 text-xs whitespace-nowrap">
+              <span className="text-xs whitespace-nowrap">
                 Scanned{" "}
                 {new Date(report.scanned_at).toLocaleDateString(undefined, {
                   month: "short",
@@ -315,7 +315,18 @@ export default function PublicReportPage() {
                   year: "numeric",
                 })}
               </span>
-            </p>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
+                Core
+              </span>
+              <a
+                href="https://inkog.io/pricing"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-muted-foreground/50 hover:text-violet-500 dark:hover:text-violet-400 transition-colors"
+              >
+                Try Deep &rarr;
+              </a>
+            </div>
           </div>
           <Button variant="outline" size="sm" onClick={handleCopyLink} className="shrink-0 self-start">
             {copied ? (
@@ -687,19 +698,38 @@ export default function PublicReportPage() {
               Install the Inkog GitHub App to automatically scan every push.
               Get security reports on pull requests.
             </p>
-            <Button
-              variant="outline"
-              asChild
-            >
-              <a
-                href="https://github.com/apps/inkog-scanner/installations/new"
-                target="_blank"
-                rel="noopener noreferrer"
+            <div className="flex flex-wrap justify-center gap-3">
+              <Button
+                variant="outline"
+                asChild
               >
-                Install GitHub App
-                <ArrowRight className="w-4 h-4 ml-1.5" />
-              </a>
-            </Button>
+                <a
+                  href="https://github.com/apps/inkog-scanner/installations/new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Install GitHub App
+                  <ArrowRight className="w-4 h-4 ml-1.5" />
+                </a>
+              </Button>
+              <Button
+                variant="ghost"
+                asChild
+                className="text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
+              >
+                <a
+                  href="https://inkog.io/pricing"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Upgrade to Deep Scan
+                  <ArrowRight className="w-4 h-4 ml-1.5" />
+                </a>
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground/50 mt-3">
+              This report was generated with Inkog Core. Deep scanning adds behavioral analysis and runtime vulnerability detection.
+            </p>
           </div>
         </div>
       </main>

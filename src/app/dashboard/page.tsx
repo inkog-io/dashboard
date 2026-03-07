@@ -68,7 +68,7 @@ export default function DashboardPage() {
       // Fetch stats, history, and agents in parallel
       const [statsResponse, historyResponse, agentsResponse] = await Promise.all([
         api.stats.get(),
-        api.history.list({ limit: 5, summary: true }),
+        api.history.list({ limit: 50, summary: true }),
         api.agents.list(),
       ]);
 
@@ -159,6 +159,12 @@ export default function DashboardPage() {
   const riskScore = stats?.risk_score_avg ?? summary?.average_risk_score ?? 0;
   const criticalCount = stats?.critical_unresolved ?? recentScans[0]?.critical_count ?? 0;
   const governanceScore = stats?.governance_score_avg ?? 0;
+
+  // Build scan policy lookup from recent scans
+  const scanPolicies: Record<string, string> = {};
+  for (const scan of recentScans) {
+    scanPolicies[scan.id] = scan.scan_policy || "balanced";
+  }
 
   // Agent-centric metrics
   const criticalAgents = agents.filter(a => a.health_status === 'critical').length;
@@ -312,6 +318,7 @@ export default function DashboardPage() {
         <AgentList
           agents={agents}
           loading={loading}
+          scanPolicies={scanPolicies}
           onRename={handleRenameAgent}
           onDelete={handleDeleteAgent}
         />

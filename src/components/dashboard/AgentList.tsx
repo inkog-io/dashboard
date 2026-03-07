@@ -34,6 +34,7 @@ import type { Agent } from "@/lib/api";
 interface AgentListProps {
   agents: Agent[];
   loading?: boolean;
+  scanPolicies?: Record<string, string>;
   onAgentClick?: (agent: Agent) => void;
   onDelete?: (agent: Agent) => Promise<void>;
   onRename?: (agent: Agent, newName: string) => Promise<void>;
@@ -100,6 +101,7 @@ function PolicyBadge({ policy }: { policy: string }) {
 export function AgentList({
   agents,
   loading = false,
+  scanPolicies,
   onAgentClick,
   onDelete,
   onRename,
@@ -348,9 +350,33 @@ export function AgentList({
 
               <TableCell>
                 {agent.last_scan_at ? (
-                  <span className="text-sm text-muted-foreground">
-                    {compactTimeAgo(new Date(agent.last_scan_at))}
-                  </span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm text-muted-foreground">
+                      {compactTimeAgo(new Date(agent.last_scan_at))}
+                    </span>
+                    {scanPolicies && agent.last_scan_id && (
+                      scanPolicies[agent.last_scan_id] === "deep-checks" ? (
+                        <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+                          Deep
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
+                            Core
+                          </span>
+                          <a
+                            href="https://inkog.io/pricing"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[10px] text-muted-foreground/60 hover:text-violet-500 dark:hover:text-violet-400 transition-colors"
+                          >
+                            Try Deep &rarr;
+                          </a>
+                        </div>
+                      )
+                    )}
+                  </div>
                 ) : (
                   <span className="text-sm text-muted-foreground/60">Never</span>
                 )}

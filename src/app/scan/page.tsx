@@ -230,6 +230,22 @@ export default function PublicScanPage() {
               </Button>
             </div>
 
+            {/* Scan tier note */}
+            <p className="mt-3 text-[11px] text-muted-foreground/60">
+              This scan uses{" "}
+              <span className="font-medium text-muted-foreground">Inkog Core</span>.{" "}
+              For deeper behavioral analysis,{" "}
+              <a
+                href="https://inkog.io/pricing"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-violet-500 dark:text-violet-400 hover:underline"
+              >
+                try Inkog Deep
+              </a>
+              .
+            </p>
+
             {/* Error with recovery */}
             {error && error !== "too_large" && (
               <p className="mt-4 text-sm text-red-600 dark:text-red-400">
