@@ -218,6 +218,7 @@ export interface SkillFinding {
   owasp_agentic?: string;
   owasp_mcp?: string;
   confidence: number;
+  compliance_mapping?: { framework: string; reference: string }[];
 }
 
 export interface SkillToolAnalysis {
