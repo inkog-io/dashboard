@@ -785,7 +785,7 @@ def recursive_tool(depth=0):
               </div>
             </div>
             <Link
-              href="/dashboard/api-keys"
+              href="/dashboard/settings?tab=api-keys"
               className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors whitespace-nowrap"
             >
               Get CLI Access

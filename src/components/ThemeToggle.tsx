@@ -3,10 +3,14 @@
 import { Moon, Sun, Monitor } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 
+interface ThemeToggleProps {
+  isCollapsed?: boolean;
+}
+
 /**
  * Theme toggle button with three states: light, dark, system
  */
-export function ThemeToggle() {
+export function ThemeToggle({ isCollapsed = false }: ThemeToggleProps) {
   const { theme, setTheme, resolvedTheme } = useTheme();
 
   const cycleTheme = () => {
@@ -41,11 +45,13 @@ export function ThemeToggle() {
   return (
     <button
       onClick={cycleTheme}
-      className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+      className={`flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors ${
+        isCollapsed ? "justify-center p-2" : "px-3 py-2"
+      }`}
       title={`Theme: ${getLabel()} (click to change)`}
     >
       {getIcon()}
-      <span className="hidden sm:inline">{getLabel()}</span>
+      {!isCollapsed && <span>{getLabel()}</span>}
     </button>
   );
 }

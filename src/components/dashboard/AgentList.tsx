@@ -200,7 +200,7 @@ export function AgentList({
               </div>
               <div className="flex-1 min-w-0">
                 <Link
-                  href="/dashboard/api-keys"
+                  href="/dashboard/settings?tab=api-keys"
                   className="text-sm font-medium text-foreground hover:underline flex items-center gap-1.5"
                 >
                   <Key className="h-3.5 w-3.5" />

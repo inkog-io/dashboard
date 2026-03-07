@@ -8,10 +8,8 @@ import {
   Key,
   History,
   Plus,
-  Search,
-  ShieldCheck,
+  Settings,
 } from "lucide-react";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
 import {
   CommandDialog,
   CommandEmpty,
@@ -29,7 +27,6 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter();
-  const { isAdmin } = useCurrentUser();
 
   const runCommand = useCallback(
     (command: () => void) => {
@@ -65,19 +62,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             <span>History</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/dashboard/api-keys"))}
+            onSelect={() => runCommand(() => router.push("/dashboard/settings"))}
           >
-            <Key className="mr-2 h-4 w-4" />
-            <span>API Keys</span>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
           </CommandItem>
-          {isAdmin && (
-            <CommandItem
-              onSelect={() => runCommand(() => router.push("/dashboard/admin"))}
-            >
-              <ShieldCheck className="mr-2 h-4 w-4" />
-              <span>Admin</span>
-            </CommandItem>
-          )}
         </CommandGroup>
 
         <CommandSeparator />
@@ -90,7 +79,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             <span>New Scan</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/dashboard/api-keys"))}
+            onSelect={() => runCommand(() => router.push("/dashboard/settings?tab=api-keys"))}
           >
             <Key className="mr-2 h-4 w-4" />
             <span>Create API Key</span>

@@ -94,8 +94,10 @@ export function Sidebar({
           </div>
         )}
 
-        {/* Navigation */}
-        <SidebarNav isCollapsed={isCollapsed} />
+        {/* Navigation - scrollable */}
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
+          <SidebarNav isCollapsed={isCollapsed} />
+        </div>
 
         {/* Collapse Toggle */}
         <div
@@ -123,24 +125,15 @@ export function Sidebar({
 
         {/* Theme Toggle */}
         <div className={cn(
-          "px-3 py-2",
+          "flex-shrink-0 px-3 py-2",
           isCollapsed ? "flex justify-center" : ""
         )}>
-          {!isCollapsed ? (
-            <ThemeToggle />
-          ) : (
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <div><ThemeToggle /></div>
-              </TooltipTrigger>
-              <TooltipContent side="right">Toggle theme</TooltipContent>
-            </Tooltip>
-          )}
+          <ThemeToggle isCollapsed={isCollapsed} />
         </div>
 
         {/* User Section */}
         <div className={cn(
-          "p-4 border-t border-border",
+          "flex-shrink-0 p-4 border-t border-border",
           isCollapsed ? "flex justify-center" : "flex items-center gap-3"
         )}>
           <UserButton afterSignOutUrl="/" />

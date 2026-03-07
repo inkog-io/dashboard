@@ -521,18 +521,20 @@ export default function HistoryPage() {
                           {formatDate(row.data.created_at)}
                         </TableCell>
                         <TableCell className="font-medium text-foreground">
-                          <span className="inline-flex items-center gap-1.5">
-                            {row.data.agent_name || <span className="text-muted-foreground italic">Unnamed</span>}
+                          <div className="flex flex-col gap-1">
+                            <span className="truncate max-w-[200px]">
+                              {row.data.agent_name || <span className="text-muted-foreground italic">Unnamed</span>}
+                            </span>
                             {row.data.scan_policy === "deep-checks" ? (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+                              <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
                                 Inkog Deep
                               </span>
                             ) : (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                              <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                                 Inkog Core
                               </span>
                             )}
-                          </span>
+                          </div>
                         </TableCell>
                         {row.data.findings_count === -1 ? (
                           <>

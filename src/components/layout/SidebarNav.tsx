@@ -5,11 +5,9 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Shield,
-  Key,
   History,
   BookOpen,
-  Github,
-  ShieldCheck,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -21,7 +19,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useApiKeyStatus } from "@/hooks/useApiKeyStatus";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useGitHubInstallationStatus } from "@/hooks/useGitHubInstallationStatus";
 
 interface NavItem {
@@ -106,7 +103,6 @@ function NavItemComponent({
 export function SidebarNav({ isCollapsed }: SidebarNavProps) {
   const pathname = usePathname();
   const { hasKeys, loading: loadingKeys } = useApiKeyStatus();
-  const { isAdmin } = useCurrentUser();
   const { hasInstallations, loading: loadingInstallations } = useGitHubInstallationStatus();
 
   const isActive = (href: string) => {
@@ -115,6 +111,8 @@ export function SidebarNav({ isCollapsed }: SidebarNavProps) {
     }
     return pathname.startsWith(href);
   };
+
+  const needsSetup = !loadingKeys && !hasKeys && !loadingInstallations && !hasInstallations;
 
   // Build nav groups dynamically to include badges
   const navGroups: NavGroup[] = [
@@ -127,29 +125,16 @@ export function SidebarNav({ isCollapsed }: SidebarNavProps) {
       ],
     },
     {
-      title: "SETTINGS",
+      title: "MANAGE",
       items: [
         {
-          href: "/dashboard/api-keys",
-          label: "API Keys",
-          icon: Key,
-          // Only show Setup badge when user has no keys AND no GitHub installations
-          badge: !loadingKeys && !hasKeys && !loadingInstallations && !hasInstallations ? "Setup" : undefined,
-        },
-        {
-          href: "/dashboard/integrations",
-          label: "Integrations",
-          icon: Github,
-          badge: !loadingInstallations && !hasInstallations && !loadingKeys && !hasKeys ? "Setup" : undefined,
+          href: "/dashboard/settings",
+          label: "Settings",
+          icon: Settings,
+          badge: needsSetup ? "Setup" : undefined,
         },
       ],
     },
-    ...(isAdmin ? [{
-      title: "ADMIN",
-      items: [
-        { href: "/dashboard/admin", label: "Admin", icon: ShieldCheck },
-      ],
-    }] : []),
     {
       title: "HELP",
       items: [
@@ -160,7 +145,7 @@ export function SidebarNav({ isCollapsed }: SidebarNavProps) {
 
   return (
     <TooltipProvider>
-      <nav className="flex-1 px-3 py-4 space-y-6">
+      <nav className="px-3 py-4 space-y-6">
         {navGroups.map((group, groupIndex) => (
           <div key={group.title}>
             {groupIndex > 0 && <Separator className="mb-4" />}

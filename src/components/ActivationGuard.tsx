@@ -20,7 +20,8 @@ interface ActivationGuardProps {
  * Bypass routes (always allowed):
  * - /dashboard/onboarding - The onboarding page itself
  * - /dashboard/scan - Let users complete their first scan
- * - /dashboard/api-keys - Let users create API keys
+ * - /dashboard/api-keys - Legacy redirect to settings
+ * - /dashboard/settings - Settings page (API keys, integrations, team)
  *
  * The ?completed=true param also bypasses the check (used after onboarding).
  */
@@ -38,7 +39,8 @@ export function ActivationGuard({ children }: ActivationGuardProps) {
         "/dashboard/scan",
         "/dashboard/api-keys",
         "/dashboard/results", // Allow viewing results
-        "/dashboard/integrations", // Settings page - always accessible
+        "/dashboard/integrations", // Legacy route redirect
+        "/dashboard/settings", // Settings page - always accessible
         "/dashboard/skills", // Skill scanner page
       ];
 
