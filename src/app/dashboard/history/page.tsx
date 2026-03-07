@@ -16,6 +16,7 @@ import {
   Terminal,
   Loader2,
   Bot,
+  Shield,
   Trash2,
 } from "lucide-react";
 
@@ -271,7 +272,12 @@ export default function HistoryPage() {
     if (!api || !deleteScanId) return;
     setDeleting(true);
     try {
-      await api.scans.delete(deleteScanId);
+      const scanToDelete = scans.find(s => s.id === deleteScanId);
+      if (scanToDelete?.scan_type === 'skill') {
+        await api.skills.delete(deleteScanId);
+      } else {
+        await api.scans.delete(deleteScanId);
+      }
       setDeleteScanId(null);
       fetchHistory();
     } catch {
@@ -518,24 +524,44 @@ export default function HistoryPage() {
                       <TableRow
                         key={row.data.id}
                         className="dark:border-border hover:bg-accent cursor-pointer group"
-                        onClick={() => router.push(`/dashboard/results/${row.data.id}`)}
+                        onClick={() => {
+                          if (row.data.scan_type === 'skill') {
+                            router.push(`/dashboard/skills/${row.data.id}`);
+                          } else {
+                            router.push(`/dashboard/results/${row.data.id}`);
+                          }
+                        }}
                       >
                         <TableCell className="text-muted-foreground">
                           {formatDate(row.data.created_at)}
                         </TableCell>
                         <TableCell className="font-medium text-foreground">
                           <div className="flex flex-col gap-1">
-                            <span className="truncate max-w-[200px]">
-                              {row.data.agent_name || <span className="text-muted-foreground italic">Unnamed</span>}
-                            </span>
-                            {row.data.scan_policy === "deep-checks" ? (
-                              <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
-                                Inkog Deep
-                              </span>
+                            {row.data.scan_type === 'skill' ? (
+                              <>
+                                <span className="truncate max-w-[200px] flex items-center gap-1.5">
+                                  <Shield className="h-4 w-4 text-blue-500" />
+                                  {row.data.agent_name || 'Skill Scan'}
+                                </span>
+                                <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                  Skill Scan
+                                </span>
+                              </>
                             ) : (
-                              <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                                Inkog Core
-                              </span>
+                              <>
+                                <span className="truncate max-w-[200px]">
+                                  {row.data.agent_name || <span className="text-muted-foreground italic">Unnamed</span>}
+                                </span>
+                                {row.data.scan_policy === "deep-checks" ? (
+                                  <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+                                    Inkog Deep
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                    Inkog Core
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
                         </TableCell>

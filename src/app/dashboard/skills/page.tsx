@@ -43,8 +43,7 @@ export default function SkillsPage() {
       const api = createAPIClient(() => Promise.resolve(token));
       const response = await api.skills.scanMCP(mcpServer.trim());
       setResult(response);
-      if (response.scan_id && response.result) {
-        sessionStorage.setItem(`skill-scan-${response.scan_id}`, JSON.stringify(response.result));
+      if (response.scan_id) {
         router.push(`/dashboard/skills/${response.scan_id}`);
       }
     } catch (err) {
@@ -65,8 +64,7 @@ export default function SkillsPage() {
       const api = createAPIClient(() => Promise.resolve(token));
       const response = await api.skills.scan({ repository_url: repoUrl.trim() });
       setResult(response);
-      if (response.scan_id && response.result) {
-        sessionStorage.setItem(`skill-scan-${response.scan_id}`, JSON.stringify(response.result));
+      if (response.scan_id) {
         router.push(`/dashboard/skills/${response.scan_id}`);
       }
     } catch (err) {

@@ -294,6 +294,34 @@ export interface Scan {
   client_ip: string;
   user_agent: string;
   created_at: string;
+  scan_type?: 'agent' | 'skill';   // Discriminator for unified history
+}
+
+export interface SkillScanFull {
+  id: string;
+  user_id: string;
+  org_id?: string | null;
+  scan_number?: number | null;
+  format: string;
+  name: string | null;
+  source: string | null;
+  status: string;
+  risk_score: number;
+  security_score: number;
+  overall_risk: string | null;
+  files_scanned: number;
+  lines_of_code: number;
+  findings_count: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  duration_ms: number;
+  analyzability: number;
+  created_at: string;
+  findings: SkillFinding[] | null;
+  tool_analyses: SkillToolAnalysis[] | null;
+  permissions: SkillPermissions | null;
 }
 
 export interface ScanSummary {
@@ -1544,6 +1572,19 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
         request<{ success: boolean; scan_id: string; ai_status: string }>(
           `/v1/scan/skills/${scanId}/ai`,
           { method: 'POST' },
+        ),
+
+      /** Get a skill scan result by ID */
+      get: (scanId: string) =>
+        request<{ success: boolean; scan: SkillScanFull }>(
+          `/v1/scan/skills/${scanId}`,
+        ),
+
+      /** Delete a skill scan by ID */
+      delete: (scanId: string) =>
+        request<{ success: boolean }>(
+          `/v1/scan/skills/${scanId}`,
+          { method: 'DELETE' },
         ),
     },
   };
