@@ -613,8 +613,8 @@ def recursive_tool(depth=0):
           <span className="text-sm font-medium text-foreground">Deep Analysis</span>
           <span className="text-xs text-muted-foreground">
             {mode === "agent"
-              ? "(ZIP upload, AI-powered deep security scan)"
-              : "(AI-powered deep code analysis after scan)"}
+              ? "(ZIP upload for Inkog Deep security scan)"
+              : "(Inkog Deep code analysis after scan)"}
           </span>
         </label>
       )}

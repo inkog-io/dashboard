@@ -133,6 +133,7 @@ export default function SkillScanResultPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedFinding, setSelectedFinding] = useState<SkillFinding | null>(null);
+  const [selectedAIFinding, setSelectedAIFinding] = useState<AIFinding | null>(null);
   const [severityFilter, setSeverityFilter] = useState<string>("ALL");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -185,7 +186,7 @@ export default function SkillScanResultPage() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
-  // Poll when AI scan is processing
+  // Poll when deep scan is processing
   useEffect(() => {
     if (result?.ai_scan_status !== 'processing') return;
     const poll = setInterval(async () => {
@@ -415,7 +416,7 @@ export default function SkillScanResultPage() {
         </div>
       </div>
 
-      {/* AI Deep Analysis */}
+      {/* Inkog Deep Analysis */}
       {canAccessDeepScan && !result.ai_scan_status && (
         <Card className="border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
           <CardContent className="flex items-center justify-between py-5">
@@ -424,9 +425,9 @@ export default function SkillScanResultPage() {
                 <Bot className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="font-medium text-foreground">AI Deep Analysis</p>
+                <p className="font-medium text-foreground">Inkog Deep Analysis</p>
                 <p className="text-sm text-muted-foreground">
-                  Reduce false positives with AI-powered deep code analysis
+                  Reduce false positives with Inkog Deep code analysis
                 </p>
               </div>
             </div>
@@ -468,7 +469,7 @@ export default function SkillScanResultPage() {
               <div>
                 <p className="font-medium text-red-800 dark:text-red-200">Deep analysis failed</p>
                 <p className="text-sm text-red-600 dark:text-red-400">
-                  The AI analysis encountered an error. You can retry.
+                  The deep analysis encountered an error. You can retry.
                 </p>
               </div>
             </div>
@@ -490,7 +491,7 @@ export default function SkillScanResultPage() {
       )}
 
       {result.ai_scan_status === 'completed' && result.ai_findings && (
-        <AIFindingsSection aiFindings={result.ai_findings} />
+        <AIFindingsSection aiFindings={result.ai_findings} onFindingClick={setSelectedAIFinding} />
       )}
 
       {/* Permissions */}
@@ -593,6 +594,12 @@ export default function SkillScanResultPage() {
         onClose={() => setSelectedFinding(null)}
       />
 
+      <DeepFindingDetailsPanel
+        finding={selectedAIFinding}
+        open={!!selectedAIFinding}
+        onClose={() => setSelectedAIFinding(null)}
+      />
+
       <ConfirmDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
@@ -616,7 +623,7 @@ interface AIFinding {
   category?: string;
 }
 
-function AIFindingsSection({ aiFindings }: { aiFindings: Record<string, unknown> }) {
+function AIFindingsSection({ aiFindings, onFindingClick }: { aiFindings: Record<string, unknown>; onFindingClick: (finding: AIFinding) => void }) {
   const findings = (aiFindings?.findings as AIFinding[]) || [];
   if (findings.length === 0) {
     return (
@@ -624,13 +631,13 @@ function AIFindingsSection({ aiFindings }: { aiFindings: Record<string, unknown>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-purple-600" />
-            AI Analysis
+            Inkog Deep Analysis
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-2 text-green-600 py-4 justify-center">
             <CheckCircle className="h-5 w-5" />
-            <span>No additional findings from AI deep analysis</span>
+            <span>No additional findings from Inkog Deep analysis</span>
           </div>
         </CardContent>
       </Card>
@@ -642,10 +649,10 @@ function AIFindingsSection({ aiFindings }: { aiFindings: Record<string, unknown>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-purple-600" />
-          AI Analysis ({findings.length})
+          Inkog Deep Analysis ({findings.length})
         </CardTitle>
         <CardDescription>
-          Deep findings from AI-powered code analysis
+          Deep findings from Inkog Deep code analysis
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -654,41 +661,40 @@ function AIFindingsSection({ aiFindings }: { aiFindings: Record<string, unknown>
             const sev = (finding.severity || "LOW").toUpperCase();
             const colors = severityColors[sev] || severityColors.LOW;
             return (
-              <div
+              <button
                 key={i}
-                className={`p-4 rounded-lg border-l-2 border ${colors.border} ${colors.left} bg-white dark:bg-gray-900`}
+                onClick={() => onFindingClick(finding)}
+                className={`w-full text-left p-4 rounded-lg border-l-2 border ${colors.border} ${colors.left} bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors group`}
               >
-                <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <span
-                    className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${colors.bg} ${colors.text} ${colors.border}`}
-                  >
-                    {sev}
-                  </span>
-                  <span className="font-medium text-sm">{finding.title}</span>
-                  {finding.category && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-                      {formatCategory(finding.category)}
-                    </span>
-                  )}
-                </div>
-                {finding.description && (
-                  <p className="text-sm text-muted-foreground mt-1">{finding.description}</p>
-                )}
-                <div className="flex items-center gap-3 mt-2">
-                  {finding.file && (
-                    <code className="text-xs text-muted-foreground bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                      {finding.file}{finding.line ? `:${finding.line}` : ''}
-                    </code>
-                  )}
-                </div>
-                {finding.remediation && (
-                  <div className="mt-2 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30 p-2">
-                    <p className="text-xs text-green-800 dark:text-green-300">
-                      {finding.remediation}
-                    </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span
+                        className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${colors.bg} ${colors.text} ${colors.border}`}
+                      >
+                        {sev}
+                      </span>
+                      <span className="font-medium text-sm">{finding.title}</span>
+                      {finding.category && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                          {formatCategory(finding.category)}
+                        </span>
+                      )}
+                    </div>
+                    {finding.description && (
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{finding.description}</p>
+                    )}
+                    <div className="flex items-center gap-3 mt-2">
+                      {finding.file && (
+                        <code className="text-xs text-muted-foreground bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                          {finding.file}{finding.line ? `:${finding.line}` : ''}
+                        </code>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground mt-1 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </button>
             );
           })}
         </div>
@@ -1014,6 +1020,142 @@ function SkillFindingDetailsPanel({
             <div className="border-t border-gray-200 dark:border-gray-700 px-5 py-3 flex items-center justify-between text-xs text-muted-foreground">
               <span>Pattern: {finding.pattern_id}</span>
               <span>ID: {finding.id?.slice(0, 8)}</span>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+}
+
+function DeepFindingDetailsPanel({
+  finding,
+  open,
+  onClose,
+}: {
+  finding: AIFinding | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const handleEscape = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    if (open) {
+      document.addEventListener("keydown", handleEscape);
+      return () => document.removeEventListener("keydown", handleEscape);
+    }
+  }, [open, handleEscape]);
+
+  const sev = finding ? (finding.severity || "LOW").toUpperCase() : "LOW";
+  const colors = severityColors[sev] || severityColors.LOW;
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <AnimatePresence>
+      {open && finding && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/20 z-50"
+            onClick={onClose}
+          />
+
+          {/* Panel */}
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "tween", duration: 0.25, ease: "easeOut" }}
+            className="fixed right-0 top-0 h-full w-full max-w-xl bg-card border-l border-border z-[60] overflow-hidden flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20">
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className={`text-xs font-semibold px-2 py-0.5 rounded-full border shrink-0 ${colors.bg} ${colors.text} ${colors.border}`}
+                >
+                  {sev}
+                </span>
+                {finding.category && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 shrink-0">
+                    {formatCategory(finding.category)}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={onClose}
+                className="p-1 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+              {/* Title & Description */}
+              <div>
+                <h2 className="text-lg font-semibold">{finding.title}</h2>
+                {finding.description && (
+                  <p className="text-sm text-muted-foreground mt-1">{finding.description}</p>
+                )}
+              </div>
+
+              {/* Location */}
+              {finding.file && (
+                <div>
+                  <h3 className="text-sm font-medium flex items-center gap-1.5 mb-2">
+                    <MapPin className="h-4 w-4" />
+                    Location
+                  </h3>
+                  <code className="block text-sm bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg">
+                    {finding.file}
+                    {finding.line ? `:${finding.line}` : ""}
+                  </code>
+                </div>
+              )}
+
+              {/* Category */}
+              {finding.category && (
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Classification</h3>
+                  <div className={`rounded-lg border p-3 ${colors.border} ${colors.bg}`}>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Category</span>
+                      <span className="font-medium">{formatCategory(finding.category)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Remediation */}
+              {finding.remediation && (
+                <div>
+                  <h3 className="text-sm font-medium mb-2">How to Fix</h3>
+                  <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30 p-3">
+                    <p className="text-sm text-green-800 dark:text-green-300">
+                      {finding.remediation}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 dark:border-gray-700 px-5 py-3 flex items-center justify-end text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">
+                <Bot className="h-3 w-3" />
+                Inkog Deep
+              </span>
             </div>
           </motion.div>
         </>

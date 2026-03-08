@@ -315,7 +315,7 @@ export default function HistoryPage() {
           </span>
           <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
             <Loader2 className="h-3 w-3 animate-spin" />
-            AI Processing
+            Deep Processing
           </span>
         </div>
       );
