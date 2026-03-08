@@ -292,6 +292,26 @@ export default function SkillScanResultPage() {
     LOW: result.low_count,
   };
 
+  const deepFindingsList: AIFinding[] = (result.ai_scan_status === 'completed' && result.ai_findings)
+    ? ((result.ai_findings as Record<string, unknown>)?.findings as AIFinding[]) || []
+    : [];
+
+  const deepSeverityCounts: Record<string, number> = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+  for (const f of deepFindingsList) {
+    const s = (f.severity || "LOW").toUpperCase();
+    if (s in deepSeverityCounts) deepSeverityCounts[s]++;
+  }
+
+  const totalFindings = (result.findings || []).length + deepFindingsList.length;
+  const totalCritical = result.critical_count + deepSeverityCounts.CRITICAL;
+  const totalHigh = result.high_count + deepSeverityCounts.HIGH;
+
+  const deepScorePenalty = deepSeverityCounts.CRITICAL * 15
+    + deepSeverityCounts.HIGH * 10
+    + deepSeverityCounts.MEDIUM * 5
+    + deepSeverityCounts.LOW * 2;
+  const adjustedScore = Math.max(0, result.security_score - deepScorePenalty);
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -387,25 +407,25 @@ export default function SkillScanResultPage() {
           </div>
           <div className="text-center p-3 bg-muted rounded-lg">
             <p className="text-2xl font-bold text-foreground">
-              {(result.findings || []).length}
+              {totalFindings}
             </p>
             <p className="text-xs text-muted-foreground uppercase">Total Findings</p>
           </div>
           <div className="text-center p-3 bg-red-50 dark:bg-red-900/30 rounded-lg">
             <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-              {result.critical_count}
+              {totalCritical}
             </p>
             <p className="text-xs text-muted-foreground uppercase">Critical</p>
           </div>
           <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
             <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-              {result.high_count}
+              {totalHigh}
             </p>
             <p className="text-xs text-muted-foreground uppercase">High</p>
           </div>
           <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
             <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {result.security_score}/100
+              {adjustedScore}/100
             </p>
             <p className="text-xs text-muted-foreground uppercase">Security Score</p>
           </div>
