@@ -306,6 +306,20 @@ export default function HistoryPage() {
         </span>
       );
     }
+    if (scan.scan_type === 'skill' && scan.ai_scan_status === 'processing') {
+      return (
+        <div className="flex flex-col gap-1">
+          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+            <CheckCircle className="h-3 w-3" />
+            Completed
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            AI Processing
+          </span>
+        </div>
+      );
+    }
     return (
       <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
         <CheckCircle className="h-3 w-3" />

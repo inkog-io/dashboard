@@ -295,6 +295,7 @@ export interface Scan {
   user_agent: string;
   created_at: string;
   scan_type?: 'agent' | 'skill';   // Discriminator for unified history
+  ai_scan_status?: string | null;  // AI deep analysis status for skill scans
 }
 
 export interface SkillScanFull {

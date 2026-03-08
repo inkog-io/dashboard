@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -18,6 +18,7 @@ import {
   X,
   FileText,
   Server,
+  FileArchive,
 } from "lucide-react";
 
 import {
@@ -43,6 +44,7 @@ import { FindingDetailsPanel } from "@/components/FindingDetailsPanel";
 import { FindingsToolbar, type SeverityFilter, type TypeFilter } from "@/components/FindingsToolbar";
 import { PolicySelector, type ScanPolicy, getStoredPolicy } from "@/components/PolicySelector";
 import { cn } from "@/lib/utils";
+import { addPendingDeepScan, removePendingDeepScan } from "@/lib/pending-deep-scans";
 import {
   Card,
   CardContent,
@@ -105,6 +107,16 @@ function ScanPageContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [frameworkFilter, setFrameworkFilter] = useState<string | null>(null);
 
+  // Deep mode state (agent)
+  const [deepMode, setDeepMode] = useState(false);
+  const [zipFile, setZipFile] = useState<File | null>(null);
+  const [deepStatus, setDeepStatus] = useState<'idle' | 'uploading' | 'processing'>('idle');
+  const [deepScanId, setDeepScanId] = useState<string | null>(null);
+  const deepPollRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Deep mode state (skill)
+  const [skillDeepMode, setSkillDeepMode] = useState(false);
+
   // Skill scan state
   const [skillScanning, setSkillScanning] = useState(false);
   const [mcpServer, setMcpServer] = useState("");
@@ -129,6 +141,11 @@ function ScanPageContent() {
   // Load stored policy preference
   useEffect(() => {
     setScanPolicy(getStoredPolicy());
+  }, []);
+
+  // Cleanup deep scan polling on unmount
+  useEffect(() => {
+    return () => { if (deepPollRef.current) clearInterval(deepPollRef.current); };
   }, []);
 
   // Scan phases for progress UI
@@ -406,6 +423,69 @@ def recursive_tool(depth=0):
     }
   }, [api, files, scanPolicy, agentName, SCAN_PHASES]);
 
+  // ZIP file handlers for deep mode
+  const handleZipSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    if (selected) {
+      setZipFile(selected);
+      if (!agentName) {
+        setAgentName(selected.name.replace(/\.zip$/i, ''));
+        setAgentNameAutoDetected(true);
+      }
+      setError(null);
+    }
+  }, [agentName]);
+
+  const handleZipDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped && (dropped.name.endsWith('.zip') || dropped.type === 'application/zip')) {
+      setZipFile(dropped);
+      if (!agentName) {
+        setAgentName(dropped.name.replace(/\.zip$/i, ''));
+        setAgentNameAutoDetected(true);
+      }
+    } else {
+      setError('Please upload a .zip file');
+    }
+  }, [agentName]);
+
+  // Run deep scan (agent mode)
+  const runDeepScan = useCallback(async () => {
+    if (!api || !zipFile) return;
+    setDeepStatus('uploading');
+    setError(null);
+    try {
+      const data = await api.deepScan.trigger(zipFile, agentName || "Security Scan");
+      setDeepScanId(data.scan_id);
+      setDeepStatus('processing');
+      addPendingDeepScan({
+        scanId: data.scan_id,
+        agentName: agentName || "Security Scan",
+        startedAt: new Date().toISOString(),
+      });
+      deepPollRef.current = setInterval(async () => {
+        try {
+          const status = await api.deepScan.getStatus(data.scan_id);
+          if (status.status === 'completed') {
+            clearInterval(deepPollRef.current!);
+            removePendingDeepScan(data.scan_id);
+            router.push(`/dashboard/results/${data.scan_id}`);
+          } else if (status.status === 'failed') {
+            clearInterval(deepPollRef.current!);
+            removePendingDeepScan(data.scan_id);
+            setDeepStatus('idle');
+            setError('Deep analysis failed. Please try again.');
+          }
+        } catch { /* ignore polling errors */ }
+      }, 5000);
+    } catch (err) {
+      setDeepStatus('idle');
+      setError(err instanceof Error ? err.message : 'Deep scan failed');
+    }
+  }, [api, zipFile, agentName, router]);
+
   // Skill scan handlers
   const handleMCPScan = useCallback(async () => {
     if (!api || !mcpServer.trim()) return;
@@ -415,14 +495,14 @@ def recursive_tool(depth=0):
     try {
       const response = await api.skills.scanMCP(mcpServer.trim());
       if (response.scan_id) {
-        router.push(`/dashboard/skills/${response.scan_id}`);
+        router.push(`/dashboard/skills/${response.scan_id}${skillDeepMode ? '?deep=true' : ''}`);
       }
     } catch (err) {
       setSkillError(err instanceof Error ? err.message : "Scan failed");
     } finally {
       setSkillScanning(false);
     }
-  }, [api, mcpServer, router]);
+  }, [api, mcpServer, skillDeepMode, router]);
 
   const handleRepoScan = useCallback(async () => {
     if (!api || !repoUrl.trim()) return;
@@ -432,17 +512,17 @@ def recursive_tool(depth=0):
     try {
       const response = await api.skills.scan({ repository_url: repoUrl.trim() });
       if (response.scan_id) {
-        router.push(`/dashboard/skills/${response.scan_id}`);
+        router.push(`/dashboard/skills/${response.scan_id}${skillDeepMode ? '?deep=true' : ''}`);
       }
     } catch (err) {
       setSkillError(err instanceof Error ? err.message : "Scan failed");
     } finally {
       setSkillScanning(false);
     }
-  }, [api, repoUrl, router]);
+  }, [api, repoUrl, skillDeepMode, router]);
 
   // Whether the mode selector should be hidden
-  const hideModeSelector = scanning || !!result;
+  const hideModeSelector = scanning || !!result || deepStatus !== 'idle';
 
   return (
     <div className="space-y-8">
@@ -459,15 +539,7 @@ def recursive_tool(depth=0):
             </a>
           </p>
         </div>
-        {canAccessDeepScan && mode === "agent" && (
-          <Link
-            href="/dashboard/scan/deep-checks"
-            className="flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity text-sm font-medium whitespace-nowrap"
-          >
-            <Bot className="h-4 w-4" />
-            Deep Checks
-          </Link>
-        )}
+        {/* Deep Checks link removed — inline deep mode checkbox below */}
       </div>
 
       {/* Mode Selector Cards - Hidden during active scan or when results are displayed */}
@@ -517,14 +589,141 @@ def recursive_tool(depth=0):
         </div>
       )}
 
+      {/* Deep Mode Checkbox */}
+      {!hideModeSelector && canAccessDeepScan && (
+        <label className="flex items-center gap-2 cursor-pointer -mt-4">
+          <input
+            type="checkbox"
+            checked={mode === "agent" ? deepMode : skillDeepMode}
+            onChange={(e) => {
+              if (mode === "agent") {
+                setDeepMode(e.target.checked);
+                if (e.target.checked) {
+                  setFiles([]);
+                } else {
+                  setZipFile(null);
+                }
+              } else {
+                setSkillDeepMode(e.target.checked);
+              }
+            }}
+            className="rounded border-border"
+          />
+          <Bot className="h-4 w-4 text-purple-600" />
+          <span className="text-sm font-medium text-foreground">Deep Analysis</span>
+          <span className="text-xs text-muted-foreground">
+            {mode === "agent"
+              ? "(ZIP upload, AI-powered deep security scan)"
+              : "(AI-powered deep code analysis after scan)"}
+          </span>
+        </label>
+      )}
+
       {/* ===== AGENT MODE ===== */}
       {mode === "agent" && (
         <>
           {/* Upload Section - Hidden when results exist */}
           {!result && (
             <>
-              {/* Drop Zone - Only when no files selected */}
-              {files.length === 0 && (
+              {/* Deep scan processing state */}
+              {deepStatus !== 'idle' && (
+                <div className="border rounded-xl p-12 text-center space-y-4">
+                  <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mx-auto" />
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      {deepStatus === 'uploading' ? 'Uploading repository...' : 'Deep Analysis in Progress'}
+                    </h3>
+                    <p className="text-muted-foreground text-sm mt-1">
+                      {deepStatus === 'processing'
+                        ? 'Inkog Deep is analyzing your code. This can take up to 10 minutes.'
+                        : 'Sending your repository to the analysis server...'}
+                    </p>
+                  </div>
+                  {deepScanId && <p className="text-xs text-muted-foreground font-mono">Scan ID: {deepScanId}</p>}
+                </div>
+              )}
+
+              {/* Deep mode: ZIP upload */}
+              {deepMode && deepStatus === 'idle' && (
+                <>
+                  {!zipFile ? (
+                    <div
+                      className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
+                        isDragging
+                          ? "border-foreground bg-muted"
+                          : "border-border hover:border-border"
+                      }`}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDragging(true);
+                      }}
+                      onDragLeave={(e) => {
+                        e.preventDefault();
+                        setIsDragging(false);
+                      }}
+                      onDrop={handleZipDrop}
+                    >
+                      <FileArchive className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground mb-4">
+                        Drag & drop your repository .zip file here
+                      </p>
+                      <input
+                        type="file"
+                        accept=".zip"
+                        onChange={handleZipSelect}
+                        className="hidden"
+                        id="zip-upload"
+                      />
+                      <label
+                        htmlFor="zip-upload"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 cursor-pointer transition-colors"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Choose .zip file
+                      </label>
+                      <p className="text-xs text-muted-foreground mt-3">
+                        Max 50MB. The entire repository folder should be zipped.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-card rounded-xl border border-border shadow-sm p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <FileArchive className="h-8 w-8 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">{zipFile.name}</p>
+                            <p className="text-sm text-muted-foreground">{(zipFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                          </div>
+                        </div>
+                        <button onClick={() => setZipFile(null)} className="text-muted-foreground hover:text-foreground">
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-foreground mb-1.5">Agent Name</label>
+                        <input
+                          type="text"
+                          placeholder="e.g., Sales Outreach Agent"
+                          value={agentName}
+                          onChange={handleAgentNameChange}
+                          className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <button
+                        onClick={runDeepScan}
+                        disabled={deepStatus !== 'idle'}
+                        className="w-full py-3 bg-black dark:bg-white text-white dark:text-black font-medium rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        <Bot className="h-5 w-5" />
+                        Run Deep Security Analysis
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Normal mode: Multi-file drop zone */}
+              {!deepMode && deepStatus === 'idle' && files.length === 0 && (
                 <div
                   className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
                     isDragging
@@ -573,8 +772,8 @@ def recursive_tool(depth=0):
                 </div>
               )}
 
-              {/* Selected Files */}
-              {files.length > 0 && (
+              {/* Selected Files (normal mode only) */}
+              {!deepMode && files.length > 0 && (
                 <div className="bg-card rounded-xl border border-border shadow-sm p-5">
                   {/* Scanning Progress UI */}
                   {scanning ? (

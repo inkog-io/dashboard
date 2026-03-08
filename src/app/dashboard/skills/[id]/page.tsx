@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { format } from "date-fns";
 import { compactTimeAgo } from "@/lib/utils";
@@ -127,6 +127,7 @@ function formatCategory(cat: string): string {
 export default function SkillScanResultPage() {
   const { id } = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { getToken } = useAuth();
   const [result, setResult] = useState<SkillScanFull | null>(null);
   const [loading, setLoading] = useState(true);
@@ -215,6 +216,24 @@ export default function SkillScanResultPage() {
       setAiTriggering(false);
     }
   };
+
+  // Auto-trigger deep analysis if ?deep=true is present
+  const deepAutoTriggered = useRef(false);
+  useEffect(() => {
+    if (!result || !canAccessDeepScan) return;
+    if (searchParams.get('deep') !== 'true') return;
+    if (result.ai_scan_status) return; // Already triggered or completed
+    if (deepAutoTriggered.current) return;
+    deepAutoTriggered.current = true;
+
+    // Remove query param to prevent re-triggering
+    const url = new URL(window.location.href);
+    url.searchParams.delete('deep');
+    window.history.replaceState({}, '', url.pathname);
+
+    triggerDeepCheck();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, canAccessDeepScan, searchParams]);
 
   const handleExport = () => {
     if (!result) return;
