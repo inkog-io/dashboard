@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
@@ -28,6 +28,8 @@ import {
   FileJson,
   Trash2,
   Loader2,
+  Bot,
+  RefreshCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -47,6 +49,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { downloadJSON } from "@/lib/export-utils";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 import {
   createAPIClient,
@@ -133,6 +136,9 @@ export default function SkillScanResultPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState<'json' | null>(null);
+  const { canAccessDeepScan } = useCurrentUser();
+  const [aiTriggering, setAiTriggering] = useState(false);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const fetchScan = async () => {
@@ -170,6 +176,43 @@ export default function SkillScanResultPage() {
       router.push("/dashboard/skills");
     } catch {
       setDeleting(false);
+    }
+  };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, []);
+
+  // Poll when AI scan is processing
+  useEffect(() => {
+    if (result?.ai_scan_status !== 'processing') return;
+    const poll = setInterval(async () => {
+      try {
+        const token = await getToken();
+        const api = createAPIClient(() => Promise.resolve(token));
+        const { scan } = await api.skills.get(id as string);
+        if (scan.ai_scan_status !== 'processing') {
+          clearInterval(poll);
+          setResult(scan);
+        }
+      } catch { /* ignore polling errors */ }
+    }, 5000);
+    pollRef.current = poll;
+    return () => clearInterval(poll);
+  }, [result?.ai_scan_status, id, getToken]);
+
+  const triggerDeepCheck = async () => {
+    setAiTriggering(true);
+    try {
+      const token = await getToken();
+      const api = createAPIClient(() => Promise.resolve(token));
+      await api.skills.triggerAI(id as string);
+      setResult(prev => prev ? { ...prev, ai_scan_status: 'processing' } : prev);
+    } catch {
+      // Could show a toast here
+    } finally {
+      setAiTriggering(false);
     }
   };
 
@@ -260,6 +303,12 @@ export default function SkillScanResultPage() {
               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                 Inkog Core
               </span>
+              {result.ai_scan_status === 'completed' && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                  <Bot className="h-3 w-3" />
+                  Inkog Deep
+                </span>
+              )}
             </div>
             {result.created_at && (
               <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
@@ -346,6 +395,84 @@ export default function SkillScanResultPage() {
           {" \u00b7 "}Analyzability: {Math.round(result.analyzability * 100)}%
         </div>
       </div>
+
+      {/* AI Deep Analysis */}
+      {canAccessDeepScan && !result.ai_scan_status && (
+        <Card className="border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
+          <CardContent className="flex items-center justify-between py-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-lg">
+                <Bot className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">AI Deep Analysis</p>
+                <p className="text-sm text-muted-foreground">
+                  Reduce false positives with AI-powered deep code analysis
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={triggerDeepCheck}
+              disabled={aiTriggering}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {aiTriggering ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Bot className="h-4 w-4 mr-2" />
+              )}
+              {aiTriggering ? "Starting..." : "Run Deep Analysis"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {result.ai_scan_status === 'processing' && (
+        <Card className="border-purple-200 dark:border-purple-800">
+          <CardContent className="flex items-center gap-3 py-5">
+            <Loader2 className="h-5 w-5 text-purple-600 dark:text-purple-400 animate-spin" />
+            <div>
+              <p className="font-medium text-foreground">Deep analysis in progress...</p>
+              <p className="text-sm text-muted-foreground">
+                You can leave this page. Results will appear when done.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {result.ai_scan_status === 'failed' && (
+        <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+          <CardContent className="flex items-center justify-between py-5">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              <div>
+                <p className="font-medium text-red-800 dark:text-red-200">Deep analysis failed</p>
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  The AI analysis encountered an error. You can retry.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={triggerDeepCheck}
+              disabled={aiTriggering}
+              className="border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
+            >
+              {aiTriggering ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {result.ai_scan_status === 'completed' && result.ai_findings && (
+        <AIFindingsSection aiFindings={result.ai_findings} />
+      )}
 
       {/* Permissions */}
       {result.permissions && <PermissionCard permissions={result.permissions} />}
@@ -457,6 +584,97 @@ export default function SkillScanResultPage() {
         loading={deleting}
       />
     </div>
+  );
+}
+
+interface AIFinding {
+  severity?: string;
+  title?: string;
+  description?: string;
+  file?: string;
+  line?: number;
+  remediation?: string;
+  category?: string;
+}
+
+function AIFindingsSection({ aiFindings }: { aiFindings: Record<string, unknown> }) {
+  const findings = (aiFindings?.findings as AIFinding[]) || [];
+  if (findings.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-purple-600" />
+            AI Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2 text-green-600 py-4 justify-center">
+            <CheckCircle className="h-5 w-5" />
+            <span>No additional findings from AI deep analysis</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Bot className="h-5 w-5 text-purple-600" />
+          AI Analysis ({findings.length})
+        </CardTitle>
+        <CardDescription>
+          Deep findings from AI-powered code analysis
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {findings.map((finding, i) => {
+            const sev = (finding.severity || "LOW").toUpperCase();
+            const colors = severityColors[sev] || severityColors.LOW;
+            return (
+              <div
+                key={i}
+                className={`p-4 rounded-lg border-l-2 border ${colors.border} ${colors.left} bg-white dark:bg-gray-900`}
+              >
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${colors.bg} ${colors.text} ${colors.border}`}
+                  >
+                    {sev}
+                  </span>
+                  <span className="font-medium text-sm">{finding.title}</span>
+                  {finding.category && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                      {formatCategory(finding.category)}
+                    </span>
+                  )}
+                </div>
+                {finding.description && (
+                  <p className="text-sm text-muted-foreground mt-1">{finding.description}</p>
+                )}
+                <div className="flex items-center gap-3 mt-2">
+                  {finding.file && (
+                    <code className="text-xs text-muted-foreground bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                      {finding.file}{finding.line ? `:${finding.line}` : ''}
+                    </code>
+                  )}
+                </div>
+                {finding.remediation && (
+                  <div className="mt-2 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30 p-2">
+                    <p className="text-xs text-green-800 dark:text-green-300">
+                      {finding.remediation}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -322,6 +322,8 @@ export interface SkillScanFull {
   findings: SkillFinding[] | null;
   tool_analyses: SkillToolAnalysis[] | null;
   permissions: SkillPermissions | null;
+  ai_scan_status?: string | null;
+  ai_findings?: Record<string, unknown> | null;
 }
 
 export interface ScanSummary {

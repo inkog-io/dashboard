@@ -459,7 +459,7 @@ def recursive_tool(depth=0):
             </a>
           </p>
         </div>
-        {canAccessDeepScan && (
+        {canAccessDeepScan && mode === "agent" && (
           <Link
             href="/dashboard/scan/deep-checks"
             className="flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity text-sm font-medium whitespace-nowrap"
