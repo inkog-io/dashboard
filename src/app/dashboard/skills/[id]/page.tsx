@@ -614,13 +614,19 @@ export default function SkillScanResultPage() {
 }
 
 interface AIFinding {
-  severity?: string;
+  finding_number?: number;
   title?: string;
-  description?: string;
-  file?: string;
-  line?: number;
-  remediation?: string;
+  detection_id?: string;
   category?: string;
+  severity?: string;
+  confidence?: string;
+  affected_files?: { file_path: string; line_numbers: string }[];
+  proof?: { file_path: string; start_line: number; end_line: number; code_snippet: string; language: string }[];
+  explanation?: string;
+  recommended_action?: string;
+  false_positive_risk?: string;
+  false_positive_rationale?: string;
+  compliance_mappings?: { framework: string; reference: string }[];
 }
 
 function AIFindingsSection({ aiFindings, onFindingClick }: { aiFindings: Record<string, unknown>; onFindingClick: (finding: AIFinding) => void }) {
@@ -652,7 +658,7 @@ function AIFindingsSection({ aiFindings, onFindingClick }: { aiFindings: Record<
           Inkog Deep Analysis ({findings.length})
         </CardTitle>
         <CardDescription>
-          Deep findings from Inkog Deep code analysis
+          Findings from Inkog Deep code analysis
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -680,14 +686,23 @@ function AIFindingsSection({ aiFindings, onFindingClick }: { aiFindings: Record<
                           {formatCategory(finding.category)}
                         </span>
                       )}
+                      {finding.confidence && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${
+                          finding.confidence === "HIGH" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800" :
+                          finding.confidence === "MEDIUM" ? "bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800" :
+                          "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700"
+                        }`}>
+                          {finding.confidence}
+                        </span>
+                      )}
                     </div>
-                    {finding.description && (
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{finding.description}</p>
+                    {finding.explanation && (
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{finding.explanation}</p>
                     )}
                     <div className="flex items-center gap-3 mt-2">
-                      {finding.file && (
+                      {finding.affected_files?.[0] && (
                         <code className="text-xs text-muted-foreground bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                          {finding.file}{finding.line ? `:${finding.line}` : ''}
+                          {finding.affected_files[0].file_path}{finding.affected_files[0].line_numbers ? `:${finding.affected_files[0].line_numbers}` : ''}
                         </code>
                       )}
                     </div>
@@ -1102,48 +1117,126 @@ function DeepFindingDetailsPanel({
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
-              {/* Title & Description */}
+              {/* Title & Explanation */}
               <div>
                 <h2 className="text-lg font-semibold">{finding.title}</h2>
-                {finding.description && (
-                  <p className="text-sm text-muted-foreground mt-1">{finding.description}</p>
+                {finding.explanation && (
+                  <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">{finding.explanation}</p>
                 )}
               </div>
 
-              {/* Location */}
-              {finding.file && (
+              {/* Affected Files */}
+              {finding.affected_files && finding.affected_files.length > 0 && (
                 <div>
                   <h3 className="text-sm font-medium flex items-center gap-1.5 mb-2">
                     <MapPin className="h-4 w-4" />
-                    Location
+                    Affected Files
                   </h3>
-                  <code className="block text-sm bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg">
-                    {finding.file}
-                    {finding.line ? `:${finding.line}` : ""}
-                  </code>
+                  <div className="space-y-1">
+                    {finding.affected_files.map((f, i) => (
+                      <code key={i} className="block text-sm bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg">
+                        {f.file_path}{f.line_numbers ? `:${f.line_numbers}` : ''}
+                      </code>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {/* Category */}
-              {finding.category && (
+              {/* Proof / Code Snippets */}
+              {finding.proof && finding.proof.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium flex items-center gap-1.5 mb-2">
+                    <FileCode className="h-4 w-4" />
+                    Proof
+                  </h3>
+                  <div className="space-y-3">
+                    {finding.proof.map((p, i) => (
+                      <div key={i}>
+                        <code className="text-xs text-muted-foreground mb-1 block">
+                          {p.file_path}:{p.start_line}&ndash;{p.end_line}
+                        </code>
+                        <pre className="text-xs bg-gray-900 dark:bg-gray-950 text-gray-100 p-3 rounded-lg overflow-x-auto font-mono">
+                          {p.code_snippet}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Classification */}
+              {(finding.category || finding.confidence || finding.detection_id || finding.false_positive_risk) && (
                 <div>
                   <h3 className="text-sm font-medium mb-2">Classification</h3>
-                  <div className={`rounded-lg border p-3 ${colors.border} ${colors.bg}`}>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Category</span>
-                      <span className="font-medium">{formatCategory(finding.category)}</span>
-                    </div>
+                  <div className={`rounded-lg border p-3 space-y-2 ${colors.border} ${colors.bg}`}>
+                    {finding.category && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Category</span>
+                        <span className="font-medium">{formatCategory(finding.category)}</span>
+                      </div>
+                    )}
+                    {finding.confidence && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Confidence</span>
+                        <span className="font-medium">{finding.confidence}</span>
+                      </div>
+                    )}
+                    {finding.detection_id && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Detection ID</span>
+                        <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{finding.detection_id}</code>
+                      </div>
+                    )}
+                    {finding.false_positive_risk && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">False Positive Risk</span>
+                        <span className={`font-medium ${
+                          finding.false_positive_risk === "HIGH" ? "text-red-600 dark:text-red-400" :
+                          finding.false_positive_risk === "MEDIUM" ? "text-yellow-600 dark:text-yellow-400" :
+                          "text-green-600 dark:text-green-400"
+                        }`}>{finding.false_positive_risk}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* False Positive Assessment */}
+              {finding.false_positive_rationale && (finding.false_positive_risk === "MEDIUM" || finding.false_positive_risk === "HIGH") && (
+                <div>
+                  <h3 className="text-sm font-medium mb-2">False Positive Assessment</h3>
+                  <div className="rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/30 p-3">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-300 whitespace-pre-wrap">
+                      {finding.false_positive_rationale}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Compliance */}
+              {finding.compliance_mappings && finding.compliance_mappings.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Compliance</h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {finding.compliance_mappings.map((c, i) => (
+                      <span
+                        key={i}
+                        className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md border border-gray-200 dark:border-gray-700"
+                      >
+                        {c.framework}: {c.reference}
+                      </span>
+                    ))}
                   </div>
                 </div>
               )}
 
               {/* Remediation */}
-              {finding.remediation && (
+              {finding.recommended_action && (
                 <div>
                   <h3 className="text-sm font-medium mb-2">How to Fix</h3>
                   <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30 p-3">
-                    <p className="text-sm text-green-800 dark:text-green-300">
-                      {finding.remediation}
+                    <p className="text-sm text-green-800 dark:text-green-300 whitespace-pre-wrap">
+                      {finding.recommended_action}
                     </p>
                   </div>
                 </div>
