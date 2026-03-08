@@ -296,6 +296,7 @@ export interface Scan {
   created_at: string;
   scan_type?: 'agent' | 'skill';   // Discriminator for unified history
   ai_scan_status?: string | null;  // AI deep analysis status for skill scans
+  deep_scan_duration_ms?: number | null;  // Duration of deep scan (skill scans only)
 }
 
 export interface SkillScanFull {
@@ -325,6 +326,7 @@ export interface SkillScanFull {
   permissions: SkillPermissions | null;
   ai_scan_status?: string | null;
   ai_findings?: Record<string, unknown> | null;
+  deep_scan_duration_ms?: number | null;
 }
 
 export interface ScanSummary {

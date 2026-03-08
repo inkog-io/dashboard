@@ -471,7 +471,7 @@ export default function HistoryPage() {
                         onSort={handleSort}
                       />
                     </TableHead>
-                    <TableHead className="dark:text-muted-foreground">Agent</TableHead>
+                    <TableHead className="dark:text-muted-foreground">Name</TableHead>
                     <TableHead className="dark:text-muted-foreground">Files</TableHead>
                     <TableHead className="dark:text-muted-foreground">
                       <SortableHeader
@@ -557,13 +557,20 @@ export default function HistoryPage() {
                                   <Shield className="h-4 w-4 text-blue-500" />
                                   {row.data.agent_name || 'Skill Scan'}
                                 </span>
-                                <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                                  Skill Scan
-                                </span>
+                                {row.data.ai_scan_status === 'completed' || row.data.ai_scan_status === 'processing' ? (
+                                  <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+                                    Inkog Deep
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                    Inkog Core
+                                  </span>
+                                )}
                               </>
                             ) : (
                               <>
-                                <span className="truncate max-w-[200px]">
+                                <span className="truncate max-w-[200px] flex items-center gap-1.5">
+                                  <Bot className="h-4 w-4 text-purple-500" />
                                   {row.data.agent_name || <span className="text-muted-foreground italic">Unnamed</span>}
                                 </span>
                                 {row.data.scan_policy === "deep-checks" ? (
@@ -626,11 +633,16 @@ export default function HistoryPage() {
                               </span>
                             </TableCell>
                             <TableCell className="text-muted-foreground">
-                              {row.data.duration_ms === 0
-                                ? "--"
-                                : row.data.duration_ms >= 1000
-                                ? `${(row.data.duration_ms / 1000).toFixed(1)}s`
-                                : `${row.data.duration_ms}ms`}
+                              {(() => {
+                                const ms = row.data.scan_type === 'skill' && row.data.ai_scan_status === 'completed' && row.data.deep_scan_duration_ms
+                                  ? row.data.deep_scan_duration_ms
+                                  : row.data.duration_ms;
+                                return ms === 0
+                                  ? "--"
+                                  : ms >= 1000
+                                  ? `${(ms / 1000).toFixed(1)}s`
+                                  : `${ms}ms`;
+                              })()}
                             </TableCell>
                           </>
                         )}
