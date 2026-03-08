@@ -650,7 +650,9 @@ interface AIFinding {
 }
 
 function AIFindingsSection({ aiFindings, onFindingClick }: { aiFindings: Record<string, unknown>; onFindingClick: (finding: AIFinding) => void }) {
-  const findings = (aiFindings?.findings as AIFinding[]) || [];
+  const findings = [...((aiFindings?.findings as AIFinding[]) || [])].sort(
+    (a, b) => (severityOrd[(a.severity || "LOW").toUpperCase()] ?? 4) - (severityOrd[(b.severity || "LOW").toUpperCase()] ?? 4)
+  );
   if (findings.length === 0) {
     return (
       <Card>
