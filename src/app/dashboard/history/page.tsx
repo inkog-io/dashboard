@@ -17,6 +17,7 @@ import {
   Loader2,
   Bot,
   Shield,
+  Server,
   Trash2,
 } from "lucide-react";
 
@@ -273,7 +274,7 @@ export default function HistoryPage() {
     setDeleting(true);
     try {
       const scanToDelete = scans.find(s => s.id === deleteScanId);
-      if (scanToDelete?.scan_type === 'skill') {
+      if (scanToDelete?.scan_type === 'skill' || scanToDelete?.scan_type === 'mcp') {
         await api.skills.delete(deleteScanId);
       } else {
         await api.scans.delete(deleteScanId);
@@ -306,7 +307,7 @@ export default function HistoryPage() {
         </span>
       );
     }
-    if (scan.scan_type === 'skill' && scan.ai_scan_status === 'processing') {
+    if ((scan.scan_type === 'skill' || scan.scan_type === 'mcp') && scan.ai_scan_status === 'processing') {
       return (
         <div className="flex flex-col gap-1">
           <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
@@ -545,7 +546,7 @@ export default function HistoryPage() {
                         key={row.data.id}
                         className="dark:border-border hover:bg-accent cursor-pointer group"
                         onClick={() => {
-                          if (row.data.scan_type === 'skill') {
+                          if (row.data.scan_type === 'skill' || row.data.scan_type === 'mcp') {
                             router.push(`/dashboard/skills/${row.data.id}`);
                           } else {
                             router.push(`/dashboard/results/${row.data.id}`);
@@ -557,7 +558,28 @@ export default function HistoryPage() {
                         </TableCell>
                         <TableCell className="font-medium text-foreground">
                           <div className="flex flex-col gap-1">
-                            {row.data.scan_type === 'skill' ? (
+                            {row.data.scan_type === 'mcp' ? (
+                              <>
+                                <span className="truncate max-w-[200px] flex items-center gap-1.5">
+                                  <Server className="h-4 w-4 text-emerald-500" />
+                                  {row.data.agent_name || 'MCP Server'}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+                                    MCP
+                                  </span>
+                                  {row.data.ai_scan_status === 'completed' || row.data.ai_scan_status === 'processing' ? (
+                                    <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+                                      Inkog Deep
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                      Inkog Core
+                                    </span>
+                                  )}
+                                </div>
+                              </>
+                            ) : row.data.scan_type === 'skill' ? (
                               <>
                                 <span className="truncate max-w-[200px] flex items-center gap-1.5">
                                   <Shield className="h-4 w-4 text-blue-500" />
@@ -650,7 +672,7 @@ export default function HistoryPage() {
                             </TableCell>
                             <TableCell className="text-muted-foreground">
                               {(() => {
-                                const ms = row.data.scan_type === 'skill' && row.data.ai_scan_status === 'completed' && row.data.deep_scan_duration_ms
+                                const ms = (row.data.scan_type === 'skill' || row.data.scan_type === 'mcp') && row.data.ai_scan_status === 'completed' && row.data.deep_scan_duration_ms
                                   ? row.data.duration_ms + row.data.deep_scan_duration_ms
                                   : row.data.duration_ms;
                                 return ms === 0

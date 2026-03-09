@@ -294,7 +294,7 @@ export interface Scan {
   client_ip: string;
   user_agent: string;
   created_at: string;
-  scan_type?: 'agent' | 'skill';   // Discriminator for unified history
+  scan_type?: 'agent' | 'skill' | 'mcp';   // Discriminator for unified history
   ai_scan_status?: string | null;  // AI deep analysis status for skill scans
   deep_scan_duration_ms?: number | null;  // Duration of deep scan (skill scans only)
 }

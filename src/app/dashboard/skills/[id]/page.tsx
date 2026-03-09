@@ -30,6 +30,7 @@ import {
   Loader2,
   Bot,
   RefreshCw,
+  Server,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -329,11 +330,17 @@ export default function SkillScanResultPage() {
           <div className="h-6 w-px bg-border" />
           <div>
             <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              </div>
+              {result.format === 'mcp' ? (
+                <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                  <Server className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+              ) : (
+                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+              )}
               <h1 className="text-xl font-semibold text-foreground">
-                {result.name || "Skill Scan"}
+                {result.name || (result.format === 'mcp' ? "MCP Server Scan" : "Skill Scan")}
               </h1>
               {result.scan_number && (
                 <span className="text-sm text-muted-foreground font-mono">

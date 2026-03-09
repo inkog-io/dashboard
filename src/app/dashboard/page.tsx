@@ -15,6 +15,7 @@ import {
   Sparkles,
   X,
   BookOpen,
+  Server,
 } from "lucide-react";
 
 import {
@@ -175,8 +176,11 @@ export default function DashboardPage() {
 
   // Skill scan metrics
   const skillScans = recentScans.filter(s => s.scan_type === 'skill');
+  const mcpScans = recentScans.filter(s => s.scan_type === 'mcp');
+  const allSkillAndMCPScans = recentScans.filter(s => s.scan_type === 'skill' || s.scan_type === 'mcp');
   const uniqueSkillNames = new Set(skillScans.map(s => s.agent_name || s.id));
-  const skillCriticalCount = skillScans.reduce((sum, s) => sum + (s.critical_count || 0), 0);
+  const uniqueMCPNames = new Set(mcpScans.map(s => s.agent_name || s.id));
+  const skillCriticalCount = allSkillAndMCPScans.reduce((sum, s) => sum + (s.critical_count || 0), 0);
 
   // Use first name if available and meaningful, otherwise fall back to email prefix
   const firstName = (() => {
@@ -233,10 +237,10 @@ export default function DashboardPage() {
                 Scan Agent
               </Link>
               <Link
-                href="/dashboard/scan?mode=skill"
+                href="/dashboard/scan?mode=mcp"
                 className="inline-flex items-center gap-1.5 px-4 py-2 border border-green-600 text-green-700 dark:text-green-300 text-sm font-medium rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
               >
-                <Shield className="h-4 w-4" />
+                <Server className="h-4 w-4" />
                 Scan MCP Server
               </Link>
             </div>
@@ -276,11 +280,11 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SecurityMetricCard
           title="Assets Monitored"
-          value={agents.length + uniqueSkillNames.size}
+          value={agents.length + uniqueSkillNames.size + uniqueMCPNames.size}
           subtitle={
-            agents.length === 0 && uniqueSkillNames.size === 0
+            agents.length === 0 && uniqueSkillNames.size === 0 && uniqueMCPNames.size === 0
               ? "Run your first scan"
-              : `${agents.length} agents, ${uniqueSkillNames.size} skills`
+              : `${agents.length} agents, ${uniqueSkillNames.size} skills, ${uniqueMCPNames.size} MCP`
           }
           icon={Bot}
           variant={criticalAgents > 0 ? "danger" : warningAgents > 0 ? "warning" : "success"}
@@ -336,8 +340,8 @@ export default function DashboardPage() {
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <span className="text-border">|</span>
-            <Link href="/dashboard/scan?mode=skill" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-              <Shield className="h-4 w-4" />
+            <Link href="/dashboard/scan?mode=mcp" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+              <Server className="h-4 w-4" />
               Scan MCP
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -352,13 +356,13 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Recent Skill Scans */}
-      {skillScans.length > 0 && (
+      {/* Recent Skill & MCP Scans */}
+      {allSkillAndMCPScans.length > 0 && (
         <div className="animate-stagger-3">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-muted-foreground" />
-              <h2 className="font-semibold text-foreground">Recent Skill Scans</h2>
+              <h2 className="font-semibold text-foreground">Recent Skill & MCP Scans</h2>
             </div>
             <Link href="/dashboard/history" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
               View All <ArrowRight className="h-3.5 w-3.5" />
@@ -367,10 +371,13 @@ export default function DashboardPage() {
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <table className="w-full text-sm">
               <tbody>
-                {skillScans.slice(0, 5).map((scan) => (
+                {allSkillAndMCPScans.slice(0, 5).map((scan) => (
                   <tr key={scan.id} onClick={() => router.push(`/dashboard/skills/${scan.id}`)}
                       className="border-b border-border last:border-0 hover:bg-muted/50 cursor-pointer transition-colors">
-                    <td className="px-4 py-3 font-medium text-foreground">{scan.agent_name || 'Unknown'}</td>
+                    <td className="px-4 py-3 font-medium text-foreground flex items-center gap-1.5">
+                      {scan.scan_type === 'mcp' ? <Server className="h-4 w-4 text-emerald-500 flex-shrink-0" /> : <Shield className="h-4 w-4 text-blue-500 flex-shrink-0" />}
+                      {scan.agent_name || 'Unknown'}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={cn(
                         "text-xs px-2 py-0.5 rounded-full font-medium",

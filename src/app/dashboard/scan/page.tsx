@@ -62,7 +62,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-type ScanMode = "agent" | "skill";
+type ScanMode = "agent" | "skill" | "mcp";
 
 export default function ScanPage() {
   return (
@@ -125,6 +125,9 @@ function ScanPageContent() {
 
   // Deep mode state (skill)
   const [skillDeepMode, setSkillDeepMode] = useState(false);
+
+  // Deep mode state (mcp)
+  const [mcpDeepMode, setMcpDeepMode] = useState(false);
 
   // Skill scan state
   const [skillScanning, setSkillScanning] = useState(false);
@@ -504,14 +507,14 @@ def recursive_tool(depth=0):
     try {
       const response = await api.skills.scanMCP(mcpServer.trim());
       if (response.scan_id) {
-        router.push(`/dashboard/skills/${response.scan_id}${skillDeepMode ? '?deep=true' : ''}`);
+        router.push(`/dashboard/skills/${response.scan_id}${mcpDeepMode ? '?deep=true' : ''}`);
       }
     } catch (err) {
       setSkillError(err instanceof Error ? err.message : "Scan failed");
     } finally {
       setSkillScanning(false);
     }
-  }, [api, mcpServer, skillDeepMode, router]);
+  }, [api, mcpServer, mcpDeepMode, router]);
 
   const handleRepoScan = useCallback(async () => {
     if (!api || !repoUrl.trim()) return;
@@ -553,7 +556,7 @@ def recursive_tool(depth=0):
 
       {/* Mode Selector Cards - Hidden during active scan or when results are displayed */}
       {!hideModeSelector && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <button
             onClick={() => setMode("agent")}
             className={cn(
@@ -592,7 +595,28 @@ def recursive_tool(depth=0):
             </div>
             <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <Shield className="h-3.5 w-3.5 flex-shrink-0" />
-              Scan MCP servers &amp; skill packages
+              Scan skill packages &amp; repos
+            </p>
+          </button>
+
+          <button
+            onClick={() => setMode("mcp")}
+            className={cn(
+              "relative rounded-xl border-2 p-4 text-left transition-all",
+              mode === "mcp"
+                ? "border-emerald-500 bg-emerald-500/5 shadow-sm"
+                : "border-border bg-card hover:bg-accent/50"
+            )}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              {mode === "mcp" && (
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              )}
+              <span className="font-medium text-sm text-foreground">MCP Scan</span>
+            </div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Server className="h-3.5 w-3.5 flex-shrink-0" />
+              Scan MCP servers from registry
             </p>
           </button>
         </div>
@@ -607,19 +631,21 @@ def recursive_tool(depth=0):
             <button
               type="button"
               role="switch"
-              aria-checked={mode === "agent" ? deepMode : skillDeepMode}
+              aria-checked={mode === "agent" ? deepMode : mode === "mcp" ? mcpDeepMode : skillDeepMode}
               onClick={() => {
                 if (mode === "agent") {
                   const next = !deepMode;
                   setDeepMode(next);
                   if (next) { setFiles([]); } else { setZipFile(null); }
+                } else if (mode === "mcp") {
+                  setMcpDeepMode(!mcpDeepMode);
                 } else {
                   setSkillDeepMode(!skillDeepMode);
                 }
               }}
               className={cn(
                 "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200",
-                (mode === "agent" ? deepMode : skillDeepMode)
+                (mode === "agent" ? deepMode : mode === "mcp" ? mcpDeepMode : skillDeepMode)
                   ? "bg-violet-600"
                   : "bg-muted-foreground/25"
               )}
@@ -627,7 +653,7 @@ def recursive_tool(depth=0):
               <span
                 className={cn(
                   "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200",
-                  (mode === "agent" ? deepMode : skillDeepMode) ? "translate-x-5" : "translate-x-0"
+                  (mode === "agent" ? deepMode : mode === "mcp" ? mcpDeepMode : skillDeepMode) ? "translate-x-5" : "translate-x-0"
                 )}
               />
             </button>
@@ -675,11 +701,11 @@ def recursive_tool(depth=0):
 
           {/* Label */}
           <div className="flex items-center gap-2">
-            <Sparkles className={cn("h-4 w-4", canAccessDeepScan && (mode === "agent" ? deepMode : skillDeepMode) ? "text-violet-600" : "text-muted-foreground")} />
+            <Sparkles className={cn("h-4 w-4", canAccessDeepScan && (mode === "agent" ? deepMode : mode === "mcp" ? mcpDeepMode : skillDeepMode) ? "text-violet-600" : "text-muted-foreground")} />
             <span className="text-sm font-medium text-foreground">Deep Analysis</span>
             {canAccessDeepScan ? (
               <span className="text-xs text-muted-foreground">
-                {(mode === "agent" ? deepMode : skillDeepMode)
+                {(mode === "agent" ? deepMode : mode === "mcp" ? mcpDeepMode : skillDeepMode)
                   ? mode === "agent" ? "ZIP upload for comprehensive scan" : "Context-aware deep security scan"
                   : "Standard scan"}
               </span>
@@ -1325,91 +1351,100 @@ def recursive_tool(depth=0):
       {/* ===== SKILL MODE ===== */}
       {mode === "skill" && (
         <>
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* MCP Server Scan */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Server className="h-5 w-5" />
-                  Scan MCP Server
-                </CardTitle>
-                <CardDescription>
-                  Scan an MCP server from the registry by name
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g., github, filesystem"
-                    value={mcpServer}
-                    onChange={(e) => setMcpServer(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleMCPScan()}
-                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    disabled={skillScanning}
-                  />
-                  <button
-                    onClick={handleMCPScan}
-                    disabled={skillScanning || !mcpServer.trim()}
-                    className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    {skillScanning ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scan"}
-                  </button>
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">Popular servers:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {popularServers.map((s) => (
-                      <button
-                        key={s.name}
-                        onClick={() => setMcpServer(s.name)}
-                        className="text-xs px-2 py-1 rounded-full border border-border hover:bg-accent"
-                        title={s.desc}
-                      >
-                        {s.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Repository Scan */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <FileCode className="h-5 w-5" />
-                  Scan Repository
-                </CardTitle>
-                <CardDescription>
-                  Scan a skill package from a GitHub repository URL
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="https://github.com/org/mcp-server"
-                    value={repoUrl}
-                    onChange={(e) => setRepoUrl(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleRepoScan()}
-                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    disabled={skillScanning}
-                  />
-                  <button
-                    onClick={handleRepoScan}
-                    disabled={skillScanning || !repoUrl.trim()}
-                    className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    {skillScanning ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scan"}
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FileCode className="h-5 w-5" />
+                Scan Repository
+              </CardTitle>
+              <CardDescription>
+                Scan a skill package from a GitHub repository URL
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="https://github.com/org/mcp-server"
+                  value={repoUrl}
+                  onChange={(e) => setRepoUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleRepoScan()}
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  disabled={skillScanning}
+                />
+                <button
+                  onClick={handleRepoScan}
+                  disabled={skillScanning || !repoUrl.trim()}
+                  className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {skillScanning ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scan"}
+                </button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Skill Error */}
+          {skillError && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 flex-shrink-0" />
+              <p className="text-red-700 dark:text-red-400">{skillError}</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ===== MCP MODE ===== */}
+      {mode === "mcp" && (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Server className="h-5 w-5 text-emerald-600" />
+                Scan MCP Server
+              </CardTitle>
+              <CardDescription>
+                Scan an MCP server from the registry by name
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g., github, filesystem"
+                  value={mcpServer}
+                  onChange={(e) => setMcpServer(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleMCPScan()}
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  disabled={skillScanning}
+                />
+                <button
+                  onClick={handleMCPScan}
+                  disabled={skillScanning || !mcpServer.trim()}
+                  className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {skillScanning ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scan"}
+                </button>
+              </div>
+
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Popular servers:</p>
+                <div className="flex flex-wrap gap-1">
+                  {popularServers.map((s) => (
+                    <button
+                      key={s.name}
+                      onClick={() => setMcpServer(s.name)}
+                      className="text-xs px-2 py-1 rounded-full border border-border hover:bg-accent"
+                      title={s.desc}
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* MCP Error */}
           {skillError && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 flex-shrink-0" />
