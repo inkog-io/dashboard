@@ -651,7 +651,7 @@ export default function HistoryPage() {
                             <TableCell className="text-muted-foreground">
                               {(() => {
                                 const ms = row.data.scan_type === 'skill' && row.data.ai_scan_status === 'completed' && row.data.deep_scan_duration_ms
-                                  ? row.data.deep_scan_duration_ms
+                                  ? row.data.duration_ms + row.data.deep_scan_duration_ms
                                   : row.data.duration_ms;
                                 return ms === 0
                                   ? "--"
