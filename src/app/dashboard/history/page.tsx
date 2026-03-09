@@ -563,15 +563,20 @@ export default function HistoryPage() {
                                   <Shield className="h-4 w-4 text-blue-500" />
                                   {row.data.agent_name || 'Skill Scan'}
                                 </span>
-                                {row.data.ai_scan_status === 'completed' || row.data.ai_scan_status === 'processing' ? (
-                                  <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
-                                    Inkog Deep
+                                <div className="flex items-center gap-1">
+                                  <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400">
+                                    Skill
                                   </span>
-                                ) : (
-                                  <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                                    Inkog Core
-                                  </span>
-                                )}
+                                  {row.data.ai_scan_status === 'completed' || row.data.ai_scan_status === 'processing' ? (
+                                    <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+                                      Inkog Deep
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                      Inkog Core
+                                    </span>
+                                  )}
+                                </div>
                               </>
                             ) : (
                               <>
@@ -579,15 +584,20 @@ export default function HistoryPage() {
                                   <Bot className="h-4 w-4 text-purple-500" />
                                   {row.data.agent_name || <span className="text-muted-foreground italic">Unnamed</span>}
                                 </span>
-                                {row.data.scan_policy === "deep-checks" ? (
-                                  <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
-                                    Inkog Deep
+                                <div className="flex items-center gap-1">
+                                  <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
+                                    Agent
                                   </span>
-                                ) : (
-                                  <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                                    Inkog Core
-                                  </span>
-                                )}
+                                  {row.data.scan_policy === "deep-checks" ? (
+                                    <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+                                      Inkog Deep
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                      Inkog Core
+                                    </span>
+                                  )}
+                                </div>
                               </>
                             )}
                           </div>
