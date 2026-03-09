@@ -651,17 +651,18 @@ def recursive_tool(depth=0):
                 className="max-w-[240px] bg-popover text-popover-foreground border border-border shadow-lg p-3"
               >
                 <p className="font-medium text-xs mb-1.5">Upgrade to unlock Deep Analysis</p>
+                <p className="text-[11px] text-muted-foreground mb-1.5">Goes beyond pattern matching with semantic understanding.</p>
                 <ul className="text-[11px] text-muted-foreground space-y-1">
                   {mode === "agent" ? (
                     <>
-                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Full codebase taint tracking</li>
-                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Exploitability assessment</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Context-aware vulnerability detection</li>
                       <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Multi-agent flow analysis</li>
-                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Remediation guidance per finding</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Exploitability assessment</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Compliance-mapped remediation</li>
                     </>
                   ) : (
                     <>
-                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>AI-powered code analysis</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Semantic code analysis</li>
                       <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Tool poisoning detection</li>
                       <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Supply chain risk assessment</li>
                       <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Permission scope analysis</li>
@@ -679,7 +680,7 @@ def recursive_tool(depth=0):
             {canAccessDeepScan ? (
               <span className="text-xs text-muted-foreground">
                 {(mode === "agent" ? deepMode : skillDeepMode)
-                  ? mode === "agent" ? "ZIP upload for comprehensive scan" : "AI-powered code analysis"
+                  ? mode === "agent" ? "ZIP upload for comprehensive scan" : "Context-aware deep security scan"
                   : "Standard scan"}
               </span>
             ) : (
@@ -705,17 +706,18 @@ def recursive_tool(depth=0):
                 className="max-w-[240px] bg-popover text-popover-foreground border border-border shadow-lg p-3"
               >
                 <p className="font-medium text-xs mb-1.5">What is Deep Analysis?</p>
+                <p className="text-[11px] text-muted-foreground mb-1.5">Goes beyond pattern matching with semantic understanding.</p>
                 <ul className="text-[11px] text-muted-foreground space-y-1">
                   {mode === "agent" ? (
                     <>
-                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Full codebase taint tracking</li>
-                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Exploitability assessment</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Context-aware vulnerability detection</li>
                       <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Multi-agent flow analysis</li>
-                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Remediation guidance per finding</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Exploitability assessment</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Compliance-mapped remediation</li>
                     </>
                   ) : (
                     <>
-                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>AI-powered code analysis</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Semantic code analysis</li>
                       <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Tool poisoning detection</li>
                       <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Supply chain risk assessment</li>
                       <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Permission scope analysis</li>
