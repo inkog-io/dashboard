@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import {
   Terminal,
@@ -468,6 +469,12 @@ export default function OnboardingPage() {
                       />
                     ))}
                   </div>
+                  <p className="text-center text-xs text-muted-foreground mt-2">
+                    or{" "}
+                    <Link href="/dashboard/scan?mode=skill&completed=true" className="text-primary hover:underline">
+                      scan an MCP server
+                    </Link>
+                  </p>
                 </CardContent>
               </>
             )}

@@ -255,7 +255,7 @@ export function AgentList({
             </div>
           </div>
 
-          {/* Alternative Option */}
+          {/* Alternative Options */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>or</span>
             <Button
@@ -268,6 +268,13 @@ export function AgentList({
               Upload files directly
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            You can also{" "}
+            <Link href="/dashboard/scan?mode=skill" className="text-primary hover:underline">
+              scan an MCP server
+            </Link>{" "}
+            for security vulnerabilities.
+          </p>
         </div>
       </div>
     );

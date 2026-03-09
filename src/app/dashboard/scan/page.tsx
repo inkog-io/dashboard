@@ -19,6 +19,9 @@ import {
   FileText,
   Server,
   FileArchive,
+  Lock,
+  Sparkles,
+  HelpCircle,
 } from "lucide-react";
 
 import {
@@ -52,6 +55,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type ScanMode = "agent" | "skill";
 
@@ -589,34 +598,135 @@ def recursive_tool(depth=0):
         </div>
       )}
 
-      {/* Deep Mode Checkbox */}
-      {!hideModeSelector && canAccessDeepScan && (
-        <label className="flex items-center gap-2 cursor-pointer -mt-4">
-          <input
-            type="checkbox"
-            checked={mode === "agent" ? deepMode : skillDeepMode}
-            onChange={(e) => {
-              if (mode === "agent") {
-                setDeepMode(e.target.checked);
-                if (e.target.checked) {
-                  setFiles([]);
+      {/* Deep Mode Toggle */}
+      {!hideModeSelector && (
+        <TooltipProvider delayDuration={200}>
+        <div className="flex items-center gap-3 -mt-4">
+          {/* Toggle switch */}
+          {canAccessDeepScan ? (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={mode === "agent" ? deepMode : skillDeepMode}
+              onClick={() => {
+                if (mode === "agent") {
+                  const next = !deepMode;
+                  setDeepMode(next);
+                  if (next) { setFiles([]); } else { setZipFile(null); }
                 } else {
-                  setZipFile(null);
+                  setSkillDeepMode(!skillDeepMode);
                 }
-              } else {
-                setSkillDeepMode(e.target.checked);
-              }
-            }}
-            className="rounded border-border"
-          />
-          <Bot className="h-4 w-4 text-purple-600" />
-          <span className="text-sm font-medium text-foreground">Deep Analysis</span>
-          <span className="text-xs text-muted-foreground">
-            {mode === "agent"
-              ? "(ZIP upload for Inkog Deep security scan)"
-              : "(Inkog Deep code analysis after scan)"}
-          </span>
-        </label>
+              }}
+              className={cn(
+                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200",
+                (mode === "agent" ? deepMode : skillDeepMode)
+                  ? "bg-violet-600"
+                  : "bg-muted-foreground/25"
+              )}
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200",
+                  (mode === "agent" ? deepMode : skillDeepMode) ? "translate-x-5" : "translate-x-0"
+                )}
+              />
+            </button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href="https://inkog.io/pricing"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-muted-foreground/15 transition-colors hover:bg-violet-200 dark:hover:bg-violet-900/30 group"
+                >
+                  <span className="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 translate-x-0">
+                    <Lock className="h-3 w-3 text-muted-foreground absolute top-1 left-1" />
+                  </span>
+                </a>
+              </TooltipTrigger>
+              <TooltipContent
+                side="bottom"
+                align="start"
+                className="max-w-[240px] bg-popover text-popover-foreground border border-border shadow-lg p-3"
+              >
+                <p className="font-medium text-xs mb-1.5">Upgrade to unlock Deep Analysis</p>
+                <ul className="text-[11px] text-muted-foreground space-y-1">
+                  {mode === "agent" ? (
+                    <>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Full codebase taint tracking</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Exploitability assessment</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Multi-agent flow analysis</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Remediation guidance per finding</li>
+                    </>
+                  ) : (
+                    <>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>AI-powered code analysis</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Tool poisoning detection</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Supply chain risk assessment</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Permission scope analysis</li>
+                    </>
+                  )}
+                </ul>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
+          {/* Label */}
+          <div className="flex items-center gap-2">
+            <Sparkles className={cn("h-4 w-4", canAccessDeepScan && (mode === "agent" ? deepMode : skillDeepMode) ? "text-violet-600" : "text-muted-foreground")} />
+            <span className="text-sm font-medium text-foreground">Deep Analysis</span>
+            {canAccessDeepScan ? (
+              <span className="text-xs text-muted-foreground">
+                {(mode === "agent" ? deepMode : skillDeepMode)
+                  ? mode === "agent" ? "ZIP upload for comprehensive scan" : "AI-powered code analysis"
+                  : "Standard scan"}
+              </span>
+            ) : (
+              <a
+                href="https://inkog.io/pricing"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-violet-600 dark:text-violet-400 hover:underline"
+              >
+                Upgrade &rarr;
+              </a>
+            )}
+
+            {/* Info tooltip — always visible */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                  <HelpCircle className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent
+                side="bottom"
+                className="max-w-[240px] bg-popover text-popover-foreground border border-border shadow-lg p-3"
+              >
+                <p className="font-medium text-xs mb-1.5">What is Deep Analysis?</p>
+                <ul className="text-[11px] text-muted-foreground space-y-1">
+                  {mode === "agent" ? (
+                    <>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Full codebase taint tracking</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Exploitability assessment</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Multi-agent flow analysis</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Remediation guidance per finding</li>
+                    </>
+                  ) : (
+                    <>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>AI-powered code analysis</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Tool poisoning detection</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Supply chain risk assessment</li>
+                      <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-px">&#x2022;</span>Permission scope analysis</li>
+                    </>
+                  )}
+                </ul>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+        </TooltipProvider>
       )}
 
       {/* ===== AGENT MODE ===== */}
@@ -936,9 +1046,9 @@ def recursive_tool(depth=0):
 
           {/* Error */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-              <p className="text-red-700">{error}</p>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 flex-shrink-0" />
+              <p className="text-red-700 dark:text-red-400">{error}</p>
             </div>
           )}
 
@@ -1299,9 +1409,9 @@ def recursive_tool(depth=0):
 
           {/* Skill Error */}
           {skillError && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-              <p className="text-red-700">{skillError}</p>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 flex-shrink-0" />
+              <p className="text-red-700 dark:text-red-400">{skillError}</p>
             </div>
           )}
         </>

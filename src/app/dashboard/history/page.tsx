@@ -454,6 +454,12 @@ export default function HistoryPage() {
                       upload files directly
                     </Link>
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    or{" "}
+                    <Link href="/dashboard/scan?mode=skill" className="text-primary hover:underline">
+                      scan an MCP server
+                    </Link>
+                  </p>
                 </div>
               )}
             </div>

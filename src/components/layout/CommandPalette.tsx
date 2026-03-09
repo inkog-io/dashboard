@@ -9,6 +9,7 @@ import {
   History,
   Plus,
   Settings,
+  Server,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -56,6 +57,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             <span>Scan</span>
           </CommandItem>
           <CommandItem
+            onSelect={() => runCommand(() => router.push("/dashboard/scan?mode=skill"))}
+          >
+            <Server className="mr-2 h-4 w-4" />
+            <span>Scan MCP / Skills</span>
+          </CommandItem>
+          <CommandItem
             onSelect={() => runCommand(() => router.push("/dashboard/history"))}
           >
             <History className="mr-2 h-4 w-4" />
@@ -77,6 +84,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           >
             <Plus className="mr-2 h-4 w-4" />
             <span>New Scan</span>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => runCommand(() => router.push("/dashboard/scan?mode=skill"))}
+          >
+            <Server className="mr-2 h-4 w-4" />
+            <span>Scan MCP Server</span>
           </CommandItem>
           <CommandItem
             onSelect={() => runCommand(() => router.push("/dashboard/settings?tab=api-keys"))}

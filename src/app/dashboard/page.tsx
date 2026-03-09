@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import {
@@ -25,12 +25,14 @@ import {
   type ScanSummary,
   type Agent,
 } from "@/lib/api";
+import { cn, compactTimeAgo } from "@/lib/utils";
 import { SecurityMetricCard, type MetricVariant } from "@/components/dashboard/SecurityMetricCard";
 import { AgentList } from "@/components/dashboard/AgentList";
 import { SkeletonCrossfade, SkeletonMetricCard } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { getToken } = useAuth();
   const { user, isLoaded } = useUser();
   const [api, setApi] = useState<InkogAPI | null>(null);
@@ -171,6 +173,11 @@ export default function DashboardPage() {
   const warningAgents = agents.filter(a => a.health_status === 'warning').length;
   const healthyAgents = agents.filter(a => a.health_status === 'healthy').length;
 
+  // Skill scan metrics
+  const skillScans = recentScans.filter(s => s.scan_type === 'skill');
+  const uniqueSkillNames = new Set(skillScans.map(s => s.agent_name || s.id));
+  const skillCriticalCount = skillScans.reduce((sum, s) => sum + (s.critical_count || 0), 0);
+
   // Use first name if available and meaningful, otherwise fall back to email prefix
   const firstName = (() => {
     if (!isLoaded) return "there";
@@ -215,16 +222,24 @@ export default function DashboardPage() {
             <p className="text-sm text-green-700 dark:text-green-300 mt-0.5">
               {showWelcomeBanner
                 ? "You're all set. Run your first scan to start monitoring your AI agents for security vulnerabilities."
-                : "Scan your first AI agent to discover security vulnerabilities and compliance gaps."}
+                : "Scan your AI agents or MCP servers to discover security vulnerabilities and compliance gaps."}
             </p>
-            <Link
-              href="/dashboard/scan"
-              className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Shield className="h-4 w-4" />
-              Scan Your First Agent
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            <div className="flex items-center gap-2 mt-3">
+              <Link
+                href="/dashboard/scan"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Bot className="h-4 w-4" />
+                Scan Agent
+              </Link>
+              <Link
+                href="/dashboard/scan?mode=skill"
+                className="inline-flex items-center gap-1.5 px-4 py-2 border border-green-600 text-green-700 dark:text-green-300 text-sm font-medium rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+              >
+                <Shield className="h-4 w-4" />
+                Scan MCP Server
+              </Link>
+            </div>
           </div>
           <button
             onClick={() => {
@@ -260,9 +275,13 @@ export default function DashboardPage() {
       >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SecurityMetricCard
-          title="Agents Monitored"
-          value={agents.length}
-          subtitle={agents.length === 0 ? "Scan your first agent" : `${healthyAgents} healthy, ${warningAgents} warning, ${criticalAgents} critical`}
+          title="Assets Monitored"
+          value={agents.length + uniqueSkillNames.size}
+          subtitle={
+            agents.length === 0 && uniqueSkillNames.size === 0
+              ? "Run your first scan"
+              : `${agents.length} agents, ${uniqueSkillNames.size} skills`
+          }
           icon={Bot}
           variant={criticalAgents > 0 ? "danger" : warningAgents > 0 ? "warning" : "success"}
           loading={loading}
@@ -310,14 +329,19 @@ export default function DashboardPage() {
             <Bot className="h-5 w-5 text-muted-foreground" />
             <h2 className="font-semibold text-foreground">Your Agents</h2>
           </div>
-          <Link
-            href="/dashboard/scan"
-            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-          >
-            <Shield className="h-4 w-4" />
-            Scan New Agent
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard/scan" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+              <Bot className="h-4 w-4" />
+              Scan Agent
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+            <span className="text-border">|</span>
+            <Link href="/dashboard/scan?mode=skill" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+              <Shield className="h-4 w-4" />
+              Scan MCP
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </div>
         <AgentList
           agents={agents}
@@ -327,6 +351,51 @@ export default function DashboardPage() {
           onDelete={handleDeleteAgent}
         />
       </div>
+
+      {/* Recent Skill Scans */}
+      {skillScans.length > 0 && (
+        <div className="animate-stagger-3">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-muted-foreground" />
+              <h2 className="font-semibold text-foreground">Recent Skill Scans</h2>
+            </div>
+            <Link href="/dashboard/history" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+              View All <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <tbody>
+                {skillScans.slice(0, 5).map((scan) => (
+                  <tr key={scan.id} onClick={() => router.push(`/dashboard/skills/${scan.id}`)}
+                      className="border-b border-border last:border-0 hover:bg-muted/50 cursor-pointer transition-colors">
+                    <td className="px-4 py-3 font-medium text-foreground">{scan.agent_name || 'Unknown'}</td>
+                    <td className="px-4 py-3">
+                      <span className={cn(
+                        "text-xs px-2 py-0.5 rounded-full font-medium",
+                        scan.risk_score >= 80 ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" :
+                        scan.risk_score >= 50 ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400" :
+                        scan.risk_score >= 30 ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" :
+                        "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                      )}>
+                        {scan.risk_score >= 80 ? 'Critical' : scan.risk_score >= 50 ? 'High' : scan.risk_score >= 30 ? 'Medium' : 'Low'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{compactTimeAgo(new Date(scan.created_at))}</td>
+                    <td className="px-4 py-3">
+                      {scan.ai_scan_status === 'completed'
+                        ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 font-semibold">Deep</span>
+                        : <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-semibold">Core</span>
+                      }
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Summary Stats (if available) */}
       {summary && (
