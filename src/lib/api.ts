@@ -294,7 +294,7 @@ export interface Scan {
   client_ip: string;
   user_agent: string;
   created_at: string;
-  scan_type?: 'agent' | 'skill' | 'mcp';   // Discriminator for unified history
+  scan_type?: 'agent' | 'skill' | 'mcp' | 'red';   // Discriminator for unified history
   ai_scan_status?: string | null;  // AI deep analysis status for skill scans
   deep_scan_duration_ms?: number | null;  // Duration of deep scan (skill scans only)
 }
@@ -1551,6 +1551,22 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
       getStatus: (scanId: string) =>
         request<{ scan_id: string; status: 'processing' | 'completed' | 'failed'; scan: Scan }>(
           `/v1/scan/deep/${scanId}`,
+        ),
+    },
+
+    /** Red scan endpoints */
+    red: {
+      /** Get Red scan status and results */
+      get: (scanId: string) =>
+        request<{ scan_id: string; status: string; scan: Record<string, unknown> }>(
+          `/v1/red/scan/${scanId}`,
+        ),
+
+      /** Delete a Red scan */
+      delete: (scanId: string) =>
+        request<{ status: string }>(
+          `/v1/red/scan/${scanId}`,
+          { method: 'DELETE' },
         ),
     },
 

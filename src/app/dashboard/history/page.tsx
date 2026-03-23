@@ -17,6 +17,7 @@ import {
   Loader2,
   Bot,
   Shield,
+  ShieldAlert,
   Server,
   Trash2,
 } from "lucide-react";
@@ -276,6 +277,8 @@ export default function HistoryPage() {
       const scanToDelete = scans.find(s => s.id === deleteScanId);
       if (scanToDelete?.scan_type === 'skill' || scanToDelete?.scan_type === 'mcp') {
         await api.skills.delete(deleteScanId);
+      } else if (scanToDelete?.scan_type === 'red') {
+        await api.red.delete(deleteScanId);
       } else {
         await api.scans.delete(deleteScanId);
       }
@@ -548,6 +551,8 @@ export default function HistoryPage() {
                         onClick={() => {
                           if (row.data.scan_type === 'skill' || row.data.scan_type === 'mcp') {
                             router.push(`/dashboard/skills/${row.data.id}`);
+                          } else if (row.data.scan_type === 'red') {
+                            router.push(`/dashboard/red/${row.data.id}`);
                           } else {
                             router.push(`/dashboard/results/${row.data.id}`);
                           }
@@ -598,6 +603,18 @@ export default function HistoryPage() {
                                       Inkog Core
                                     </span>
                                   )}
+                                </div>
+                              </>
+                            ) : row.data.scan_type === 'red' ? (
+                              <>
+                                <span className="truncate max-w-[200px] flex items-center gap-1.5">
+                                  <ShieldAlert className="h-4 w-4 text-red-500" />
+                                  {row.data.agent_name || 'Red Scan'}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+                                    Inkog Red
+                                  </span>
                                 </div>
                               </>
                             ) : (
