@@ -619,6 +619,15 @@ export default function HistoryPage() {
                                   <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
                                     Inkog Red
                                   </span>
+                                  {row.data.scan_policy === 'deep' ? (
+                                    <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+                                      Deep
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center w-fit px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                      Core
+                                    </span>
+                                  )}
                                 </div>
                               </>
                             ) : (
@@ -656,7 +665,7 @@ export default function HistoryPage() {
                         ) : (
                           <>
                             <TableCell className="dark:text-foreground">
-                              {row.data.files_scanned}
+                              {row.data.scan_type === 'red' ? <span className="text-muted-foreground">–</span> : row.data.files_scanned}
                             </TableCell>
                             <TableCell>
                               <span className="font-medium dark:text-foreground">
