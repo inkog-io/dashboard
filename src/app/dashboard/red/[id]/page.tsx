@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { createAPIClient } from "@/lib/api";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Card,
   CardContent,
@@ -16,12 +17,15 @@ import {
   ChevronDown,
   ChevronRight,
   Copy,
-  ExternalLink,
   Loader2,
   Shield,
   ShieldAlert,
   ShieldCheck,
   Trash2,
+  X,
+  Clock,
+  Target,
+  Fingerprint,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -85,25 +89,7 @@ interface ProbeResult {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-function gradeColor(grade: string) {
-  switch (grade?.toLowerCase()) {
-    case "hardened":
-    case "resilient":
-    case "a":
-      return "text-green-600 dark:text-green-400";
-    case "moderate":
-    case "b":
-      return "text-amber-600 dark:text-amber-400";
-    case "vulnerable":
-    case "weak":
-    case "c":
-    case "d":
-    case "f":
-      return "text-red-600 dark:text-red-400";
-    default:
-      return "text-foreground";
-  }
-}
+const severityOrd: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 
 function scoreColor(score: number) {
   if (score >= 80) return "text-green-600 dark:text-green-400";
@@ -176,6 +162,79 @@ function normalizeOwaspMapping(raw: unknown): OwaspEntry[] {
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
+const severityColors: Record<string, { bg: string; text: string; border: string; left: string }> = {
+  CRITICAL: {
+    bg: "bg-red-50 dark:bg-red-900/30",
+    text: "text-red-700 dark:text-red-400",
+    border: "border-red-200 dark:border-red-800",
+    left: "border-l-red-500",
+  },
+  HIGH: {
+    bg: "bg-orange-50 dark:bg-orange-900/30",
+    text: "text-orange-700 dark:text-orange-400",
+    border: "border-orange-200 dark:border-orange-800",
+    left: "border-l-orange-500",
+  },
+  MEDIUM: {
+    bg: "bg-amber-50 dark:bg-amber-900/30",
+    text: "text-amber-700 dark:text-amber-400",
+    border: "border-amber-200 dark:border-amber-800",
+    left: "border-l-amber-500",
+  },
+  LOW: {
+    bg: "bg-blue-50 dark:bg-blue-900/30",
+    text: "text-blue-700 dark:text-blue-400",
+    border: "border-blue-200 dark:border-blue-800",
+    left: "border-l-blue-500",
+  },
+};
+
+const verdictColors: Record<string, { bg: string; text: string; border: string }> = {
+  exposed: {
+    bg: "bg-red-50 dark:bg-red-900/30",
+    text: "text-red-700 dark:text-red-400",
+    border: "border-red-200 dark:border-red-800",
+  },
+  defended: {
+    bg: "bg-green-50 dark:bg-green-900/30",
+    text: "text-green-700 dark:text-green-400",
+    border: "border-green-200 dark:border-green-800",
+  },
+  degraded: {
+    bg: "bg-amber-50 dark:bg-amber-900/30",
+    text: "text-amber-700 dark:text-amber-400",
+    border: "border-amber-200 dark:border-amber-800",
+  },
+  error: {
+    bg: "bg-gray-50 dark:bg-gray-900/30",
+    text: "text-gray-600 dark:text-gray-400",
+    border: "border-gray-200 dark:border-gray-700",
+  },
+};
+
+const filterBtnColors: Record<string, { active: string; inactive: string }> = {
+  ALL: {
+    active: "bg-gray-900 text-white dark:bg-white dark:text-gray-900",
+    inactive: "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600",
+  },
+  exposed: {
+    active: "bg-red-600 text-white",
+    inactive: "bg-white dark:bg-gray-800 text-red-600 border border-red-300 dark:border-red-800",
+  },
+  defended: {
+    active: "bg-green-600 text-white",
+    inactive: "bg-white dark:bg-gray-800 text-green-600 border border-green-300 dark:border-green-800",
+  },
+  degraded: {
+    active: "bg-amber-600 text-white",
+    inactive: "bg-white dark:bg-gray-800 text-amber-600 border border-amber-300 dark:border-amber-800",
+  },
+  error: {
+    active: "bg-gray-600 text-white",
+    inactive: "bg-white dark:bg-gray-800 text-gray-600 border border-gray-300 dark:border-gray-700",
+  },
+};
+
 // ─── Component ─────────────────────────────────────────────────────────────
 
 export default function RedScanResultPage() {
@@ -186,19 +245,19 @@ export default function RedScanResultPage() {
   const [scan, setScan] = useState<RedScan | null>(null);
   const [status, setStatus] = useState<string>("loading");
   const [error, setError] = useState<string | null>(null);
-  const [showAllProbes, setShowAllProbes] = useState(false);
+  const [showAllExposures, setShowAllExposures] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [selectedProbe, setSelectedProbe] = useState<ProbeResult | null>(null);
+  const [verdictFilter, setVerdictFilter] = useState<string>("ALL");
 
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
 
     const poll = async () => {
-      const api = createAPIClient(getToken);
       try {
-        // Use generic request since red scan API isn't in the typed client yet
         const token = await getToken();
         if (!token) return;
 
@@ -330,7 +389,9 @@ export default function RedScanResultPage() {
   }
 
   // ─── Completed ────────────────────────────────────────────────────────────
-  const exposures = (scan.probe_results ?? []).filter((p) => p.verdict === "exposed");
+  const exposures = (scan.probe_results ?? [])
+    .filter((p) => p.verdict === "exposed")
+    .sort((a, b) => (severityOrd[a.severity?.toUpperCase()] ?? 4) - (severityOrd[b.severity?.toUpperCase()] ?? 4));
 
   return (
     <div className="space-y-6">
@@ -552,48 +613,50 @@ export default function RedScanResultPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {(showAllProbes ? exposures : exposures.slice(0, 10)).map((probe, i) => (
-                <div
-                  key={`${probe.probe_id}-${i}`}
-                  className="p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-start gap-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase shrink-0 ${severityBadge(probe.severity)}`}>
-                      {probe.severity}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-foreground">{probe.probe_id}</p>
-                        <span className="text-xs text-muted-foreground">
-                          {categoryLabel(probe.category, probe.subcategory)}
-                        </span>
-                        {probe.owasp_id && (
-                          <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                            {probe.owasp_id}
+              {(showAllExposures ? exposures : exposures.slice(0, 10)).map((probe, i) => {
+                const colors = severityColors[probe.severity?.toUpperCase()] || severityColors.LOW;
+                return (
+                  <button
+                    key={`${probe.probe_id}-${i}`}
+                    onClick={() => setSelectedProbe(probe)}
+                    className={`w-full text-left p-3 rounded-lg border-l-2 border ${colors.border} ${colors.left} bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors group`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase shrink-0 ${severityBadge(probe.severity)}`}>
+                        {probe.severity}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-foreground">{probe.probe_id}</p>
+                          <span className="text-xs text-muted-foreground">
+                            {categoryLabel(probe.category, probe.subcategory)}
                           </span>
+                          {probe.owasp_id && (
+                            <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                              {probe.owasp_id}
+                            </span>
+                          )}
+                        </div>
+                        {probe.detection_details && (
+                          <p className="text-xs text-muted-foreground mt-1">{probe.detection_details}</p>
+                        )}
+                        {probe.response && (
+                          <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2 italic">
+                            &ldquo;{probe.response.slice(0, 200)}{probe.response.length > 200 ? "..." : ""}&rdquo;
+                          </p>
                         )}
                       </div>
-                      {probe.detection_details && (
-                        <p className="text-xs text-muted-foreground mt-1">{probe.detection_details}</p>
-                      )}
-                      {probe.response && (
-                        <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2 italic">
-                          &ldquo;{probe.response.slice(0, 200)}{probe.response.length > 200 ? "..." : ""}&rdquo;
-                        </p>
-                      )}
+                      <ChevronRight className="h-4 w-4 text-muted-foreground mt-1 shrink-0 group-hover:translate-x-0.5 transition-transform" />
                     </div>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium shrink-0 ${verdictBadge(probe.verdict)}`}>
-                      {probe.verdict}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              {exposures.length > 10 && !showAllProbes && (
+                  </button>
+                );
+              })}
+              {exposures.length > 10 && !showAllExposures && (
                 <Button
                   variant="ghost"
                   size="sm"
                   className="w-full"
-                  onClick={() => setShowAllProbes(true)}
+                  onClick={() => setShowAllExposures(true)}
                 >
                   Show all {exposures.length} exposures
                   <ChevronDown className="h-4 w-4 ml-1" />
@@ -605,37 +668,80 @@ export default function RedScanResultPage() {
       )}
 
       {/* All Probes */}
-      {scan.probe_results && scan.probe_results.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">All Probe Results ({scan.probe_results.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
-              {scan.probe_results.map((probe, i) => (
-                <div
-                  key={`${probe.probe_id}-${i}`}
-                  className="flex items-center gap-3 px-3 py-2 rounded hover:bg-muted/50 transition-colors text-sm"
+      {scan.probe_results && scan.probe_results.length > 0 && (() => {
+        const verdictCounts: Record<string, number> = { exposed: 0, defended: 0, degraded: 0, error: 0 };
+        for (const p of scan.probe_results) {
+          if (p.verdict in verdictCounts) verdictCounts[p.verdict]++;
+        }
+        const filteredProbes = verdictFilter === "ALL"
+          ? scan.probe_results
+          : scan.probe_results.filter((p) => p.verdict === verdictFilter);
+
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">All Probe Results ({scan.probe_results.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Verdict Filter Buttons */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <button
+                  onClick={() => setVerdictFilter("ALL")}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    verdictFilter === "ALL" ? filterBtnColors.ALL.active : filterBtnColors.ALL.inactive
+                  }`}
                 >
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-20 justify-center shrink-0 ${verdictBadge(probe.verdict)}`}>
-                    {probe.verdict}
-                  </span>
-                  <span className="text-muted-foreground w-28 truncate shrink-0">{probe.probe_id}</span>
-                  <span className="text-muted-foreground/60 w-32 truncate shrink-0 text-xs">
-                    {categoryLabel(probe.category, probe.subcategory)}
-                  </span>
-                  <span className="text-foreground flex-1 truncate">
-                    {probe.detection_details || "—"}
-                  </span>
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${severityBadge(probe.severity)}`}>
-                    {probe.severity}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                  All ({scan.probe_results.length})
+                </button>
+                {(["exposed", "defended", "degraded", "error"] as const).map(
+                  (v) =>
+                    verdictCounts[v] > 0 && (
+                      <button
+                        key={v}
+                        onClick={() => setVerdictFilter(v)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                          verdictFilter === v ? filterBtnColors[v].active : filterBtnColors[v].inactive
+                        }`}
+                      >
+                        {v.charAt(0).toUpperCase() + v.slice(1)} ({verdictCounts[v]})
+                      </button>
+                    )
+                )}
+              </div>
+
+              <div className="space-y-1">
+                {filteredProbes.map((probe, i) => (
+                  <button
+                    key={`${probe.probe_id}-${i}`}
+                    onClick={() => setSelectedProbe(probe)}
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 rounded hover:bg-muted/50 transition-colors text-sm group cursor-pointer"
+                  >
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-20 justify-center shrink-0 ${verdictBadge(probe.verdict)}`}>
+                      {probe.verdict}
+                    </span>
+                    <span className="text-muted-foreground w-28 truncate shrink-0">{probe.probe_id}</span>
+                    <span className="text-muted-foreground/60 w-32 truncate shrink-0 text-xs">
+                      {categoryLabel(probe.category, probe.subcategory)}
+                    </span>
+                    <span className="text-foreground flex-1 truncate">
+                      {probe.detection_details || "\u2014"}
+                    </span>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${severityBadge(probe.severity)}`}>
+                      {probe.severity}
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                ))}
+                {filteredProbes.length === 0 && (
+                  <div className="text-center py-4 text-muted-foreground text-sm">
+                    No probes match the selected filter.
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Metadata */}
       <Card>
@@ -647,6 +753,13 @@ export default function RedScanResultPage() {
         </CardContent>
       </Card>
 
+      {/* Probe Details Panel */}
+      <ProbeDetailsPanel
+        probe={selectedProbe}
+        open={!!selectedProbe}
+        onClose={() => setSelectedProbe(null)}
+      />
+
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
@@ -657,5 +770,182 @@ export default function RedScanResultPage() {
         loading={deleting}
       />
     </div>
+  );
+}
+
+// ─── Probe Details Panel ──────────────────────────────────────────────────
+
+function ProbeDetailsPanel({
+  probe,
+  open,
+  onClose,
+}: {
+  probe: ProbeResult | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const handleEscape = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    if (open) {
+      document.addEventListener("keydown", handleEscape);
+      return () => document.removeEventListener("keydown", handleEscape);
+    }
+  }, [open, handleEscape]);
+
+  const vc = probe ? verdictColors[probe.verdict] || verdictColors.error : verdictColors.error;
+  const sc = probe ? severityColors[probe.severity?.toUpperCase()] || severityColors.LOW : severityColors.LOW;
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <AnimatePresence>
+      {open && probe && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/20 z-50"
+            onClick={onClose}
+          />
+
+          {/* Panel */}
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "tween", duration: 0.25, ease: "easeOut" }}
+            className="fixed right-0 top-0 h-full w-full max-w-xl bg-card border-l border-border z-[60] overflow-hidden flex flex-col"
+          >
+            {/* Header */}
+            <div className={`flex items-center justify-between p-4 border-b ${vc.border} ${vc.bg}`}>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase shrink-0 ${verdictBadge(probe.verdict)}`}>
+                  {probe.verdict}
+                </span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase shrink-0 ${severityBadge(probe.severity)}`}>
+                  {probe.severity}
+                </span>
+                {probe.owasp_id && (
+                  <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
+                    {probe.owasp_id}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={onClose}
+                className="p-1 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+              {/* Probe ID & Category */}
+              <div>
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <Fingerprint className="h-5 w-5 text-muted-foreground" />
+                  {probe.probe_id}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {categoryLabel(probe.category, probe.subcategory)}
+                </p>
+              </div>
+
+              {/* Detection Details */}
+              {probe.detection_details && (
+                <div>
+                  <h3 className="text-sm font-medium flex items-center gap-1.5 mb-2">
+                    <Target className="h-4 w-4" />
+                    Detection
+                  </h3>
+                  <div className={`rounded-lg border p-3 ${sc.border} ${sc.bg}`}>
+                    <p className={`text-sm ${sc.text}`}>{probe.detection_details}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Classification */}
+              <div>
+                <h3 className="text-sm font-medium mb-2">Classification</h3>
+                <div className="rounded-lg border border-border p-3 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Verdict</span>
+                    <span className={`font-medium ${vc.text}`}>
+                      {probe.verdict.charAt(0).toUpperCase() + probe.verdict.slice(1)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Severity</span>
+                    <span className={`font-medium ${sc.text}`}>{probe.severity}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Category</span>
+                    <span className="font-medium">{probe.category?.replace(/_/g, " ")}</span>
+                  </div>
+                  {probe.subcategory && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subcategory</span>
+                      <span className="font-medium">{probe.subcategory.replace(/_/g, " ")}</span>
+                    </div>
+                  )}
+                  {probe.confidence != null && probe.confidence > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Confidence</span>
+                      <span className="font-medium">
+                        {probe.confidence <= 1
+                          ? `${Math.round(probe.confidence * 100)}%`
+                          : `${Math.round(probe.confidence)}%`}
+                      </span>
+                    </div>
+                  )}
+                  {probe.owasp_id && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">OWASP LLM</span>
+                      <span className="font-mono text-xs px-2 py-0.5 bg-muted rounded">{probe.owasp_id}</span>
+                    </div>
+                  )}
+                  {probe.latency_ms != null && probe.latency_ms > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5" /> Latency
+                      </span>
+                      <span className="font-medium">{probe.latency_ms}ms</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Full Response */}
+              {probe.response && (
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Model Response</h3>
+                  <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-900/50 p-4 max-h-80 overflow-y-auto">
+                    <p className="text-sm text-foreground whitespace-pre-wrap break-words leading-relaxed">
+                      {probe.response}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-border px-5 py-3 flex items-center justify-between text-xs text-muted-foreground">
+              <span>{probe.probe_id}</span>
+              <span>{categoryLabel(probe.category, probe.subcategory)}</span>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>,
+    document.body
   );
 }
