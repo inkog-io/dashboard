@@ -292,9 +292,13 @@ export default function HistoryPage() {
     }
   };
 
+  // Check if a red scan is still processing (sentinel: resilience_score/risk_score = -1)
+  const isProcessingRedScan = (scan: Scan) =>
+    scan.scan_type === 'red' && scan.risk_score === -1;
+
   // Get scan status badge
   const getScanStatusBadge = (scan: Scan) => {
-    if (scan.findings_count === -1) {
+    if (scan.findings_count === -1 || isProcessingRedScan(scan)) {
       return (
         <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
           <Loader2 className="h-3 w-3 animate-spin" />
@@ -641,7 +645,7 @@ export default function HistoryPage() {
                             )}
                           </div>
                         </TableCell>
-                        {row.data.findings_count === -1 ? (
+                        {row.data.findings_count === -1 || isProcessingRedScan(row.data) ? (
                           <>
                             <TableCell className="text-muted-foreground">--</TableCell>
                             <TableCell className="text-muted-foreground">--</TableCell>

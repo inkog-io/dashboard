@@ -4,6 +4,8 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
+import { format } from "date-fns";
+import { compactTimeAgo } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Card,
@@ -14,6 +16,7 @@ import {
 import {
   AlertCircle,
   ArrowLeft,
+  Calendar,
   ChevronDown,
   ChevronRight,
   Copy,
@@ -21,11 +24,13 @@ import {
   Shield,
   ShieldAlert,
   ShieldCheck,
+  ShieldOff,
   Trash2,
   X,
   Clock,
   Target,
   Fingerprint,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -394,277 +399,301 @@ export default function RedScanResultPage() {
     .sort((a, b) => (severityOrd[a.severity?.toUpperCase()] ?? 4) - (severityOrd[b.severity?.toUpperCase()] ?? 4));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => router.push("/dashboard/history")}>
-            <ArrowLeft className="h-4 w-4" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/dashboard/history")}
+            className="h-9 px-3"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
           </Button>
+          <div className="h-6 w-px bg-border" />
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-foreground">
-                Inkog Red Scan
+              <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <h1 className="text-xl font-semibold text-foreground">
+                {scan.target_name || "Red Scan"}
               </h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 uppercase">
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 uppercase">
                 {scan.scan_tier}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {scan.target_name || scan.target_url}
-            </p>
+            <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1 truncate max-w-xs" title={scan.target_url}>
+                <Target className="h-3.5 w-3.5 shrink-0" />
+                {scan.target_url}
+              </span>
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3.5 w-3.5" />
+                {format(new Date(scan.created_at), "MMM d, yyyy 'at' h:mm a")}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {compactTimeAgo(new Date(scan.created_at))}
+              </span>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleCopyJSON}>
-            <Copy className="h-4 w-4 mr-1.5" />
+          <Button variant="outline" className="h-9" onClick={handleCopyJSON}>
+            <Copy className="h-4 w-4 mr-2" />
             {copied ? "Copied!" : "Export JSON"}
           </Button>
           <Button
             variant="outline"
-            size="sm"
-            className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+            className="h-9 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 border-red-200 dark:border-red-800"
             onClick={() => setDeleteOpen(true)}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete
           </Button>
         </div>
       </div>
 
-      {/* Resilience Score Hero */}
-      <Card className="overflow-hidden">
-        <div className="relative bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 p-8 text-white">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="relative">
-                <svg className="h-28 w-28" viewBox="0 0 120 120">
-                  <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
-                  <circle
-                    cx="60" cy="60" r="52"
-                    fill="none"
-                    stroke={scan.resilience_score >= 80 ? "#22c55e" : scan.resilience_score >= 60 ? "#f59e0b" : "#ef4444"}
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    strokeDasharray={`${(scan.resilience_score / 100) * 327} 327`}
-                    transform="rotate(-90 60 60)"
-                  />
-                  <text x="60" y="55" textAnchor="middle" className="text-3xl font-bold" fill="white" fontSize="28">
-                    {scan.resilience_score}
-                  </text>
-                  <text x="60" y="75" textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize="12">
-                    / 100
-                  </text>
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm text-white/60 uppercase tracking-wider">Resilience Score</p>
-                <p className={`text-3xl font-bold mt-1 ${scan.resilience_score >= 80 ? "text-green-400" : scan.resilience_score >= 60 ? "text-amber-400" : "text-red-400"}`}>
-                  {scan.resilience_grade || "N/A"}
-                </p>
-                <p className="text-sm text-white/40 mt-1">
-                  {scan.probes_total} probes • {formatDuration(scan.duration_ms)}
-                </p>
-              </div>
+      {/* Resilience Score + Summary Stats */}
+      <div className="bg-card rounded-xl border border-border shadow-sm p-6">
+        <div className="flex flex-col md:flex-row md:items-center gap-8">
+          {/* Score circle + grade */}
+          <div className="flex items-center gap-5 shrink-0">
+            <div className="relative">
+              <svg className="h-24 w-24" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="currentColor" className="text-muted" strokeWidth="8" />
+                <circle
+                  cx="60" cy="60" r="52"
+                  fill="none"
+                  stroke={scan.resilience_score >= 80 ? "#22c55e" : scan.resilience_score >= 60 ? "#f59e0b" : "#ef4444"}
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(scan.resilience_score / 100) * 327} 327`}
+                  transform="rotate(-90 60 60)"
+                />
+                <text x="60" y="56" textAnchor="middle" className="text-2xl font-bold" fill="currentColor" fontSize="26">
+                  {scan.resilience_score}
+                </text>
+                <text x="60" y="74" textAnchor="middle" className="text-muted-foreground" fill="currentColor" fontSize="11" opacity="0.5">
+                  / 100
+                </text>
+              </svg>
             </div>
-            <div className="hidden md:grid grid-cols-2 gap-x-12 gap-y-3 text-right">
-              <div>
-                <p className="text-xs text-white/50">Extraction</p>
-                <p className={`text-lg font-semibold ${scoreColor(scan.extraction_resilience)}`}>
-                  {scan.extraction_resilience.toFixed(0)}%
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-white/50">Injection</p>
-                <p className={`text-lg font-semibold ${scoreColor(scan.injection_resilience)}`}>
-                  {scan.injection_resilience.toFixed(0)}%
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-white/50">Evasion</p>
-                <p className={`text-lg font-semibold ${scoreColor(scan.evasion_resilience)}`}>
-                  {scan.evasion_resilience.toFixed(0)}%
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-white/50">Consistency</p>
-                <p className={`text-lg font-semibold ${scoreColor(scan.consistency_score)}`}>
-                  {scan.consistency_score.toFixed(0)}%
-                </p>
-              </div>
-              {scan.compliance_resilience != null && scan.compliance_resilience > 0 && (
-                <div>
-                  <p className="text-xs text-white/50">Compliance</p>
-                  <p className={`text-lg font-semibold ${scoreColor(scan.compliance_resilience)}`}>
-                    {scan.compliance_resilience.toFixed(0)}%
-                  </p>
-                </div>
-              )}
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Resilience Score</p>
+              <p className={`text-2xl font-bold mt-0.5 ${scoreColor(scan.resilience_score)}`}>
+                {scan.resilience_grade || "N/A"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {scan.probes_total} probes &middot; {formatDuration(scan.duration_ms)}
+              </p>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="hidden md:block w-px h-20 bg-border" />
+
+          {/* Probe breakdown stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1">
+            <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {scan.defended_count}
+              </p>
+              <p className="text-xs text-muted-foreground uppercase">Defended</p>
+            </div>
+            <div className="text-center p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                {scan.degraded_count}
+              </p>
+              <p className="text-xs text-muted-foreground uppercase">Degraded</p>
+            </div>
+            <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                {scan.exposed_count}
+              </p>
+              <p className="text-xs text-muted-foreground uppercase">Exposed</p>
+            </div>
+            <div className="text-center p-3 bg-muted rounded-lg">
+              <p className="text-2xl font-bold text-foreground">
+                {scan.error_count}
+              </p>
+              <p className="text-xs text-muted-foreground uppercase">Error</p>
             </div>
           </div>
         </div>
-      </Card>
 
-      {/* Probe Breakdown */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {[
-          { label: "Total", value: scan.probes_total, color: "text-foreground" },
-          { label: "Defended", value: scan.defended_count, color: "text-green-600 dark:text-green-400" },
-          { label: "Degraded", value: scan.degraded_count, color: "text-amber-600 dark:text-amber-400" },
-          { label: "Exposed", value: scan.exposed_count, color: "text-red-600 dark:text-red-400" },
-          { label: "Error", value: scan.error_count, color: "text-gray-500" },
-        ].map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="pt-4 pb-3 px-4">
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-              <p className={`text-2xl font-bold mt-1 ${stat.color}`}>{stat.value}</p>
-            </CardContent>
-          </Card>
-        ))}
+        {/* Scan metadata line */}
+        <div className="mt-4 pt-4 border-t border-border text-sm text-muted-foreground text-center">
+          {scan.probes_total} probes executed in {formatDuration(scan.duration_ms)}
+          <span className="ml-2">&middot; Tier: <span className="capitalize">{scan.scan_tier}</span></span>
+        </div>
       </div>
 
-      {/* Score Breakdown Bars */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4" />
+      {/* Resilience Breakdown */}
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-border">
+          <h2 className="text-base font-semibold flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
             Resilience Breakdown
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </h2>
+        </div>
+        <div className="p-6 space-y-5">
           {[
-            { label: "Extraction Resilience", value: scan.extraction_resilience },
-            { label: "Injection Resilience", value: scan.injection_resilience },
-            { label: "Evasion Resilience", value: scan.evasion_resilience },
-            { label: "Consistency", value: scan.consistency_score },
+            { label: "Extraction", desc: "System prompt leakage resistance", value: scan.extraction_resilience, icon: ShieldOff },
+            { label: "Injection", desc: "Prompt injection resistance", value: scan.injection_resilience, icon: Zap },
+            { label: "Evasion", desc: "Encoding & obfuscation resistance", value: scan.evasion_resilience, icon: Fingerprint },
+            { label: "Consistency", desc: "Response stability across mutations", value: scan.consistency_score, icon: Target },
             ...(scan.compliance_resilience != null && scan.compliance_resilience > 0
-              ? [{ label: "Compliance Resilience", value: scan.compliance_resilience }]
+              ? [{ label: "Compliance", desc: "Safety & content policy adherence", value: scan.compliance_resilience, icon: Shield }]
               : []),
           ].map((item) => (
-            <div key={item.label}>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm text-muted-foreground">{item.label}</span>
-                <span className={`text-sm font-semibold ${scoreColor(item.value)}`}>
-                  {item.value.toFixed(0)}%
-                </span>
+            <div key={item.label} className="flex items-center gap-4">
+              <div className={`p-2 rounded-lg shrink-0 ${
+                item.value >= 80 ? "bg-green-50 dark:bg-green-900/20" :
+                item.value >= 60 ? "bg-amber-50 dark:bg-amber-900/20" :
+                "bg-red-50 dark:bg-red-900/20"
+              }`}>
+                <item.icon className={`h-4 w-4 ${
+                  item.value >= 80 ? "text-green-600 dark:text-green-400" :
+                  item.value >= 60 ? "text-amber-600 dark:text-amber-400" :
+                  "text-red-600 dark:text-red-400"
+                }`} />
               </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${scoreBg(item.value)}`}
-                  style={{ width: `${item.value}%` }}
-                />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <div>
+                    <span className="text-sm font-medium text-foreground">{item.label}</span>
+                    <span className="text-xs text-muted-foreground ml-2 hidden sm:inline">{item.desc}</span>
+                  </div>
+                  <span className={`text-sm font-semibold tabular-nums ${scoreColor(item.value)}`}>
+                    {item.value.toFixed(0)}%
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${scoreBg(item.value)}`}
+                    style={{ width: `${item.value}%` }}
+                  />
+                </div>
               </div>
             </div>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* OWASP LLM Top 10 */}
       {owaspEntries.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Shield className="h-4 w-4" />
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="text-base font-semibold flex items-center gap-2">
+              <Shield className="h-4 w-4 text-muted-foreground" />
               OWASP LLM Top 10 Mapping
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {owaspEntries.map((entry) => (
-                <div key={entry.id} className="flex items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-xs font-mono text-muted-foreground shrink-0">
-                          {entry.id}
-                        </span>
-                        <span className="text-sm font-medium text-foreground truncate">
-                          {entry.name}
-                        </span>
-                        <span className="text-xs text-muted-foreground shrink-0">
-                          {entry.defended}/{entry.total}
-                        </span>
-                      </div>
-                      <span className={`text-sm font-semibold ml-2 shrink-0 ${scoreColor(entry.resilience)}`}>
-                        {entry.resilience.toFixed(0)}%
+            </h2>
+          </div>
+          <div className="p-6 space-y-4">
+            {owaspEntries.map((entry) => (
+              <div key={entry.id} className="flex items-center gap-4">
+                <span className={`text-xs font-mono px-2 py-1 rounded-md shrink-0 font-semibold ${
+                  entry.resilience >= 80
+                    ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400"
+                    : entry.resilience >= 60
+                    ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
+                    : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400"
+                }`}>
+                  {entry.id}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-medium text-foreground truncate">
+                        {entry.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {entry.defended}/{entry.total} defended
                       </span>
                     </div>
-                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${scoreBg(entry.resilience)}`}
-                        style={{ width: `${entry.resilience}%` }}
-                      />
-                    </div>
+                    <span className={`text-sm font-semibold ml-2 shrink-0 tabular-nums ${scoreColor(entry.resilience)}`}>
+                      {entry.resilience.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${scoreBg(entry.resilience)}`}
+                      style={{ width: `${entry.resilience}%` }}
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Exposures */}
       {exposures.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="text-base font-semibold flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-red-500" />
-              Exposures ({exposures.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {(showAllExposures ? exposures : exposures.slice(0, 10)).map((probe, i) => {
-                const colors = severityColors[probe.severity?.toUpperCase()] || severityColors.LOW;
-                return (
-                  <button
-                    key={`${probe.probe_id}-${i}`}
-                    onClick={() => setSelectedProbe(probe)}
-                    className={`w-full text-left p-3 rounded-lg border-l-2 border ${colors.border} ${colors.left} bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors group`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase shrink-0 ${severityBadge(probe.severity)}`}>
-                        {probe.severity}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-foreground">{probe.probe_id}</p>
-                          <span className="text-xs text-muted-foreground">
-                            {categoryLabel(probe.category, probe.subcategory)}
+              Exposures
+              <span className="ml-1 inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full text-[10px] font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+                {exposures.length}
+              </span>
+            </h2>
+          </div>
+          <div className="p-4 space-y-2">
+            {(showAllExposures ? exposures : exposures.slice(0, 10)).map((probe, i) => {
+              const colors = severityColors[probe.severity?.toUpperCase()] || severityColors.LOW;
+              return (
+                <button
+                  key={`${probe.probe_id}-${i}`}
+                  onClick={() => setSelectedProbe(probe)}
+                  className={`w-full text-left p-3 rounded-lg border-l-2 border ${colors.border} ${colors.left} hover:bg-muted/30 transition-colors group`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase shrink-0 ${severityBadge(probe.severity)}`}>
+                      {probe.severity}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-foreground">{probe.probe_id}</p>
+                        <span className="text-xs text-muted-foreground">
+                          {categoryLabel(probe.category, probe.subcategory)}
+                        </span>
+                        {probe.owasp_id && (
+                          <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            {probe.owasp_id}
                           </span>
-                          {probe.owasp_id && (
-                            <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                              {probe.owasp_id}
-                            </span>
-                          )}
-                        </div>
-                        {probe.detection_details && (
-                          <p className="text-xs text-muted-foreground mt-1">{probe.detection_details}</p>
-                        )}
-                        {probe.response && (
-                          <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2 italic">
-                            &ldquo;{probe.response.slice(0, 200)}{probe.response.length > 200 ? "..." : ""}&rdquo;
-                          </p>
                         )}
                       </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground mt-1 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                      {probe.detection_details && (
+                        <p className="text-xs text-muted-foreground mt-1">{probe.detection_details}</p>
+                      )}
+                      {probe.response && (
+                        <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2 italic">
+                          &ldquo;{probe.response.slice(0, 200)}{probe.response.length > 200 ? "..." : ""}&rdquo;
+                        </p>
+                      )}
                     </div>
-                  </button>
-                );
-              })}
-              {exposures.length > 10 && !showAllExposures && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => setShowAllExposures(true)}
-                >
-                  Show all {exposures.length} exposures
-                  <ChevronDown className="h-4 w-4 ml-1" />
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground mt-1 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </button>
+              );
+            })}
+            {exposures.length > 10 && !showAllExposures && (
+              <button
+                className="w-full py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1"
+                onClick={() => setShowAllExposures(true)}
+              >
+                Show all {exposures.length} exposures
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
       )}
 
       {/* All Probes */}
@@ -678,13 +707,14 @@ export default function RedScanResultPage() {
           : scan.probe_results.filter((p) => p.verdict === verdictFilter);
 
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">All Probe Results ({scan.probe_results.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* Verdict Filter Buttons */}
-              <div className="flex flex-wrap gap-2 mb-4">
+          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h2 className="text-base font-semibold">All Probe Results ({scan.probe_results.length})</h2>
+            </div>
+
+            {/* Verdict Filter Pills */}
+            <div className="px-5 py-3 border-b border-border bg-muted/30">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setVerdictFilter("ALL")}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
@@ -708,50 +738,47 @@ export default function RedScanResultPage() {
                     )
                 )}
               </div>
+            </div>
 
-              <div className="space-y-1">
-                {filteredProbes.map((probe, i) => (
-                  <button
-                    key={`${probe.probe_id}-${i}`}
-                    onClick={() => setSelectedProbe(probe)}
-                    className="w-full text-left flex items-center gap-3 px-3 py-2 rounded hover:bg-muted/50 transition-colors text-sm group cursor-pointer"
-                  >
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-20 justify-center shrink-0 ${verdictBadge(probe.verdict)}`}>
-                      {probe.verdict}
-                    </span>
-                    <span className="text-muted-foreground w-28 truncate shrink-0">{probe.probe_id}</span>
-                    <span className="text-muted-foreground/60 w-32 truncate shrink-0 text-xs">
-                      {categoryLabel(probe.category, probe.subcategory)}
-                    </span>
-                    <span className="text-foreground flex-1 truncate">
-                      {probe.detection_details || "\u2014"}
-                    </span>
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${severityBadge(probe.severity)}`}>
-                      {probe.severity}
-                    </span>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
-                ))}
-                {filteredProbes.length === 0 && (
-                  <div className="text-center py-4 text-muted-foreground text-sm">
-                    No probes match the selected filter.
-                  </div>
-                )}
+            <div className="divide-y divide-border">
+              {filteredProbes.map((probe, i) => (
+                <button
+                  key={`${probe.probe_id}-${i}`}
+                  onClick={() => setSelectedProbe(probe)}
+                  className="w-full text-left flex items-center gap-3 px-5 py-3 hover:bg-muted/40 transition-colors text-sm group cursor-pointer"
+                >
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium w-20 justify-center shrink-0 ${verdictBadge(probe.verdict)}`}>
+                    {probe.verdict}
+                  </span>
+                  <span className="text-muted-foreground w-28 truncate shrink-0 font-mono text-xs">{probe.probe_id}</span>
+                  <span className="text-muted-foreground/60 w-32 truncate shrink-0 text-xs">
+                    {categoryLabel(probe.category, probe.subcategory)}
+                  </span>
+                  <span className="text-foreground flex-1 truncate text-xs">
+                    {probe.detection_details || "\u2014"}
+                  </span>
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${severityBadge(probe.severity)}`}>
+                    {probe.severity}
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              ))}
+              {filteredProbes.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  No probes match the selected filter.
+                </div>
+              )}
+            </div>
+
+            {/* Results count footer */}
+            {filteredProbes.length > 0 && verdictFilter !== "ALL" && (
+              <div className="px-5 py-3 bg-muted/30 border-t border-border text-xs text-muted-foreground">
+                Showing {filteredProbes.length} of {scan.probe_results.length} probes
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
         );
       })()}
-
-      {/* Metadata */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Scan ID: {id}</span>
-            <span>Created: {new Date(scan.created_at).toLocaleString()}</span>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Probe Details Panel */}
       <ProbeDetailsPanel
