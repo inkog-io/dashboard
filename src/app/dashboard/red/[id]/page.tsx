@@ -1046,7 +1046,7 @@ function ProbeDetailsPanel({
                     <Zap className="h-4 w-4 text-red-500" />
                     Attack Sent
                   </h3>
-                  <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4 max-h-48 overflow-y-auto">
+                  <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4 max-h-60 overflow-y-auto">
                     <p className="text-sm text-red-800 dark:text-red-300 whitespace-pre-wrap break-words leading-relaxed font-mono">
                       {probe.probe_payload}
                     </p>
@@ -1058,7 +1058,7 @@ function ProbeDetailsPanel({
               {probe.response && (
                 <div>
                   <h3 className="text-sm font-medium mb-2">AI Response</h3>
-                  <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-900/50 p-4 max-h-80 overflow-y-auto">
+                  <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-900/50 p-4 max-h-96 overflow-y-auto">
                     <p className="text-sm text-foreground whitespace-pre-wrap break-words leading-relaxed">
                       {probe.response}
                     </p>
@@ -1264,18 +1264,18 @@ function VulnerabilityDetailsPanel({
                           </span>
                         </div>
                         {ev.attack_payload && (
-                          <div className="p-3 border-b border-border bg-red-50/50 dark:bg-red-900/10">
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400 mb-1.5">Attack sent</p>
+                          <div className="p-3 border-b border-border bg-red-50/50 dark:bg-red-900/10 max-h-40 overflow-y-auto">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400 mb-1.5 sticky top-0">Attack sent</p>
                             <p className="text-xs text-red-800 dark:text-red-300 font-mono whitespace-pre-wrap break-words leading-relaxed">
-                              {ev.attack_payload.length > 400 ? ev.attack_payload.slice(0, 400) + "..." : ev.attack_payload}
+                              {ev.attack_payload}
                             </p>
                           </div>
                         )}
                         {ev.response && (
-                          <div className="p-3">
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">AI response</p>
+                          <div className="p-3 max-h-48 overflow-y-auto">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 sticky top-0 bg-card pb-1">AI response</p>
                             <p className="text-xs text-foreground whitespace-pre-wrap break-words leading-relaxed">
-                              {ev.response.length > 400 ? ev.response.slice(0, 400) + "..." : ev.response}
+                              {ev.response}
                             </p>
                           </div>
                         )}
