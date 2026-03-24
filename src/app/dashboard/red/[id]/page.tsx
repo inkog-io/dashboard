@@ -675,7 +675,7 @@ export default function RedScanResultPage() {
             </h2>
           </div>
           <div className="p-4 space-y-3">
-            {scan.vulnerabilities.map((vuln) => {
+            {[...scan.vulnerabilities].sort((a, b) => (severityOrd[a.severity?.toUpperCase()] ?? 4) - (severityOrd[b.severity?.toUpperCase()] ?? 4)).map((vuln) => {
               const colors = severityColors[vuln.severity?.toUpperCase()] || severityColors.LOW;
               return (
                 <button
