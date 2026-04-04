@@ -52,6 +52,7 @@ import { TopologyMapVisualization } from "@/components/TopologyMap";
 import { FindingDetailsPanel } from "@/components/FindingDetailsPanel";
 import { FindingsToolbar, type SeverityFilter, type TypeFilter } from "@/components/FindingsToolbar";
 import { StrengthsSection } from "@/components/dashboard/StrengthsSection";
+import { BadgeGenerator } from "@/components/BadgeGenerator";
 import { ScanDiffView } from "@/components/ScanDiffView";
 import { GroupedFindings } from "@/components/GroupedFindings";
 import { DeepScanResultsView, type DeepScanReport } from "@/components/DeepScanResultsView";
@@ -516,6 +517,15 @@ export default function ScanResultsPage() {
           {/* Strengths Section */}
           {scan.strengths && scan.strengths.length > 0 && (
             <StrengthsSection strengths={scan.strengths} />
+          )}
+
+          {/* Security Badges */}
+          {scan.agent_id && (
+            <BadgeGenerator
+              agentId={scan.agent_id}
+              agentName={scan.agent_name || "scan"}
+              criticalCount={scan.critical_count ?? 0}
+            />
           )}
 
           {/* Governance Section */}

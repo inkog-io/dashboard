@@ -8,6 +8,7 @@ interface CurrentUserState {
   user: CurrentUser | null;
   isAdmin: boolean;
   canAccessDeepScan: boolean;
+  hasInkogRed: boolean;
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -22,6 +23,12 @@ export function useCurrentUser(): CurrentUserState {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasInkogRed, setHasInkogRed] = useState(false);
+
+  // Check localStorage for Inkog Red status (avoid SSR mismatch)
+  useEffect(() => {
+    setHasInkogRed(localStorage.getItem("inkog_linkedin_followed") === "true");
+  }, []);
 
   const fetchUser = useCallback(async () => {
     if (!isSignedIn) {
@@ -51,6 +58,7 @@ export function useCurrentUser(): CurrentUserState {
     user,
     isAdmin: user?.roles?.includes("admin") ?? false,
     canAccessDeepScan: (user?.roles?.includes("admin") || user?.roles?.includes("deepscan")) ?? false,
+    hasInkogRed,
     isLoading,
     error,
     refresh: fetchUser,

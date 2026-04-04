@@ -19,6 +19,13 @@ interface SecurityMetricCardProps {
   };
   /** 7-day trend data for sparkline visualization */
   trend?: number[];
+  /** Delta comparison vs previous scan */
+  trendDelta?: {
+    value: number;
+    label?: string;
+    /** If true, higher values are better (e.g., governance score). If false, lower is better (e.g., risk score). */
+    higherIsBetter?: boolean;
+  };
   /** Tooltip explaining what this metric means */
   tooltip?: string;
   /** Link to relevant documentation page */
@@ -68,6 +75,7 @@ export function SecurityMetricCard({
   loading = false,
   badge,
   trend,
+  trendDelta,
   tooltip,
   docsUrl,
 }: SecurityMetricCardProps) {
@@ -141,6 +149,21 @@ export function SecurityMetricCard({
         </div>
         {subtitle && (
           <p className="text-xs text-muted-foreground/80 mt-0.5">{subtitle}</p>
+        )}
+        {trendDelta && trendDelta.value !== 0 && (
+          <div className="flex items-center gap-1 mt-1">
+            <span className={cn(
+              "text-xs font-medium",
+              (trendDelta.higherIsBetter ? trendDelta.value > 0 : trendDelta.value < 0)
+                ? "text-green-600 dark:text-green-400"
+                : "text-amber-600 dark:text-amber-400"
+            )}>
+              {trendDelta.value > 0 ? "↑" : "↓"} {Math.abs(trendDelta.value)}
+            </span>
+            {trendDelta.label && (
+              <span className="text-[10px] text-muted-foreground">{trendDelta.label}</span>
+            )}
+          </div>
         )}
       </div>
     </div>

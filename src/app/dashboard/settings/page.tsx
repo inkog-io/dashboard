@@ -2,18 +2,22 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
-import { Settings, Key, Github, Users } from "lucide-react";
+import { Settings, Key, Github, Users, Sparkles, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { APIKeysSection } from "@/components/settings/APIKeysSection";
 import { IntegrationsSection } from "@/components/settings/IntegrationsSection";
 import { AdminSection } from "@/components/settings/AdminSection";
+import { LinkedInGate } from "@/components/settings/LinkedInGate";
+import { ReferralProgram } from "@/components/settings/ReferralProgram";
 
-type Tab = "api-keys" | "integrations" | "team";
+type Tab = "api-keys" | "integrations" | "early-access" | "referral" | "team";
 
 const tabs: { id: Tab; label: string; icon: typeof Key; adminOnly?: boolean }[] = [
   { id: "api-keys", label: "API Keys", icon: Key },
   { id: "integrations", label: "Integrations", icon: Github },
+  { id: "early-access", label: "Early Access", icon: Sparkles },
+  { id: "referral", label: "Refer & Earn", icon: Gift },
   { id: "team", label: "Team", icon: Users, adminOnly: true },
 ];
 
@@ -75,6 +79,8 @@ function SettingsContent() {
       <div>
         {activeTab === "api-keys" && <APIKeysSection />}
         {activeTab === "integrations" && <IntegrationsSection />}
+        {activeTab === "early-access" && <LinkedInGate />}
+        {activeTab === "referral" && <ReferralProgram />}
         {activeTab === "team" && isAdmin && <AdminSection />}
       </div>
     </div>

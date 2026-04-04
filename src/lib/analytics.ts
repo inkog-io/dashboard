@@ -295,3 +295,66 @@ export function resetOnboarding(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(ONBOARDING_STORAGE_KEY);
 }
+
+// =============================================================================
+// Setup Checklist Events
+// =============================================================================
+
+export interface SetupStepCompletedProperties {
+  step_name: string;
+  step_number: number;
+  method?: string;
+}
+
+export function trackSetupStepCompleted(properties: SetupStepCompletedProperties): void {
+  posthog.capture("setup_step_completed", {
+    timestamp: new Date().toISOString(),
+    ...properties,
+  });
+}
+
+export function trackSetupChecklistDismissed(): void {
+  posthog.capture("setup_checklist_dismissed", {
+    timestamp: new Date().toISOString(),
+  });
+}
+
+export interface SetupChecklistCompletedProperties {
+  duration_seconds?: number;
+  steps_completed: number;
+}
+
+export function trackSetupChecklistCompleted(properties: SetupChecklistCompletedProperties): void {
+  posthog.capture("setup_checklist_completed", {
+    timestamp: new Date().toISOString(),
+    ...properties,
+  });
+}
+
+// =============================================================================
+// Growth Events
+// =============================================================================
+
+export function trackReferralLinkCopied(): void {
+  posthog.capture("referral_link_copied", {
+    timestamp: new Date().toISOString(),
+  });
+}
+
+export function trackLinkedInGateCompleted(): void {
+  posthog.capture("linkedin_gate_completed", {
+    timestamp: new Date().toISOString(),
+  });
+}
+
+export interface BadgeCopiedProperties {
+  badge_type: string;
+  agent_id: string;
+}
+
+export function trackBadgeCopied(properties: BadgeCopiedProperties): void {
+  posthog.capture("badge_copied", {
+    timestamp: new Date().toISOString(),
+    ...properties,
+  });
+}

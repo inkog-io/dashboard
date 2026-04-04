@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import {
@@ -12,8 +12,6 @@ import {
   AlertCircle,
   Bot,
   Activity,
-  Sparkles,
-  X,
   BookOpen,
   Server,
 } from "lucide-react";
@@ -29,10 +27,11 @@ import {
 import { cn, compactTimeAgo } from "@/lib/utils";
 import { SecurityMetricCard, type MetricVariant } from "@/components/dashboard/SecurityMetricCard";
 import { AgentList } from "@/components/dashboard/AgentList";
+import { SetupChecklist } from "@/components/dashboard/SetupChecklist";
+import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { SkeletonCrossfade, SkeletonMetricCard } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const { getToken } = useAuth();
   const { user, isLoaded } = useUser();
@@ -44,21 +43,14 @@ export default function DashboardPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
-  const [dismissedEmptyBanner, setDismissedEmptyBanner] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(false);
+  const [hasGitHub, setHasGitHub] = useState(false);
 
   // Initialize API client
   useEffect(() => {
     const client = createAPIClient(getToken);
     setApi(client);
   }, [getToken]);
-
-  // Check if coming from completed onboarding
-  useEffect(() => {
-    if (searchParams.get("completed") === "true") {
-      setShowWelcomeBanner(true);
-    }
-  }, [searchParams]);
 
   // Fetch dashboard data
   const fetchData = useCallback(async () => {
@@ -68,7 +60,7 @@ export default function DashboardPage() {
       setLoading(true);
       setError(null);
 
-      // Fetch stats, history, and agents in parallel
+      // Fetch stats, history, agents, keys, and GitHub installations in parallel
       const [statsResponse, historyResponse, agentsResponse] = await Promise.all([
         api.stats.get(),
         api.history.list({ limit: 50, summary: true }),
@@ -79,6 +71,10 @@ export default function DashboardPage() {
       setRecentScans(historyResponse.scans || []);
       setSummary(historyResponse.summary || null);
       setAgents(agentsResponse.agents || []);
+
+      // Non-critical fetches for setup checklist — don't block on errors
+      api.keys.list().then(r => setHasApiKey((r.api_keys?.length ?? 0) > 0)).catch(() => {});
+      api.github.listInstallations().then(r => setHasGitHub((r.installations?.length ?? 0) > 0)).catch(() => {});
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard");
     } finally {
@@ -158,7 +154,6 @@ export default function DashboardPage() {
   };
 
   // Use enhanced stats from backend, with fallbacks
-  const showEmptyStateBanner = agents.length === 0 && !loading && !error && !dismissedEmptyBanner;
   const riskScore = stats?.risk_score_avg ?? summary?.average_risk_score ?? 0;
   const criticalCount = stats?.critical_unresolved ?? recentScans[0]?.critical_count ?? 0;
   const governanceScore = stats?.governance_score_avg ?? 0;
@@ -213,49 +208,13 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Welcome / Empty State Banner */}
-      {(showWelcomeBanner || showEmptyStateBanner) && (
-        <div className="bg-gradient-to-r from-green-50 dark:from-green-950/30 to-emerald-50 dark:to-emerald-950/30 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-            <Sparkles className="h-5 w-5 text-green-600" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-green-900 dark:text-green-100">
-              {showWelcomeBanner ? "Setup complete!" : "Get started"}
-            </h3>
-            <p className="text-sm text-green-700 dark:text-green-300 mt-0.5">
-              {showWelcomeBanner
-                ? "You're all set. Run your first scan to start monitoring your AI agents for security vulnerabilities."
-                : "Scan your AI agents or MCP servers to discover security vulnerabilities and compliance gaps."}
-            </p>
-            <div className="flex items-center gap-2 mt-3">
-              <Link
-                href="/dashboard/scan"
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Bot className="h-4 w-4" />
-                Scan Agent
-              </Link>
-              <Link
-                href="/dashboard/scan?mode=mcp"
-                className="inline-flex items-center gap-1.5 px-4 py-2 border border-green-600 text-green-700 dark:text-green-300 text-sm font-medium rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
-              >
-                <Server className="h-4 w-4" />
-                Scan MCP Server
-              </Link>
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              setShowWelcomeBanner(false);
-              setDismissedEmptyBanner(true);
-            }}
-            className="p-1 text-green-400 dark:text-green-600 hover:text-green-600 dark:hover:text-green-400 transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-      )}
+      {/* Setup Checklist — shown for new/incomplete users, dismissable */}
+      <SetupChecklist
+        hasApiKey={hasApiKey}
+        hasScans={recentScans.length > 0}
+        hasGitHub={hasGitHub}
+        latestScanId={recentScans[0]?.id}
+      />
 
       {/* Error Alert */}
       {error && (
@@ -279,81 +238,89 @@ export default function DashboardPage() {
       >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SecurityMetricCard
-          title="Assets Monitored"
+          title="Agents Secured"
           value={agents.length + uniqueSkillNames.size + uniqueMCPNames.size}
           subtitle={
             agents.length === 0 && uniqueSkillNames.size === 0 && uniqueMCPNames.size === 0
               ? "Run your first scan"
-              : `${agents.length} agents, ${uniqueSkillNames.size} skills, ${uniqueMCPNames.size} MCP`
+              : `${agents.length} agents · ${uniqueSkillNames.size} skills · ${uniqueMCPNames.size} MCP`
           }
           icon={Bot}
           variant={criticalAgents > 0 ? "danger" : warningAgents > 0 ? "warning" : "success"}
           loading={loading}
-          tooltip="Total number of AI agents being monitored for security vulnerabilities."
+          tooltip="Total AI agents, skills, and MCP servers secured by Inkog."
           docsUrl="https://docs.inkog.io/getting-started/dashboard"
         />
         <SecurityMetricCard
-          title="Critical Issues"
-          value={criticalCount}
-          subtitle={criticalCount > 0 ? "Requires immediate attention" : "No critical issues found"}
+          title="Risks Caught"
+          value={summary?.total_findings ?? criticalCount}
+          subtitle={
+            (summary?.total_findings ?? criticalCount) > 0
+              ? "Before they reached production"
+              : "No issues detected"
+          }
           icon={AlertTriangle}
           variant={criticalCount > 0 ? "danger" : "success"}
+          badge={criticalCount > 0 ? { text: `${criticalCount} critical`, variant: "danger" } : undefined}
           loading={loading}
-          tooltip="Number of CRITICAL severity findings across all agents. Fix these immediately."
+          tooltip="Total security risks caught across all scans. Critical findings need immediate attention."
           docsUrl="https://docs.inkog.io/vulnerabilities"
         />
         <SecurityMetricCard
-          title="Governance Score"
-          value={`${governanceScore}%`}
+          title="Security Posture"
+          value={`${governanceScore}/100`}
           subtitle={getGovernanceContext(governanceScore)}
           icon={CheckCircle}
           variant={getGovernanceVariant(governanceScore)}
           loading={loading}
-          tooltip="Average governance score across all agents. Based on security controls and compliance requirements."
+          tooltip="Overall security posture based on governance controls and compliance requirements."
           docsUrl="https://docs.inkog.io/governance"
         />
         <SecurityMetricCard
-          title="Avg Risk Score"
-          value={riskScore}
-          subtitle={getRiskContext(riskScore)}
+          title="Compliance"
+          value={riskScore <= 30 && governanceScore >= 50 ? "On Track" : riskScore === 0 ? "—" : "Needs Work"}
+          subtitle={governanceScore >= 80 ? "EU AI Act · OWASP LLM" : governanceScore >= 50 ? "Partial coverage" : "Run scans to assess"}
           icon={Activity}
-          variant={getRiskScoreVariant(riskScore)}
+          variant={governanceScore >= 80 ? "success" : governanceScore >= 50 ? "warning" : "default"}
           loading={loading}
           trend={stats?.findings_trend}
-          tooltip="Average risk score across all agents. Lower is better."
+          tooltip="Compliance status across EU AI Act, NIST AI RMF, and OWASP LLM Top 10."
           docsUrl="https://docs.inkog.io/core-concepts/scoring"
         />
       </div>
       </SkeletonCrossfade>
 
-      {/* Agents Section */}
-      <div className="animate-stagger-3">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-muted-foreground" />
-            <h2 className="font-semibold text-foreground">Your Agents</h2>
+      {/* Agents + Activity Feed (2-column layout) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 animate-stagger-3">
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Bot className="h-5 w-5 text-muted-foreground" />
+              <h2 className="font-semibold text-foreground">Your Agents</h2>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link href="/dashboard/scan" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+                <Bot className="h-4 w-4" />
+                Scan Agent
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+              <span className="text-border">|</span>
+              <Link href="/dashboard/scan?mode=mcp" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+                <Server className="h-4 w-4" />
+                Scan MCP
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard/scan" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-              <Bot className="h-4 w-4" />
-              Scan Agent
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-            <span className="text-border">|</span>
-            <Link href="/dashboard/scan?mode=mcp" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-              <Server className="h-4 w-4" />
-              Scan MCP
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+          <AgentList
+            agents={agents}
+            loading={loading}
+            scanPolicies={scanPolicies}
+            onRename={handleRenameAgent}
+            onDelete={handleDeleteAgent}
+          />
         </div>
-        <AgentList
-          agents={agents}
-          loading={loading}
-          scanPolicies={scanPolicies}
-          onRename={handleRenameAgent}
-          onDelete={handleDeleteAgent}
-        />
+        <ActivityFeed scans={recentScans} skillScans={allSkillAndMCPScans} />
       </div>
 
       {/* Recent Skill & MCP Scans */}
