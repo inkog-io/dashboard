@@ -678,12 +678,12 @@ export async function GET(req: NextRequest) {
       const deepData = await fetchDeepScanStatus(row.deep_scan_id);
       if (deepData) {
         deepScanStatus = deepData.status || "processing";
-        if (deepScanStatus === "completed" && deepData.scan?.findings_json) {
+        if (deepScanStatus === "completed" && deepData.scan?.findings) {
           try {
             const fullReport =
-              typeof deepData.scan.findings_json === "string"
-                ? JSON.parse(deepData.scan.findings_json)
-                : deepData.scan.findings_json;
+              typeof deepData.scan.findings === "string"
+                ? JSON.parse(deepData.scan.findings)
+                : deepData.scan.findings;
 
             // Gate deep findings for unauthenticated users
             if (!isAuthenticated && fullReport.findings) {
