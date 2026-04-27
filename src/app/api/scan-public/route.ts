@@ -522,16 +522,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Fire deep scan in background if enabled and core found findings
+    // Trigger deep scan if enabled and core found findings.
+    // Must await — Vercel serverless terminates after response, killing unresolved promises.
     if (
       DEEP_SCAN_ENABLED &&
       !result.cached &&
       result.scan_result.findings_count > 0 &&
       result.files?.length
     ) {
-      triggerDeepScan(result.report_id, result.repo_name, result.files).catch(
-        (err) => console.error("Deep scan trigger error:", err)
-      );
+      try {
+        await triggerDeepScan(result.report_id, result.repo_name, result.files);
+      } catch (err) {
+        console.error("Deep scan trigger error:", err);
+        // Non-fatal — core results still return
+      }
     }
 
     return NextResponse.json({
