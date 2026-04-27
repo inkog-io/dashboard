@@ -94,7 +94,7 @@ export async function findRecentScanByRepo(repoName: string) {
   await ensureSchema();
   const sql = getSql();
   const [row] = await sql`
-    SELECT id, repo_url, repo_name, scan_result, created_at
+    SELECT id, repo_url, repo_name, scan_result, created_at, deep_scan_id
     FROM anonymous_scans
     WHERE repo_name = ${repoName}
       AND expires_at > NOW()

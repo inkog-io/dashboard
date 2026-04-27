@@ -268,9 +268,9 @@ export async function executeScanPipeline(
   const repo = match[2];
   const repoName = `${owner}/${repo}`;
 
-  // Check cache
+  // Check cache — skip if deep scan is enabled but cached entry lacks deep_scan_id
   const cached = await findRecentScanByRepo(repoName);
-  if (cached) {
+  if (cached && !(DEEP_SCAN_ENABLED && !cached.deep_scan_id)) {
     return {
       ok: true,
       report_id: cached.id,
