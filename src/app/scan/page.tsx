@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { Key, BarChart3, Settings2, GitBranch } from "lucide-react";
+import { Terminal, BarChart3, Settings2, GitBranch } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { TerminalProgressUI } from "@/components/TerminalProgressUI";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -59,7 +59,7 @@ export default function PublicScanPage() {
       trackAnonymousScanStarted({ repo_url: url });
 
       const MAX_RETRIES = 2;
-      const TIMEOUT_MS = 200_000; // 200s client timeout
+      const TIMEOUT_MS = 200_000;
       let lastError = "";
       let lastErrorCode = "";
 
@@ -82,7 +82,6 @@ export default function PublicScanPage() {
           if (!res.ok) {
             const err = data as PublicScanError;
 
-            // Non-retryable client errors (4xx)
             if (res.status >= 400 && res.status < 500) {
               if (err.code === "rate_limited") {
                 setError("Too many scans. Please wait an hour and try again.");
@@ -101,26 +100,23 @@ export default function PublicScanPage() {
               return;
             }
 
-            // 502 is also non-retryable (repo too large)
             if (res.status === 502) {
               setError("too_large");
               setIsScanning(false);
               return;
             }
 
-            // Retryable server errors (5xx)
             lastError = err.error || "Server error";
             lastErrorCode = err.code || `http_${res.status}`;
 
             if (attempt < MAX_RETRIES) {
-              const backoff = (attempt + 1) * 3000; // 3s, 6s
+              const backoff = (attempt + 1) * 3000;
               await new Promise((r) => setTimeout(r, backoff));
               continue;
             }
             break;
           }
 
-          // Success
           const result = data as PublicScanResponse;
 
           trackAnonymousScanCompleted({
@@ -140,9 +136,7 @@ export default function PublicScanPage() {
           clearTimeout(timeoutId);
 
           const isAbort = e instanceof DOMException && e.name === "AbortError";
-          lastError = isAbort
-            ? "Request timed out"
-            : "Network error";
+          lastError = isAbort ? "Request timed out" : "Network error";
           lastErrorCode = isAbort ? "timeout" : "network_error";
 
           if (attempt < MAX_RETRIES) {
@@ -153,7 +147,6 @@ export default function PublicScanPage() {
         }
       }
 
-      // All retries exhausted
       trackAnonymousScanError({
         repo_url: url,
         error_code: lastErrorCode,
@@ -175,7 +168,6 @@ export default function PublicScanPage() {
   useEffect(() => {
     if (autoScanUrl && !hasAutoScanned.current) {
       hasAutoScanned.current = true;
-      // Small delay to let the page render first
       const t = setTimeout(() => handleScan(autoScanUrl), 100);
       return () => clearTimeout(t);
     }
@@ -186,64 +178,51 @@ export default function PublicScanPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <PublicHeader />
 
-      <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-12 sm:py-16">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-16 sm:py-24">
         {!isScanning ? (
-          <div className="w-full max-w-xl text-center">
+          <div className="w-full max-w-lg text-center">
             {/* Hero */}
-            <div className="mb-8">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand/10 mb-6">
+            <div className="mb-10">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-brand/10 mb-6">
                 <Image
                   src="/favicon.svg"
                   alt="Inkog"
-                  width={32}
-                  height={32}
-                  className="w-8 h-8"
+                  width={28}
+                  height={28}
+                  className="w-7 h-7"
                 />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
-                Scan your AI agent for vulnerabilities
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground mb-3">
+                Scan your AI agent
               </h1>
-              <p className="text-muted-foreground text-base sm:text-lg">
-                Zero setup. Results in 60 seconds. Paste a public GitHub repo
-                URL to get a free security report.
+              <p className="text-lg text-muted-foreground">
+                Paste a public GitHub repo URL. Get a security report in 60 seconds.
               </p>
             </div>
 
             {/* Input */}
-            <div className="flex gap-2 sm:gap-3">
+            <div className="flex gap-2">
               <input
                 type="url"
                 value={repoUrl}
                 onChange={(e) => setRepoUrl(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleScan()}
                 placeholder="https://github.com/owner/repo"
-                className="flex-1 min-w-0 h-12 px-4 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand text-sm"
+                className="flex-1 min-w-0 h-14 px-5 rounded-xl border-2 border-border bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand text-base transition-colors"
                 autoFocus
               />
               <Button
                 onClick={() => handleScan()}
                 disabled={!repoUrl.trim()}
-                size="lg"
-                className="h-12 px-6 shrink-0"
+                className="h-14 px-8 rounded-xl text-base font-semibold shrink-0 hover:shadow-[0_0_20px_hsl(239_84%_67%/0.3)] transition-shadow"
               >
                 Scan
               </Button>
             </div>
 
             {/* Scan tier note */}
-            <p className="mt-3 text-[11px] text-muted-foreground/60">
-              This scan uses{" "}
-              <span className="font-medium text-muted-foreground">Inkog Core</span>.{" "}
-              For deeper behavioral analysis,{" "}
-              <a
-                href="https://inkog.io/pricing"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-violet-500 dark:text-violet-400 hover:underline"
-              >
-                try Inkog Deep
-              </a>
-              .
+            <p className="mt-3 text-xs text-muted-foreground/50">
+              Powered by Inkog Core + Deep &middot; AI behavioral analysis included
             </p>
 
             {/* Error with recovery */}
@@ -253,9 +232,9 @@ export default function PublicScanPage() {
               </p>
             )}
 
-            {/* Special error for too-large repos with example suggestions */}
+            {/* Special error for too-large repos */}
             {error === "too_large" && (
-              <div className="mt-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-left">
+              <div className="mt-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-left">
                 <p className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-2">
                   This repo is too large for browser scanning.
                 </p>
@@ -268,7 +247,7 @@ export default function PublicScanPage() {
                     <button
                       key={url}
                       onClick={() => handleScan(url)}
-                      className="px-3 py-1.5 rounded-md bg-card hover:bg-accent text-xs font-mono border border-amber-200 dark:border-amber-700 transition-colors text-foreground"
+                      className="px-4 py-2 rounded-full bg-card hover:bg-brand/10 hover:text-brand text-xs font-mono border border-amber-200 dark:border-amber-700 transition-colors text-foreground"
                     >
                       {url.replace("https://github.com/", "")}
                     </button>
@@ -277,16 +256,16 @@ export default function PublicScanPage() {
               </div>
             )}
 
-            {/* Example repos — click to auto-scan */}
+            {/* Example repos */}
             {!error && (
               <div className="mt-8 text-sm text-muted-foreground">
-                <p className="mb-2">Try an example:</p>
+                <p className="mb-3">Try an example:</p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {EXAMPLE_REPOS.map((url) => (
                     <button
                       key={url}
                       onClick={() => handleScan(url)}
-                      className="px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-xs font-mono transition-colors"
+                      className="px-4 py-2 rounded-full bg-muted hover:bg-brand/10 hover:text-brand text-sm font-mono transition-all duration-200"
                     >
                       {url.replace("https://github.com/", "")}
                     </button>
@@ -295,51 +274,36 @@ export default function PublicScanPage() {
               </div>
             )}
 
-            {/* Account benefits */}
-            <div className="mt-12 pt-8 border-t border-border">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
-                Create a free account to unlock
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
-                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-muted/50">
-                  <Key className="w-4 h-4 text-brand mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">API Keys & CLI</p>
-                    <p className="text-xs text-muted-foreground">Scan private repos with no size limits</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-muted/50">
-                  <BarChart3 className="w-4 h-4 text-brand mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Full Reports</p>
-                    <p className="text-xs text-muted-foreground">Governance scores, compliance mapping, topology</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-muted/50">
-                  <Settings2 className="w-4 h-4 text-brand mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Scan Policies</p>
-                    <p className="text-xs text-muted-foreground">EU AI Act, governance, low-noise & more</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-muted/50">
-                  <GitBranch className="w-4 h-4 text-brand mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">GitHub Integration</p>
-                    <p className="text-xs text-muted-foreground">Auto-scan on every push, PR comments</p>
-                  </div>
-                </div>
+            {/* Benefits strip */}
+            <div className="mt-16 pt-6 border-t border-border">
+              <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground/50">
+                <span className="inline-flex items-center gap-1.5">
+                  <Terminal className="w-3.5 h-3.5" />
+                  CLI & API
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <BarChart3 className="w-3.5 h-3.5" />
+                  Full Reports
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Settings2 className="w-3.5 h-3.5" />
+                  Scan Policies
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <GitBranch className="w-3.5 h-3.5" />
+                  GitHub Integration
+                </span>
               </div>
             </div>
           </div>
         ) : (
-          <div className="w-full max-w-2xl px-0 sm:px-0">
+          <div className="w-full max-w-2xl">
             <div className="text-center mb-8">
               <h2 className="text-xl font-semibold text-foreground mb-2">
                 Scanning repository...
               </h2>
               <p className="text-sm text-muted-foreground">
-                This usually takes 30–90 seconds depending on repo size.
+                Core analysis in progress. Deep behavioral analysis will continue in background.
               </p>
             </div>
             <TerminalProgressUI

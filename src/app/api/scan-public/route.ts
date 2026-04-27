@@ -10,6 +10,7 @@ import {
   findRecentScanByRepo,
   claimScan,
   countRecentScans,
+  updateDeepScanId,
 } from "@/lib/db";
 import {
   transformScanResponse,
@@ -247,7 +248,7 @@ const MAX_REMEDIATION_STEPS = 3;
 
 /** Result type for the reusable scan pipeline */
 export type ScanPipelineResult =
-  | { ok: true; report_id: string; repo_name: string; scan_result: ReturnType<typeof transformScanResponse>; cached: boolean; scanned_at: string }
+  | { ok: true; report_id: string; repo_name: string; scan_result: ReturnType<typeof transformScanResponse>; cached: boolean; scanned_at: string; files?: { path: string; content: Buffer }[] }
   | { ok: false; error: string; code: string; status: number };
 
 /**
@@ -379,6 +380,7 @@ export async function executeScanPipeline(
     scan_result: scanResult,
     cached: false,
     scanned_at: new Date().toISOString(),
+    files,
   };
 }
 
@@ -408,6 +410,64 @@ function polishFindings(scanResult: ReturnType<typeof transformScanResponse>) {
   scanResult.medium_count = scanResult.findings.filter((f) => f.severity === "MEDIUM").length;
   scanResult.low_count = scanResult.findings.filter((f) => f.severity === "LOW").length;
 }
+
+const DEEP_SCAN_ENABLED = process.env.ENABLE_ANONYMOUS_DEEP_SCAN === "true";
+const DEEP_SCAN_MAX_FILES = 50;
+
+/**
+ * Fire-and-forget deep scan after core scan completes.
+ * Sends files as JSON to /v1/scan/deep, stores scan_id for polling.
+ */
+async function triggerDeepScan(
+  reportId: string,
+  agentName: string,
+  files: { path: string; content: Buffer }[]
+) {
+  const deepFiles = files.slice(0, DEEP_SCAN_MAX_FILES).map((f) => ({
+    path: f.path,
+    content: f.content.toString("utf-8"),
+  }));
+
+  const res = await fetch(`${API_BASE_URL}/v1/scan/deep`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${INKOG_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ files: deepFiles, agent_name: agentName }),
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    console.error("Deep scan trigger failed:", res.status, errText);
+    return;
+  }
+
+  const data = (await res.json()) as { scan_id: string };
+  if (data.scan_id) {
+    await updateDeepScanId(reportId, data.scan_id);
+  }
+}
+
+/**
+ * Fetch deep scan status from backend. Returns null if not available.
+ */
+async function fetchDeepScanStatus(deepScanId: string) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/v1/scan/deep/${deepScanId}`, {
+      headers: { Authorization: `Bearer ${INKOG_API_KEY}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/** Number of deep findings returned with full detail to unauthenticated users */
+const UNGATED_DEEP_FINDING_COUNT = 2;
 
 /**
  * POST /api/scan-public
@@ -459,6 +519,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: result.error, code: result.code },
         { status: result.status }
+      );
+    }
+
+    // Fire deep scan in background if enabled and core found findings
+    if (
+      DEEP_SCAN_ENABLED &&
+      !result.cached &&
+      result.scan_result.findings_count > 0 &&
+      result.files?.length
+    ) {
+      triggerDeepScan(result.report_id, result.repo_name, result.files).catch(
+        (err) => console.error("Deep scan trigger error:", err)
       );
     }
 
@@ -598,6 +670,59 @@ export async function GET(req: NextRequest) {
       scanResult.gated_findings = gated;
     }
 
+    // Fetch deep scan status if available
+    let deepScanStatus: "not_triggered" | "processing" | "completed" | "failed" = "not_triggered";
+    let deepScanResult: Record<string, unknown> | null = null;
+
+    if (row.deep_scan_id) {
+      const deepData = await fetchDeepScanStatus(row.deep_scan_id);
+      if (deepData) {
+        deepScanStatus = deepData.status || "processing";
+        if (deepScanStatus === "completed" && deepData.scan?.findings_json) {
+          try {
+            const fullReport =
+              typeof deepData.scan.findings_json === "string"
+                ? JSON.parse(deepData.scan.findings_json)
+                : deepData.scan.findings_json;
+
+            // Gate deep findings for unauthenticated users
+            if (!isAuthenticated && fullReport.findings) {
+              const sorted = [...fullReport.findings].sort(
+                (a: { severity: string }, b: { severity: string }) => {
+                  const order: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+                  return (order[a.severity] ?? 4) - (order[b.severity] ?? 4);
+                }
+              );
+              const ungated = sorted.slice(0, UNGATED_DEEP_FINDING_COUNT);
+              const gated = sorted.slice(UNGATED_DEEP_FINDING_COUNT).map(
+                (f: { finding_number: number; title: string; severity: string; category: string; confidence: string }) => ({
+                  finding_number: f.finding_number,
+                  title: f.title,
+                  severity: f.severity,
+                  category: f.category,
+                  confidence: f.confidence,
+                })
+              );
+              fullReport.findings = ungated;
+              fullReport.gated_findings = gated;
+            }
+
+            // Always pass through agent_profile and severity_summary
+            deepScanResult = {
+              agent_profile: fullReport.agent_profile || null,
+              severity_summary: fullReport.severity_summary || null,
+              findings: fullReport.findings || [],
+              gated_findings: fullReport.gated_findings || [],
+              report: fullReport.report || null,
+            };
+          } catch {
+            // If JSON parsing fails, treat as still processing
+            deepScanStatus = "processing";
+          }
+        }
+      }
+    }
+
     return NextResponse.json({
       report_id: row.id,
       repo_name: row.repo_name,
@@ -605,6 +730,8 @@ export async function GET(req: NextRequest) {
       scan_result: scanResult,
       scanned_at: row.created_at,
       claimed: !!row.claimed_by_user_id,
+      deep_scan_status: deepScanStatus,
+      deep_scan_result: deepScanResult,
     });
   } catch (err) {
     console.error("Report fetch error:", err);

@@ -48,6 +48,10 @@ async function ensureSchema() {
     CREATE INDEX IF NOT EXISTS idx_anonymous_scans_ip_rate
     ON anonymous_scans (ip_address, created_at)
   `;
+  // Add deep_scan_id column for async deep scan tracking
+  await sql`
+    ALTER TABLE anonymous_scans ADD COLUMN IF NOT EXISTS deep_scan_id TEXT
+  `;
   initialized = true;
 }
 
@@ -71,7 +75,7 @@ export async function getAnonymousScanById(id: string) {
   await ensureSchema();
   const sql = getSql();
   const [row] = await sql`
-    SELECT id, repo_url, repo_name, scan_result, created_at, claimed_by_user_id
+    SELECT id, repo_url, repo_name, scan_result, created_at, claimed_by_user_id, deep_scan_id
     FROM anonymous_scans
     WHERE id = ${id} AND expires_at > NOW()
   `;
@@ -108,6 +112,16 @@ export async function claimScan(id: string, userId: string) {
     UPDATE anonymous_scans
     SET claimed_by_user_id = ${userId}, claimed_at = NOW()
     WHERE id = ${id}
+  `;
+}
+
+export async function updateDeepScanId(reportId: string, deepScanId: string) {
+  await ensureSchema();
+  const sql = getSql();
+  await sql`
+    UPDATE anonymous_scans
+    SET deep_scan_id = ${deepScanId}
+    WHERE id = ${reportId}
   `;
 }
 

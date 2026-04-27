@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import {
@@ -15,6 +15,8 @@ import {
   GitBranch,
   Settings2,
   ArrowRight,
+  Cpu,
+  Sparkles,
 } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { FindingCard } from "@/components/FindingCard";
@@ -44,8 +46,53 @@ interface GatedFindingSummary {
 }
 
 interface ReportScanResult extends ScanResult {
-  /** Present only for unauthenticated users — gated findings with detail stripped */
   gated_findings?: GatedFindingSummary[];
+}
+
+interface DeepFinding {
+  finding_number: number;
+  title: string;
+  detection_id?: string;
+  category: string;
+  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+  confidence: "HIGH" | "MEDIUM" | "LOW";
+  affected_files?: { file_path: string; line_numbers: string }[];
+  proof?: { file_path: string; start_line: number; end_line: number; code_snippet: string; language: string }[];
+  explanation: string;
+  recommended_action: string;
+  compliance_mappings?: { framework: string; reference: string }[];
+}
+
+interface DeepGatedSummary {
+  finding_number: number;
+  title: string;
+  severity: string;
+  category: string;
+  confidence: string;
+}
+
+interface DeepScanResult {
+  agent_profile: {
+    purpose: string;
+    framework: string;
+    language: string;
+    architecture_summary: string;
+    data_sources?: string[];
+    data_sinks?: string[];
+    external_integrations?: string[];
+    high_risk_operations?: string[];
+    is_multi_agent?: boolean;
+    trust_boundaries?: string;
+  } | null;
+  severity_summary: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  } | null;
+  findings: DeepFinding[];
+  gated_findings: DeepGatedSummary[];
+  report: { total_findings: number; files_audited: number } | null;
 }
 
 interface ReportData {
@@ -55,7 +102,23 @@ interface ReportData {
   scan_result: ReportScanResult;
   scanned_at: string;
   claimed: boolean;
+  deep_scan_status?: "not_triggered" | "processing" | "completed" | "failed";
+  deep_scan_result?: DeepScanResult | null;
 }
+
+const SEVERITY_COLORS: Record<string, string> = {
+  CRITICAL: "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800",
+  HIGH: "bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800",
+  MEDIUM: "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800",
+  LOW: "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800",
+};
+
+const SEVERITY_BORDER: Record<string, string> = {
+  CRITICAL: "border-l-red-500",
+  HIGH: "border-l-orange-500",
+  MEDIUM: "border-l-amber-500",
+  LOW: "border-l-blue-500",
+};
 
 export default function PublicReportPage() {
   const params = useParams();
@@ -70,6 +133,35 @@ export default function PublicReportPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const claimedRef = useRef(false);
+
+  // Deep scan polling state
+  const [deepStatus, setDeepStatus] = useState<"not_triggered" | "processing" | "completed" | "failed">("not_triggered");
+  const [deepResult, setDeepResult] = useState<DeepScanResult | null>(null);
+  const pollCountRef = useRef(0);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const pollDeepScan = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/scan-public?report_id=${reportId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const status = data.deep_scan_status || "not_triggered";
+      setDeepStatus(status);
+      if (status === "completed" && data.deep_scan_result) {
+        setDeepResult(data.deep_scan_result);
+        return; // Stop polling
+      }
+      if (status === "failed") return; // Stop polling
+    } catch {
+      // Silently continue polling
+    }
+
+    pollCountRef.current++;
+    // Poll for max 5 minutes (37 polls at 8s intervals)
+    if (pollCountRef.current < 37) {
+      pollTimerRef.current = setTimeout(pollDeepScan, 8000);
+    }
+  }, [reportId]);
 
   // Fetch report
   useEffect(() => {
@@ -87,6 +179,18 @@ export default function PublicReportPage() {
         }
         const data = await res.json();
         setReport(data);
+
+        // Initialize deep scan state from initial fetch
+        const initialDeepStatus = data.deep_scan_status || "not_triggered";
+        setDeepStatus(initialDeepStatus);
+        if (initialDeepStatus === "completed" && data.deep_scan_result) {
+          setDeepResult(data.deep_scan_result);
+        } else if (initialDeepStatus === "processing") {
+          // Start polling
+          pollCountRef.current = 0;
+          pollTimerRef.current = setTimeout(pollDeepScan, 8000);
+        }
+
         trackReportViewed({
           report_id: reportId,
           is_authenticated: !!isSignedIn,
@@ -99,6 +203,10 @@ export default function PublicReportPage() {
       }
     }
     fetchReport();
+
+    return () => {
+      if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reportId]);
 
@@ -110,9 +218,7 @@ export default function PublicReportPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ report_id: reportId, user_id: userId }),
-      }).catch(() => {
-        // Non-critical — silently fail
-      });
+      }).catch(() => {});
     }
   }, [isSignedIn, userId, report, reportId]);
 
@@ -191,10 +297,9 @@ export default function PublicReportPage() {
   }
 
   const { scan_result: result } = report;
+  const hasDeepResults = deepStatus === "completed" && deepResult !== null;
+  const isDeepProcessing = deepStatus === "processing";
 
-  // Server returns findings pre-sorted and pre-split:
-  // - result.findings: full-detail findings (all for authenticated, top N for anonymous)
-  // - result.gated_findings: summary-only findings (only for anonymous users)
   const fullFindings = [...(result.findings || [])].sort((a, b) => {
     const severityOrder: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
     const sevDiff = (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4);
@@ -207,7 +312,6 @@ export default function PublicReportPage() {
   const totalFindingsCount = result.findings_count;
   const hasFindings = totalFindingsCount > 0;
 
-  // Build severity breakdown of gated findings for paywall copy
   const gatedSeverityCounts: Record<string, number> = {};
   for (const f of gatedSummaries) {
     gatedSeverityCounts[f.severity] = (gatedSeverityCounts[f.severity] || 0) + 1;
@@ -217,14 +321,12 @@ export default function PublicReportPage() {
     .map((s) => `${gatedSeverityCounts[s]} ${s.charAt(0) + s.slice(1).toLowerCase()}`)
     .join(", ");
 
-  // Build fix difficulty counts for dynamic CTA
   const fixDifficultyCounts: Record<string, number> = {};
   for (const f of gatedSummaries) {
     if (f.fix_difficulty) {
       fixDifficultyCounts[f.fix_difficulty] = (fixDifficultyCounts[f.fix_difficulty] || 0) + 1;
     }
   }
-  // Pick the most compelling difficulty to highlight (easy first, then moderate)
   const fixCtaPart = fixDifficultyCounts.easy
     ? `and apply ${fixDifficultyCounts.easy} easy ${fixDifficultyCounts.easy === 1 ? "fix" : "fixes"}`
     : fixDifficultyCounts.moderate
@@ -233,13 +335,17 @@ export default function PublicReportPage() {
         ? `and apply ${fixDifficultyCounts.complex} ${fixDifficultyCounts.complex === 1 ? "fix" : "fixes"}`
         : null;
 
+  // Deep scan gated findings
+  const deepGatedSummaries: DeepGatedSummary[] = deepResult?.gated_findings || [];
+  const hasDeepGatedFindings = deepGatedSummaries.length > 0;
+
   return (
     <ErrorBoundary>
     <div className="min-h-screen bg-background flex flex-col">
       <PublicHeader />
 
-      {/* Contextual value banner — below header, above content */}
-      {!loading && report && !isSignedIn && hasGatedFindings && (
+      {/* Contextual value banner */}
+      {!loading && report && !isSignedIn && (hasGatedFindings || hasDeepGatedFindings) && (
         <div className="w-full border-b border-border bg-muted/40">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
             <p className="text-sm text-muted-foreground">
@@ -247,7 +353,7 @@ export default function PublicReportPage() {
                 Viewing preview
               </span>
               {" — "}
-              {gatedSummaries.length} {gatedSummaries.length === 1 ? "finding" : "findings"}, governance details, and remediation code locked.
+              {gatedSummaries.length + deepGatedSummaries.length} {gatedSummaries.length + deepGatedSummaries.length === 1 ? "finding" : "findings"}, governance details, and remediation code locked.
             </p>
             <Button
               size="sm"
@@ -255,7 +361,7 @@ export default function PublicReportPage() {
               onClick={() => {
                 trackPaywallAuthClicked({
                   report_id: reportId,
-                  findings_hidden: gatedSummaries.length,
+                  findings_hidden: gatedSummaries.length + deepGatedSummaries.length,
                   auth_method: "sign_up",
                 });
                 router.push(
@@ -316,16 +422,14 @@ export default function PublicReportPage() {
                 })}
               </span>
               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
-                Core
+                {hasDeepResults ? "Core + Deep" : "Core"}
               </span>
-              <a
-                href="https://inkog.io/pricing"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] text-muted-foreground/50 hover:text-violet-500 dark:hover:text-violet-400 transition-colors"
-              >
-                Try Deep &rarr;
-              </a>
+              {isDeepProcessing && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+                  <span className="w-2 h-2 border border-violet-500 border-t-transparent rounded-full animate-spin" />
+                  Deep running
+                </span>
+              )}
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={handleCopyLink} className="shrink-0 self-start">
@@ -390,8 +494,179 @@ export default function PublicReportPage() {
           </a>.
         </p>
 
+        {/* Deep analysis processing banner */}
+        {isDeepProcessing && (
+          <div className="mb-8 px-5 py-4 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800">
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-violet-800 dark:text-violet-300">
+                  Deep analysis running...
+                </p>
+                <p className="text-xs text-violet-600 dark:text-violet-400 mt-0.5">
+                  AI behavioral analysis will appear shortly.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Deep Analysis section — above core findings when complete */}
+        {hasDeepResults && deepResult && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-lg font-semibold text-foreground">
+                Deep Analysis
+              </h2>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+                <Sparkles className="w-2.5 h-2.5" />
+                AI-Powered
+              </span>
+            </div>
+
+            {/* Agent Profile card */}
+            {deepResult.agent_profile && (
+              <div className="bg-card rounded-xl border border-border p-6 mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Cpu className="w-4 h-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-foreground">Agent Profile</h3>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                  {deepResult.agent_profile.purpose || deepResult.agent_profile.architecture_summary}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {deepResult.agent_profile.framework && (
+                    <span className="bg-muted rounded-md px-2 py-0.5 text-xs font-mono">
+                      {deepResult.agent_profile.framework}
+                    </span>
+                  )}
+                  {deepResult.agent_profile.language && (
+                    <span className="bg-muted rounded-md px-2 py-0.5 text-xs font-mono">
+                      {deepResult.agent_profile.language}
+                    </span>
+                  )}
+                  {deepResult.agent_profile.is_multi_agent && (
+                    <span className="bg-muted rounded-md px-2 py-0.5 text-xs font-mono">
+                      Multi-agent
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Deep findings — ungated */}
+            {deepResult.findings.length > 0 && (
+              <div className="space-y-3 mb-4">
+                {deepResult.findings.map((finding) => (
+                  <div
+                    key={finding.finding_number}
+                    className={`bg-card rounded-xl border border-border border-l-2 ${SEVERITY_BORDER[finding.severity] || ""} overflow-hidden`}
+                  >
+                    <div className="px-5 py-4">
+                      <div className="flex items-start gap-3 mb-3">
+                        <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded border ${SEVERITY_COLORS[finding.severity] || SEVERITY_COLORS.LOW}`}>
+                          {finding.severity}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-foreground">
+                            {finding.title}
+                          </h4>
+                        </div>
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex-shrink-0">
+                          <Sparkles className="w-2 h-2" />
+                          Deep
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                        {finding.explanation}
+                      </p>
+
+                      {/* Proof code snippet */}
+                      {finding.proof && finding.proof.length > 0 && (
+                        <div className="mb-3">
+                          <CodeSnippetDisplay
+                            code={finding.proof[0].code_snippet}
+                            file={finding.proof[0].file_path}
+                            highlightLine={finding.proof[0].start_line}
+                          />
+                        </div>
+                      )}
+
+                      {/* Recommended action */}
+                      {finding.recommended_action && (
+                        <div className="bg-muted rounded-lg p-4 text-sm text-muted-foreground mb-3">
+                          <p className="font-medium text-foreground text-xs mb-1">Recommended</p>
+                          {finding.recommended_action}
+                        </div>
+                      )}
+
+                      {/* Compliance tags */}
+                      {finding.compliance_mappings && finding.compliance_mappings.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {finding.compliance_mappings.map((m, i) => (
+                            <span
+                              key={i}
+                              className="px-2 py-1 text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded border border-blue-200 dark:border-blue-800"
+                            >
+                              {m.framework}: {m.reference}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Gated deep findings */}
+            {hasDeepGatedFindings && (
+              <div className="bg-card rounded-xl border border-border overflow-hidden">
+                <div className="px-5 py-4 border-b border-border">
+                  <h3 className="text-base font-semibold text-foreground">
+                    {deepGatedSummaries.length} more deep {deepGatedSummaries.length === 1 ? "finding" : "findings"} detected
+                  </h3>
+                </div>
+                <div className="divide-y divide-border">
+                  {deepGatedSummaries.map((item) => (
+                    <div
+                      key={item.finding_number}
+                      className="flex items-center gap-3 px-5 py-3"
+                    >
+                      <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded border ${SEVERITY_COLORS[item.severity] || SEVERITY_COLORS.LOW}`}>
+                        {item.severity}
+                      </span>
+                      <span className="text-sm text-muted-foreground truncate">
+                        {item.title}
+                      </span>
+                      <Lock className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0 ml-auto" />
+                    </div>
+                  ))}
+                </div>
+                <div className="px-5 py-5 bg-muted/30 border-t border-border text-center">
+                  <Button
+                    onClick={() => {
+                      trackPaywallAuthClicked({
+                        report_id: reportId,
+                        findings_hidden: deepGatedSummaries.length,
+                        auth_method: "sign_up",
+                      });
+                      router.push(
+                        `/sign-up?redirect_url=${encodeURIComponent(`/report/${reportId}`)}`
+                      );
+                    }}
+                    className="hover:shadow-[0_0_20px_hsl(239_84%_67%/0.3)] transition-shadow"
+                  >
+                    Unlock Deep Analysis — Sign Up Free
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Zero findings — success state */}
-        {!hasFindings && (
+        {!hasFindings && !hasDeepResults && (
           <div className="text-center py-16 bg-card rounded-xl border border-border">
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="w-8 h-8 text-green-600" />
@@ -406,7 +681,7 @@ export default function PublicReportPage() {
           </div>
         )}
 
-        {/* Security Strengths — positive signals build trust before vulnerabilities */}
+        {/* Security Strengths */}
         {result.strengths && result.strengths.length > 0 && (
           <div className="mb-8">
             <div className="rounded-xl border border-green-200 dark:border-green-900 bg-green-50/50 dark:bg-green-950/30 overflow-hidden">
@@ -435,11 +710,11 @@ export default function PublicReportPage() {
           </div>
         )}
 
-        {/* Full-detail findings (always visible) */}
+        {/* Core findings */}
         {fullFindings.length > 0 && (
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-foreground mb-4">
-              {hasGatedFindings ? "Top Findings" : "Findings"}
+              {hasDeepResults ? "Core Analysis" : hasGatedFindings ? "Top Findings" : "Findings"}
             </h2>
             <div className="space-y-4">
               {fullFindings.map((finding) => (
@@ -467,7 +742,6 @@ export default function PublicReportPage() {
                         </p>
                       </div>
 
-                      {/* Explanation trace — terminal-style */}
                       {finding.explanation_trace && (
                         <div className="mt-4 overflow-x-auto">
                           <h3 className="text-sm font-medium text-foreground mb-2">
@@ -492,7 +766,6 @@ export default function PublicReportPage() {
                         </div>
                       )}
 
-                      {/* Remediation — backend-provided */}
                       {(finding.remediation_steps?.length || finding.remediation_code) && (
                         <div className="mt-4">
                           <h3 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
@@ -558,11 +831,10 @@ export default function PublicReportPage() {
           </div>
         )}
 
-        {/* Gated findings — server-side gated, no detail data in the DOM */}
+        {/* Gated core findings */}
         {hasGatedFindings && (
           <div className="mb-8">
             <div className="bg-card rounded-xl border border-border overflow-hidden">
-              {/* Summary list — text only, no FindingCard components */}
               <div className="px-5 py-4 border-b border-border">
                 <h2 className="text-lg font-semibold text-foreground">
                   {gatedSummaries.length} more{" "}
@@ -576,24 +848,17 @@ export default function PublicReportPage() {
                 )}
               </div>
 
-              {/* Minimal text rows — severity + title only, no exploitable data */}
               <div className="divide-y divide-border">
                 {gatedSummaries.map((item) => {
                   const title = item.display_title
                     || item.pattern_id.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-                  const sevColors: Record<string, string> = {
-                    CRITICAL: "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800",
-                    HIGH: "bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800",
-                    MEDIUM: "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800",
-                    LOW: "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800",
-                  };
                   return (
                     <div
                       key={item.id}
                       className="flex items-center gap-3 px-5 py-3"
                     >
                       <span
-                        className={`flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded border ${sevColors[item.severity] || sevColors.LOW}`}
+                        className={`flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded border ${SEVERITY_COLORS[item.severity] || SEVERITY_COLORS.LOW}`}
                       >
                         {item.severity}
                       </span>
@@ -606,7 +871,6 @@ export default function PublicReportPage() {
                 })}
               </div>
 
-              {/* Conversion CTA */}
               <div className="px-5 py-6 bg-muted/30 border-t border-border">
                 <div className="text-center max-w-sm mx-auto">
                   <p className="text-sm text-muted-foreground mb-4">
@@ -687,7 +951,7 @@ export default function PublicReportPage() {
           </div>
         )}
 
-        {/* Scan your own repo CTA */}
+        {/* Bottom CTA */}
         <div className="mt-4 mb-8 bg-card rounded-xl border border-border p-6 sm:p-8 text-center">
           <div className="max-w-lg mx-auto">
             <GitBranch className="w-6 h-6 text-brand mx-auto mb-3" />
@@ -712,23 +976,11 @@ export default function PublicReportPage() {
                   <ArrowRight className="w-4 h-4 ml-1.5" />
                 </a>
               </Button>
-              <Button
-                variant="ghost"
-                asChild
-                className="text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
-              >
-                <a
-                  href="https://inkog.io/pricing"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Upgrade to Deep Scan
-                  <ArrowRight className="w-4 h-4 ml-1.5" />
-                </a>
-              </Button>
             </div>
             <p className="text-[11px] text-muted-foreground/50 mt-3">
-              This report was generated with Inkog Core. Deep scanning adds behavioral analysis and runtime vulnerability detection.
+              {hasDeepResults
+                ? "This report includes Core + Deep analysis. Sign up to unlock all findings and track your agents continuously."
+                : "This report was generated with Inkog Core. Deep scanning adds behavioral analysis and runtime vulnerability detection."}
             </p>
           </div>
         </div>
