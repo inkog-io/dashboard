@@ -538,6 +538,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Log scan for observability (Vercel logs + structured for querying)
+    console.log(
+      JSON.stringify({
+        event: "anonymous_scan",
+        repo: result.repo_name,
+        report_id: result.report_id,
+        cached: result.cached,
+        findings: result.scan_result.findings_count,
+        critical: result.scan_result.critical_count,
+        deep_triggered: DEEP_SCAN_ENABLED && !result.cached && result.scan_result.findings_count > 0,
+        ip: ip !== "unknown" ? ip : undefined,
+        ts: new Date().toISOString(),
+      })
+    );
+
     return NextResponse.json({
       report_id: result.report_id,
       repo_name: result.repo_name,
@@ -725,6 +740,21 @@ export async function GET(req: NextRequest) {
           }
         }
       }
+    }
+
+    // Log report view (first poll only — access_count tracks repeat views in DB)
+    if (row.access_count <= 1) {
+      console.log(
+        JSON.stringify({
+          event: "report_viewed",
+          repo: row.repo_name,
+          report_id: row.id,
+          authenticated: isAuthenticated,
+          deep_status: deepScanStatus,
+          findings: scanResult.findings_count,
+          ts: new Date().toISOString(),
+        })
+      );
     }
 
     return NextResponse.json({

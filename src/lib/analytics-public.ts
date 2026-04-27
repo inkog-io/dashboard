@@ -57,3 +57,22 @@ export function trackAnonymousScanError(properties: {
 }): void {
   posthog.capture("anonymous_scan_error", properties);
 }
+
+export function trackDeepScanCompleted(properties: {
+  report_id: string;
+  repo_name: string;
+  deep_findings_count: number;
+  agent_framework?: string;
+  severity_summary?: Record<string, number>;
+}): void {
+  posthog.capture("deep_scan_completed", properties);
+}
+
+export function trackDeepScanViewed(properties: {
+  report_id: string;
+  is_authenticated: boolean;
+  deep_findings_visible: number;
+  deep_findings_gated: number;
+}): void {
+  posthog.capture("deep_scan_viewed", properties);
+}

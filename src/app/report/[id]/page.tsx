@@ -30,6 +30,8 @@ import {
   trackReportViewed,
   trackPaywallAuthClicked,
   trackReportShared,
+  trackDeepScanCompleted,
+  trackDeepScanViewed,
 } from "@/lib/analytics-public";
 import type { ScanResult, Finding } from "@/lib/api";
 
@@ -149,6 +151,14 @@ export default function PublicReportPage() {
       setDeepStatus(status);
       if (status === "completed" && data.deep_scan_result) {
         setDeepResult(data.deep_scan_result);
+        const dr = data.deep_scan_result;
+        trackDeepScanCompleted({
+          report_id: reportId,
+          repo_name: data.repo_name || "",
+          deep_findings_count: (dr.findings?.length || 0) + (dr.gated_findings?.length || 0),
+          agent_framework: dr.agent_profile?.framework,
+          severity_summary: dr.severity_summary,
+        });
         return; // Stop polling
       }
       if (status === "failed") return; // Stop polling
@@ -185,6 +195,13 @@ export default function PublicReportPage() {
         setDeepStatus(initialDeepStatus);
         if (initialDeepStatus === "completed" && data.deep_scan_result) {
           setDeepResult(data.deep_scan_result);
+          const dr = data.deep_scan_result;
+          trackDeepScanViewed({
+            report_id: reportId,
+            is_authenticated: !!isSignedIn,
+            deep_findings_visible: dr.findings?.length || 0,
+            deep_findings_gated: dr.gated_findings?.length || 0,
+          });
         } else if (initialDeepStatus === "processing") {
           // Start polling
           pollCountRef.current = 0;

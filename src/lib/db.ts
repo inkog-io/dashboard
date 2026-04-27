@@ -98,7 +98,10 @@ export async function findRecentScanByRepo(repoName: string) {
     FROM anonymous_scans
     WHERE repo_name = ${repoName}
       AND expires_at > NOW()
-      AND created_at > NOW() - INTERVAL '1 hour'
+      AND created_at > NOW() - CASE
+        WHEN deep_scan_id IS NOT NULL THEN INTERVAL '24 hours'
+        ELSE INTERVAL '1 hour'
+      END
     ORDER BY created_at DESC
     LIMIT 1
   `;
