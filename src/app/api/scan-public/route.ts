@@ -74,6 +74,9 @@ function isSourceCode(filePath: string): boolean {
 /**
  * Prioritize source code files over docs/config, skip test/vendor dirs.
  * Returns up to MAX_FILES files, source code first.
+ *
+ * Three tiers: high-value source (agent/backend code) → low-value source
+ * (frontend UI, migrations, generated) → config/docs.
  */
 function prioritizeFiles(
   files: { path: string; content: Buffer }[]
@@ -82,11 +85,18 @@ function prioritizeFiles(
   const skipDirs = /^(\.github\/|\.circleci\/|\.vscode\/|docs\/|examples\/|__pycache__\/|node_modules\/|vendor\/|\.claude\/)/i;
   const filtered = files.filter((f) => !skipDirs.test(f.path));
 
+  // Low-value source dirs: frontend UI, DB migrations, generated code, test fixtures
+  const lowValueDir = /^(gui\/|frontend\/|web\/|ui\/|static\/|public\/|assets\/|migrations\/|alembic\/|dist\/|build\/|\.next\/|__fixtures__\/|fixtures\/|tgwui\/)/i;
+
   const source = filtered.filter((f) => isSourceCode(f.path));
   const config = filtered.filter((f) => !isSourceCode(f.path));
 
-  // Source code first, then config/docs to fill remaining slots
-  const result = [...source, ...config].slice(0, MAX_FILES);
+  // Split source into high-value (backend/agent code) and low-value (UI/migrations)
+  const highSource = source.filter((f) => !lowValueDir.test(f.path));
+  const lowSource = source.filter((f) => lowValueDir.test(f.path));
+
+  // High-value source first, then low-value source, then config/docs
+  const result = [...highSource, ...lowSource, ...config].slice(0, MAX_FILES);
   return result;
 }
 
