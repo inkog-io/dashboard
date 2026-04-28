@@ -19,7 +19,6 @@ interface ScanData {
 }
 
 export default async function Image({ params }: { params: { id: string } }) {
-  // Fetch report data via the public API endpoint
   const apiUrl = process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : "https://app.inkog.io";
@@ -50,11 +49,16 @@ export default async function Image({ params }: { params: { id: string } }) {
   const scoreColor =
     riskScore >= 70 ? "#ef4444" : riskScore >= 40 ? "#f59e0b" : "#22c55e";
 
-  const severityPills: { label: string; count: number; color: string }[] = [];
-  if (criticalCount > 0) severityPills.push({ label: "Critical", count: criticalCount, color: "#ef4444" });
-  if (highCount > 0) severityPills.push({ label: "High", count: highCount, color: "#f97316" });
-  if (mediumCount > 0) severityPills.push({ label: "Medium", count: mediumCount, color: "#f59e0b" });
-  if (lowCount > 0) severityPills.push({ label: "Low", count: lowCount, color: "#3b82f6" });
+  // Build severity pills data
+  const pills: { label: string; count: number; color: string }[] = [];
+  if (criticalCount > 0) pills.push({ label: "Critical", count: criticalCount, color: "#ef4444" });
+  if (highCount > 0) pills.push({ label: "High", count: highCount, color: "#f97316" });
+  if (mediumCount > 0) pills.push({ label: "Medium", count: mediumCount, color: "#f59e0b" });
+  if (lowCount > 0) pills.push({ label: "Low", count: lowCount, color: "#3b82f6" });
+
+  const findingsText = isClean
+    ? "No vulnerabilities found"
+    : `${findingsCount} ${findingsCount === 1 ? "vulnerability" : "vulnerabilities"} found`;
 
   return new ImageResponse(
     (
@@ -78,13 +82,7 @@ export default async function Image({ params }: { params: { id: string } }) {
             marginBottom: "40px",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div
               style={{
                 width: "32px",
@@ -101,18 +99,15 @@ export default async function Image({ params }: { params: { id: string } }) {
             >
               I
             </div>
-            <span style={{ color: "#71717a", fontSize: "18px" }}>
-              inkog.io
-            </span>
+            <span style={{ color: "#71717a", fontSize: "18px" }}>inkog.io</span>
           </div>
-          <span style={{ color: "#52525b", fontSize: "16px" }}>
-            Security Report
-          </span>
+          <span style={{ color: "#52525b", fontSize: "16px" }}>Security Report</span>
         </div>
 
         {/* Repo name */}
         <div
           style={{
+            display: "flex",
             fontSize: "28px",
             fontFamily: "monospace",
             color: "#e4e4e7",
@@ -143,6 +138,7 @@ export default async function Image({ params }: { params: { id: string } }) {
           >
             <div
               style={{
+                display: "flex",
                 fontSize: "96px",
                 fontWeight: 800,
                 color: isClean ? "#22c55e" : scoreColor,
@@ -150,14 +146,17 @@ export default async function Image({ params }: { params: { id: string } }) {
                 letterSpacing: "-0.04em",
               }}
             >
-              {isClean ? "0" : riskScore}
+              {isClean ? "0" : String(riskScore)}
             </div>
-            <div style={{ fontSize: "20px", color: "#71717a" }}>/100 Risk</div>
+            <div style={{ display: "flex", fontSize: "20px", color: "#71717a" }}>
+              /100 Risk
+            </div>
           </div>
 
           {/* Divider */}
           <div
             style={{
+              display: "flex",
               width: "1px",
               height: "120px",
               backgroundColor: "#27272a",
@@ -172,68 +171,47 @@ export default async function Image({ params }: { params: { id: string } }) {
               gap: "16px",
             }}
           >
-            {isClean ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "32px",
-                    fontWeight: 700,
-                    color: "#22c55e",
-                  }}
-                >
-                  No vulnerabilities found
-                </div>
-              </div>
-            ) : (
-              <>
-                <div
-                  style={{
-                    fontSize: "32px",
-                    fontWeight: 700,
-                    color: "#e4e4e7",
-                  }}
-                >
-                  {findingsCount} vulnerabilit{findingsCount === 1 ? "y" : "ies"} found
-                </div>
-                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  {severityPills.map((pill) => (
-                    <div
-                      key={pill.label}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "6px 16px",
-                        borderRadius: "9999px",
-                        backgroundColor: `${pill.color}20`,
-                        border: `1px solid ${pill.color}40`,
-                      }}
+            <div
+              style={{
+                display: "flex",
+                fontSize: "32px",
+                fontWeight: 700,
+                color: isClean ? "#22c55e" : "#e4e4e7",
+              }}
+            >
+              {findingsText}
+            </div>
+
+            {pills.length > 0 && (
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                {pills.map((pill) => (
+                  <div
+                    key={pill.label}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "6px 16px",
+                      borderRadius: "9999px",
+                      backgroundColor: `${pill.color}20`,
+                      border: `1px solid ${pill.color}40`,
+                    }}
+                  >
+                    <span
+                      style={{ fontSize: "18px", fontWeight: 700, color: pill.color }}
                     >
-                      <span
-                        style={{
-                          fontSize: "18px",
-                          fontWeight: 700,
-                          color: pill.color,
-                        }}
-                      >
-                        {pill.count}
-                      </span>
-                      <span style={{ fontSize: "16px", color: pill.color }}>
-                        {pill.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
+                      {String(pill.count)}
+                    </span>
+                    <span style={{ fontSize: "16px", color: pill.color }}>
+                      {pill.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
-            <div style={{ fontSize: "18px", color: "#71717a" }}>
-              Governance: {govScore}/100
+
+            <div style={{ display: "flex", fontSize: "18px", color: "#71717a" }}>
+              {`Governance: ${govScore}/100`}
             </div>
           </div>
         </div>
