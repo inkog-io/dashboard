@@ -1,55 +1,44 @@
 import { ImageResponse } from "next/og";
+import { getAnonymousScanById } from "@/lib/db";
 
-export const runtime = "edge";
 export const alt = "Inkog Security Report";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-interface ScanData {
-  repo_name: string;
-  scan_result: {
-    findings_count: number;
-    critical_count: number;
-    high_count: number;
-    medium_count: number;
-    low_count: number;
-    risk_score: number;
-    governance_score: number;
-  };
-}
-
 export default async function Image({ params }: { params: { id: string } }) {
-  const apiUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "https://app.inkog.io";
+  let repoName = "AI Agent";
+  let findingsCount = 0;
+  let criticalCount = 0;
+  let highCount = 0;
+  let mediumCount = 0;
+  let lowCount = 0;
+  let riskScore = 0;
+  let govScore = 0;
 
-  let data: ScanData | null = null;
   try {
-    const res = await fetch(`${apiUrl}/api/scan-public?report_id=${params.id}`, {
-      next: { revalidate: 3600 },
-    });
-    if (res.ok) {
-      data = await res.json();
+    const row = await getAnonymousScanById(params.id);
+    if (row) {
+      repoName = row.repo_name || repoName;
+      const result =
+        typeof row.scan_result === "string"
+          ? JSON.parse(row.scan_result)
+          : row.scan_result;
+      findingsCount = result?.findings_count ?? 0;
+      criticalCount = result?.critical_count ?? 0;
+      highCount = result?.high_count ?? 0;
+      mediumCount = result?.medium_count ?? 0;
+      lowCount = result?.low_count ?? 0;
+      riskScore = result?.risk_score ?? 0;
+      govScore = result?.governance_score ?? 0;
     }
   } catch {
     // Fall back to generic image
   }
 
-  const repoName = data?.repo_name ?? "AI Agent";
-  const result = data?.scan_result;
-  const findingsCount = result?.findings_count ?? 0;
-  const criticalCount = result?.critical_count ?? 0;
-  const highCount = result?.high_count ?? 0;
-  const mediumCount = result?.medium_count ?? 0;
-  const lowCount = result?.low_count ?? 0;
-  const riskScore = result?.risk_score ?? 0;
-  const govScore = result?.governance_score ?? 0;
-
   const isClean = findingsCount === 0;
   const scoreColor =
     riskScore >= 70 ? "#ef4444" : riskScore >= 40 ? "#f59e0b" : "#22c55e";
 
-  // Build severity pills data
   const pills: { label: string; count: number; color: string }[] = [];
   if (criticalCount > 0) pills.push({ label: "Critical", count: criticalCount, color: "#ef4444" });
   if (highCount > 0) pills.push({ label: "High", count: highCount, color: "#f97316" });
