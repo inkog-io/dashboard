@@ -58,6 +58,13 @@ export function trackAnonymousScanError(properties: {
   posthog.capture("anonymous_scan_error", properties);
 }
 
+export function trackReportCtaScanClicked(properties: {
+  report_id: string;
+  source_repo: string;
+}): void {
+  posthog.capture("report_cta_scan_clicked", properties);
+}
+
 export function trackDeepScanCompleted(properties: {
   report_id: string;
   repo_name: string;

@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { Terminal, BarChart3, Settings2, GitBranch } from "lucide-react";
+import { Terminal, Shield, Settings2, GitBranch } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
 import { TerminalProgressUI } from "@/components/TerminalProgressUI";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -29,6 +29,7 @@ export default function PublicScanPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scanDone, setScanDone] = useState(false);
+  const [scanCount, setScanCount] = useState<number | null>(null);
   const scanUrlRef = useRef<string>("");
 
   // Redirect signed-in users to the full dashboard scanner
@@ -38,6 +39,14 @@ export default function PublicScanPage() {
       router.replace(url ? `/dashboard/scan?url=${encodeURIComponent(url)}` : "/dashboard/scan");
     }
   }, [isLoaded, isSignedIn, router, searchParams]);
+
+  // Fetch scan count for social proof
+  useEffect(() => {
+    fetch("/api/scan-count")
+      .then((r) => r.json())
+      .then((d) => { if (d.count > 0) setScanCount(d.count); })
+      .catch(() => {});
+  }, []);
 
   // Auto-scan if ?url= is pre-filled (e.g., from "Scan again" link)
   const hasAutoScanned = useRef(false);
@@ -278,12 +287,14 @@ export default function PublicScanPage() {
             <div className="mt-16 pt-6 border-t border-border">
               <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground/50">
                 <span className="inline-flex items-center gap-1.5">
-                  <Terminal className="w-3.5 h-3.5" />
-                  CLI & API
+                  <Shield className="w-3.5 h-3.5" />
+                  {scanCount !== null
+                    ? `${new Intl.NumberFormat().format(scanCount)} agents scanned`
+                    : "--- agents scanned"}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <BarChart3 className="w-3.5 h-3.5" />
-                  Full Reports
+                  <Terminal className="w-3.5 h-3.5" />
+                  CLI & API
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Settings2 className="w-3.5 h-3.5" />

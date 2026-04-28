@@ -177,6 +177,15 @@
   box-shadow: none;
 }
 
+@keyframes risk-glow {
+  0%, 100% { box-shadow: 0 0 20px -5px hsl(var(--severity-critical) / 0.3); }
+  50% { box-shadow: 0 0 30px -5px hsl(var(--severity-critical) / 0.5); }
+}
+
+@layer utilities {
+  .animate-risk-glow { animation: risk-glow 3s ease-in-out infinite; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-stagger-1,
   .animate-stagger-2,
@@ -186,7 +195,8 @@
     animation: none;
     opacity: 1;
   }
-  .animate-danger-pulse {
+  .animate-danger-pulse,
+  .animate-risk-glow {
     animation: none;
   }
 }

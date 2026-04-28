@@ -140,4 +140,13 @@ export async function countRecentScans(ipAddress: string): Promise<number> {
   return row.count;
 }
 
+export async function getTotalScanCount(): Promise<number> {
+  await ensureSchema();
+  const sql = getSql();
+  const [row] = await sql`
+    SELECT COUNT(*)::int AS count FROM anonymous_scans
+  `;
+  return row.count;
+}
+
 export default getSql;

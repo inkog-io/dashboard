@@ -5,9 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import {
   Shield,
-  AlertTriangle,
   FileText,
-  Activity,
   Link2,
   CheckCircle,
   Lock,
@@ -23,13 +21,14 @@ import { FindingCard } from "@/components/FindingCard";
 import { FindingDetailsPanel } from "@/components/FindingDetailsPanel";
 import { CodeSnippetDisplay } from "@/components/CodeSnippetDisplay";
 import { GovernanceScore } from "@/components/GovernanceScore";
-import { SecurityMetricCard } from "@/components/dashboard/SecurityMetricCard";
+// SecurityMetricCard removed — data now shown inline in hero section
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Button } from "@/components/ui/button";
 import {
   trackReportViewed,
   trackPaywallAuthClicked,
   trackReportShared,
+  trackReportCtaScanClicked,
   trackDeepScanCompleted,
   trackDeepScanViewed,
 } from "@/lib/analytics-public";
@@ -134,6 +133,7 @@ export default function PublicReportPage() {
   const [selectedFinding, setSelectedFinding] = useState<Finding | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [scanUrl, setScanUrl] = useState("");
   const claimedRef = useRef(false);
 
   // Deep scan polling state
@@ -362,32 +362,47 @@ export default function PublicReportPage() {
       <PublicHeader />
 
       {/* Contextual value banner */}
-      {!loading && report && !isSignedIn && (hasGatedFindings || hasDeepGatedFindings) && (
+      {!loading && report && !isSignedIn && (
         <div className="w-full border-b border-border bg-muted/40">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">
-                Viewing preview
-              </span>
-              {" — "}
-              {gatedSummaries.length + deepGatedSummaries.length} {gatedSummaries.length + deepGatedSummaries.length === 1 ? "finding" : "findings"}, governance details, and remediation code locked.
-            </p>
-            <Button
-              size="sm"
-              className="h-8 shrink-0"
-              onClick={() => {
-                trackPaywallAuthClicked({
-                  report_id: reportId,
-                  findings_hidden: gatedSummaries.length + deepGatedSummaries.length,
-                  auth_method: "sign_up",
-                });
-                router.push(
-                  `/sign-up?redirect_url=${encodeURIComponent(`/report/${reportId}`)}`
-                );
-              }}
-            >
-              Unlock Full Report
-            </Button>
+            {hasGatedFindings || hasDeepGatedFindings ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Report generated for{" "}
+                  <span className="font-medium text-foreground">{report.repo_name}</span>.{" "}
+                  {gatedSummaries.length + deepGatedSummaries.length} more {gatedSummaries.length + deepGatedSummaries.length === 1 ? "finding" : "findings"} + fix code available.
+                </p>
+                <Button
+                  size="sm"
+                  className="h-8 shrink-0"
+                  onClick={() => {
+                    trackPaywallAuthClicked({
+                      report_id: reportId,
+                      findings_hidden: gatedSummaries.length + deepGatedSummaries.length,
+                      auth_method: "sign_up",
+                    });
+                    router.push(
+                      `/sign-up?redirect_url=${encodeURIComponent(`/report/${reportId}`)}`
+                    );
+                  }}
+                >
+                  See All Findings
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Scan your own repositories for free.
+                </p>
+                <Button
+                  size="sm"
+                  className="h-8 shrink-0"
+                  onClick={() => router.push("/scan")}
+                >
+                  Scan Your Repo
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -420,96 +435,138 @@ export default function PublicReportPage() {
       )}
 
       <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-8">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold text-foreground mb-1">
-              Security Report
-            </h1>
-            <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
-              <code className="bg-muted px-2 py-0.5 rounded text-sm font-mono break-all">
-                {report.repo_name}
-              </code>
-              <span className="text-xs whitespace-nowrap">
-                Scanned{" "}
-                {new Date(report.scanned_at).toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </span>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
-                {hasDeepResults ? "Core + Deep" : "Core"}
-              </span>
-              {isDeepProcessing && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
-                  <span className="w-2 h-2 border border-violet-500 border-t-transparent rounded-full animate-spin" />
-                  Deep running
-                </span>
+        {/* Hero risk score */}
+        {(() => {
+          const riskScore = result.risk_score;
+          const scoreColor =
+            riskScore >= 70
+              ? "text-red-500"
+              : riskScore >= 40
+                ? "text-amber-500"
+                : "text-green-500";
+          const strokeColor =
+            riskScore >= 70
+              ? "hsl(var(--severity-critical))"
+              : riskScore >= 40
+                ? "hsl(var(--severity-medium))"
+                : "hsl(var(--severity-safe))";
+
+          // Auto-generate one-sentence summary from top patterns
+          const patternCounts: Record<string, number> = {};
+          for (const f of fullFindings) {
+            const label = f.pattern_id?.replace(/_/g, " ") || "vulnerability";
+            patternCounts[label] = (patternCounts[label] || 0) + 1;
+          }
+          const topPatterns = Object.entries(patternCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 2)
+            .map(([name]) => name);
+          const summaryText = hasFindings && topPatterns.length > 0
+            ? `${result.critical_count > 0 ? `${result.critical_count} critical vulnerabilit${result.critical_count === 1 ? "y" : "ies"}` : `${totalFindingsCount} finding${totalFindingsCount === 1 ? "" : "s"}`} including ${topPatterns.join(" and ")}.`
+            : null;
+
+          // Severity stat pills
+          const stats: { label: string; value: number; color: string }[] = [];
+          if (result.critical_count > 0) stats.push({ label: "Critical", value: result.critical_count, color: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" });
+          if (result.high_count > 0) stats.push({ label: "High", value: result.high_count, color: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400" });
+          if (result.medium_count > 0) stats.push({ label: "Medium", value: result.medium_count, color: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" });
+          if (result.low_count > 0) stats.push({ label: "Low", value: result.low_count, color: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" });
+
+          return (
+            <div className="bg-card rounded-xl border border-border p-6 sm:p-8 mb-8 text-center">
+              {/* Top row: repo name, date, share */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+                <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-sm">
+                  <code className="bg-muted px-2 py-0.5 rounded font-mono break-all">
+                    {report.repo_name}
+                  </code>
+                  <span className="text-xs whitespace-nowrap">
+                    {new Date(report.scanned_at).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </span>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
+                    {hasDeepResults ? "Core + Deep" : "Core"}
+                  </span>
+                  {isDeepProcessing && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+                      <span className="w-2 h-2 border border-violet-500 border-t-transparent rounded-full animate-spin" />
+                      Deep running
+                    </span>
+                  )}
+                </div>
+                <Button variant="outline" size="sm" onClick={handleCopyLink} className="shrink-0 self-start sm:self-auto">
+                  {copied ? (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-1.5" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Link2 className="w-4 h-4 mr-1.5" />
+                      Share
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Risk score circle */}
+              <div className={`relative w-28 h-28 mx-auto mb-4 rounded-full ${riskScore >= 70 ? "animate-risk-glow" : ""}`}>
+                <svg className="w-28 h-28 transform -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" className="text-muted" strokeWidth="8" />
+                  <circle
+                    cx="50" cy="50" r="40"
+                    fill="none"
+                    stroke={strokeColor}
+                    strokeWidth="8"
+                    strokeDasharray={`${riskScore * 2.51} 251`}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className={`text-4xl font-bold font-display ${scoreColor}`}>
+                    {riskScore}
+                  </span>
+                  <span className="text-xs text-muted-foreground">/100</span>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">Risk Score</p>
+
+              {/* Stat pills */}
+              {hasFindings ? (
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+                  <span className="text-sm text-muted-foreground">{totalFindingsCount} findings</span>
+                  <span className="text-muted-foreground/40">&middot;</span>
+                  {stats.map((s) => (
+                    <span key={s.label} className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full ${s.color}`}>
+                      {s.value} {s.label}
+                    </span>
+                  ))}
+                  <span className="text-muted-foreground/40">&middot;</span>
+                  <span className="text-sm text-muted-foreground">Gov: {result.governance_score}/100</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="text-sm text-green-600 dark:text-green-400 font-medium">
+                    Clean — No vulnerabilities detected
+                  </span>
+                  <span className="text-muted-foreground/40">&middot;</span>
+                  <span className="text-sm text-muted-foreground">Gov: {result.governance_score}/100</span>
+                </div>
+              )}
+
+              {/* One-sentence summary */}
+              {summaryText && (
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  {summaryText}
+                </p>
               )}
             </div>
-          </div>
-          <Button variant="outline" size="sm" onClick={handleCopyLink} className="shrink-0 self-start">
-            {copied ? (
-              <>
-                <CheckCircle className="w-4 h-4 mr-1.5" />
-                Copied
-              </>
-            ) : (
-              <>
-                <Link2 className="w-4 h-4 mr-1.5" />
-                Share
-              </>
-            )}
-          </Button>
-        </div>
-
-        {/* Summary metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-2">
-          <SecurityMetricCard
-            title="Total Findings"
-            value={result.findings_count}
-            icon={FileText}
-            variant={result.findings_count > 0 ? "warning" : "success"}
-          />
-          <SecurityMetricCard
-            title="Critical"
-            value={result.critical_count}
-            icon={AlertTriangle}
-            variant={result.critical_count > 0 ? "danger" : "success"}
-          />
-          <SecurityMetricCard
-            title="Risk Score"
-            value={`${result.risk_score}/100`}
-            icon={Activity}
-            variant={
-              result.risk_score >= 70
-                ? "danger"
-                : result.risk_score >= 40
-                  ? "warning"
-                  : "success"
-            }
-          />
-          <SecurityMetricCard
-            title="Governance"
-            value={`${result.governance_score}/100`}
-            icon={Shield}
-            variant={
-              result.governance_score >= 70
-                ? "success"
-                : result.governance_score >= 40
-                  ? "warning"
-                  : "danger"
-            }
-          />
-        </div>
-        <p className="text-[11px] text-muted-foreground/70 mb-8 px-0.5">
-          <strong>Risk Score</strong>: Weighted severity of vulnerabilities found (0 = no risk, 100 = critical).{" "}
-          <strong>Governance</strong>: Coverage of human oversight, authorization, and audit controls per{" "}
-          <a href="https://docs.inkog.io/core-concepts/scoring" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">
-            EU AI Act & OWASP
-          </a>.
-        </p>
+          );
+        })()}
 
         {/* Deep analysis processing banner */}
         {isDeepProcessing && (
@@ -968,36 +1025,51 @@ export default function PublicReportPage() {
           </div>
         )}
 
-        {/* Bottom CTA */}
+        {/* Bottom CTA — inline scan */}
         <div className="mt-4 mb-8 bg-card rounded-xl border border-border p-6 sm:p-8 text-center">
           <div className="max-w-lg mx-auto">
-            <GitBranch className="w-6 h-6 text-brand mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              Scan your own repositories
+              What does YOUR agent look like?
             </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Install the Inkog GitHub App to automatically scan every push.
-              Get security reports on pull requests.
+            <p className="text-sm text-muted-foreground mb-5">
+              Paste a GitHub URL and get a security report in 60 seconds.
             </p>
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={scanUrl}
+                onChange={(e) => setScanUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && scanUrl.trim()) {
+                    trackReportCtaScanClicked({ report_id: reportId, source_repo: report.repo_name });
+                    router.push(`/scan?url=${encodeURIComponent(scanUrl.trim())}`);
+                  }
+                }}
+                placeholder="https://github.com/owner/repo"
+                className="flex-1 min-w-0 h-12 px-4 rounded-xl border-2 border-border bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand text-sm transition-colors"
+              />
               <Button
-                variant="outline"
-                asChild
+                onClick={() => {
+                  if (!scanUrl.trim()) return;
+                  trackReportCtaScanClicked({ report_id: reportId, source_repo: report.repo_name });
+                  router.push(`/scan?url=${encodeURIComponent(scanUrl.trim())}`);
+                }}
+                disabled={!scanUrl.trim()}
+                className="h-12 px-6 rounded-xl font-semibold shrink-0"
               >
-                <a
-                  href="https://github.com/apps/inkog-scanner/installations/new"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Install GitHub App
-                  <ArrowRight className="w-4 h-4 ml-1.5" />
-                </a>
+                Scan
               </Button>
             </div>
-            <p className="text-[11px] text-muted-foreground/50 mt-3">
-              {hasDeepResults
-                ? "This report includes Core + Deep analysis. Sign up to unlock all findings and track your agents continuously."
-                : "This report was generated with Inkog Core. Deep scanning adds behavioral analysis and runtime vulnerability detection."}
+            <p className="text-xs text-muted-foreground/50 mt-4">
+              or{" "}
+              <a
+                href="https://github.com/apps/inkog-scanner/installations/new"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground transition-colors"
+              >
+                Install GitHub App for CI/CD scanning
+              </a>
             </p>
           </div>
         </div>
