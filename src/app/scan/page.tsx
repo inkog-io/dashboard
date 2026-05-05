@@ -92,6 +92,13 @@ export default function PublicScanPage() {
             const err = data as PublicScanError;
 
             if (res.status >= 400 && res.status < 500) {
+              trackAnonymousScanError({
+                repo_url: url,
+                error_code: err.code || `http_${res.status}`,
+                error_message: err.error || "Client error",
+                duration_ms: Date.now() - startTime,
+                retry_count: 0,
+              });
               if (err.code === "rate_limited") {
                 setError("Too many scans. Please wait an hour and try again.");
               } else if (err.code === "clone_failed") {
@@ -110,6 +117,13 @@ export default function PublicScanPage() {
             }
 
             if (res.status === 502) {
+              trackAnonymousScanError({
+                repo_url: url,
+                error_code: err.code || "repo_too_large",
+                error_message: err.error || "Backend timeout",
+                duration_ms: Date.now() - startTime,
+                retry_count: attempt,
+              });
               setError("too_large");
               setIsScanning(false);
               return;
