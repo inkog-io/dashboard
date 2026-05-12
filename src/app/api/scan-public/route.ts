@@ -16,6 +16,12 @@ import {
   transformScanResponse,
   type BackendScanResponse,
 } from "@/lib/api";
+import {
+  trackServerScanStarted,
+  trackServerScanCompleted,
+  trackServerScanFailed,
+  flushAnalytics,
+} from "@/lib/analytics-server";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
@@ -486,17 +492,35 @@ const UNGATED_DEEP_FINDING_COUNT = 2;
  * Body: { report_id, user_id } → claim existing report
  */
 export async function POST(req: NextRequest) {
+  const startedAt = Date.now();
+  // distinctId is set inside the request scope so analytics flushes carry it.
+  // We use the client IP as a stable bridge to the browser's anonymous PostHog
+  // session — same distinct_id pattern PostHog browser would use without a
+  // posthog cookie. unknown-IP requests still report under "server-anon".
+  let distinctId = "server-anon";
+  let repoUrlForLog = "";
+
   try {
     const body = await req.json();
 
-    // Handle claim request
+    // Handle claim request — not a scan, skip telemetry
     if (body.report_id && body.user_id) {
       await claimScan(body.report_id, body.user_id);
       return NextResponse.json({ success: true });
     }
 
     const { repo_url } = body;
+    repoUrlForLog = typeof repo_url === "string" ? repo_url : "";
     if (!repo_url || typeof repo_url !== "string") {
+      trackServerScanFailed({
+        distinctId,
+        repo_url: repoUrlForLog,
+        error_code: "invalid_url",
+        error_message: "Missing repo_url",
+        duration_ms: Date.now() - startedAt,
+        status_code: 400,
+      });
+      await flushAnalytics();
       return NextResponse.json(
         { error: "Missing repo_url", code: "invalid_url" },
         { status: 400 }
@@ -505,6 +529,15 @@ export async function POST(req: NextRequest) {
 
     const match = repo_url.match(REPO_URL_REGEX);
     if (!match) {
+      trackServerScanFailed({
+        distinctId,
+        repo_url,
+        error_code: "invalid_url",
+        error_message: "Invalid GitHub repository URL",
+        duration_ms: Date.now() - startedAt,
+        status_code: 400,
+      });
+      await flushAnalytics();
       return NextResponse.json(
         { error: "Invalid GitHub repository URL. Use format: https://github.com/owner/repo", code: "invalid_url" },
         { status: 400 }
@@ -513,9 +546,19 @@ export async function POST(req: NextRequest) {
 
     // Rate limit by IP
     const ip = getClientIP(req);
+    if (ip !== "unknown") distinctId = `ip:${ip}`;
     if (ip !== "unknown") {
       const recentCount = await countRecentScans(ip);
       if (recentCount >= RATE_LIMIT) {
+        trackServerScanFailed({
+          distinctId,
+          repo_url,
+          error_code: "rate_limited",
+          error_message: "Rate limit exceeded",
+          duration_ms: Date.now() - startedAt,
+          status_code: 429,
+        });
+        await flushAnalytics();
         return NextResponse.json(
           { error: "Rate limit exceeded. Please try again later.", code: "rate_limited", retry_after: 3600 },
           { status: 429 }
@@ -523,9 +566,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    trackServerScanStarted({
+      distinctId,
+      repo_url,
+      ip: ip !== "unknown" ? ip : null,
+    });
+
     const result = await executeScanPipeline(repo_url, ip !== "unknown" ? ip : null);
 
     if (!result.ok) {
+      trackServerScanFailed({
+        distinctId,
+        repo_url,
+        error_code: result.code,
+        error_message: result.error,
+        duration_ms: Date.now() - startedAt,
+        status_code: result.status,
+      });
+      await flushAnalytics();
       return NextResponse.json(
         { error: result.error, code: result.code },
         { status: result.status }
@@ -563,6 +621,17 @@ export async function POST(req: NextRequest) {
       })
     );
 
+    trackServerScanCompleted({
+      distinctId,
+      repo_url,
+      report_id: result.report_id,
+      findings_count: result.scan_result.findings_count,
+      critical_count: result.scan_result.critical_count,
+      duration_ms: Date.now() - startedAt,
+      cached: result.cached,
+    });
+    await flushAnalytics();
+
     return NextResponse.json({
       report_id: result.report_id,
       repo_name: result.repo_name,
@@ -572,6 +641,15 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("Public scan error:", err);
+    trackServerScanFailed({
+      distinctId,
+      repo_url: repoUrlForLog,
+      error_code: "scan_failed",
+      error_message: err instanceof Error ? err.message : "Unknown server error",
+      duration_ms: Date.now() - startedAt,
+      status_code: 500,
+    });
+    await flushAnalytics();
     return NextResponse.json(
       { error: "Internal server error", code: "scan_failed" },
       { status: 500 }
