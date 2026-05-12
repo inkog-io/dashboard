@@ -78,6 +78,11 @@ export default function PublicScanPage() {
   const abortRef = useRef<AbortController | null>(null);
   const cancelledRef = useRef<boolean>(false);
   const successRedirectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startTimeRef = useRef<number>(0);
+  // Monotonic counter incremented on every handleScan call. A long-running loop
+  // captures its generation locally and aborts if a newer scan supersedes it —
+  // closes the cross-scan race where a stale retry from scan A overwrites scan B.
+  const scanGenRef = useRef<number>(0);
 
   // Redirect signed-in users to the full dashboard scanner
   useEffect(() => {
@@ -99,6 +104,17 @@ export default function PublicScanPage() {
   useEffect(() => {
     const pending = readPendingScan();
     if (pending) setPendingScan(pending);
+  }, []);
+
+  // Clear any pending success-redirect timer on unmount so navigation
+  // away during the 600–1200ms hand-off doesn't yank the user back.
+  useEffect(() => {
+    return () => {
+      if (successRedirectRef.current) {
+        clearTimeout(successRedirectRef.current);
+        successRedirectRef.current = null;
+      }
+    };
   }, []);
 
   // Track elapsed time during scan (for visible progress)
@@ -126,6 +142,18 @@ export default function PublicScanPage() {
       clearTimeout(successRedirectRef.current);
       successRedirectRef.current = null;
     }
+    // Close the funnel: a user cancel is a terminal event, not a tab-close.
+    // Without this, a started event would have no matching terminal event in
+    // PostHog and look indistinguishable from a silent drop.
+    if (scanUrlRef.current) {
+      trackAnonymousScanError({
+        repo_url: scanUrlRef.current,
+        error_code: "user_cancelled",
+        error_message: "User cancelled scan",
+        duration_ms: startTimeRef.current ? Date.now() - startTimeRef.current : 0,
+        retry_count: 0,
+      });
+    }
     clearPendingScan();
     setPendingScan(null);
     setIsScanning(false);
@@ -139,17 +167,20 @@ export default function PublicScanPage() {
       if (!url.trim() || isScanning) return;
 
       // If a recent scan of the same URL is already pending, don't double-fire —
-      // unless the caller explicitly forced (Resume button, explicit deeplink).
+      // unless the caller explicitly forced (Try-again button, explicit deeplink).
+      // The recovery banner alone communicates the state — no error toast needed.
       if (!options.force) {
         const existing = readPendingScan();
         if (existing && existing.repo_url === url.trim()) {
           setPendingScan(existing);
-          setError(
-            "You started this scan a moment ago and it may still be running. Click 'Resume' to wait for it, or 'Start fresh' to abandon it."
-          );
           return;
         }
       }
+
+      // Generation token for this scan attempt — a stale retry loop from a
+      // superseded scan will see myGen !== scanGenRef.current and exit.
+      scanGenRef.current += 1;
+      const myGen = scanGenRef.current;
 
       if (urlOverride) setRepoUrl(urlOverride);
       scanUrlRef.current = url.trim();
@@ -163,6 +194,7 @@ export default function PublicScanPage() {
       cancelledRef.current = false;
 
       const startTime = Date.now();
+      startTimeRef.current = startTime;
       trackAnonymousScanStarted({ repo_url: url });
 
       const MAX_RETRIES = 2;
@@ -223,16 +255,27 @@ export default function PublicScanPage() {
             }
 
             if (res.status === 502) {
+              // Backend may return 502 with either repo_too_large (upstream
+              // timeout) or scan_failed (worker crash, deploy roll). Branch on
+              // the code so transient failures aren't misrepresented as size.
               trackAnonymousScanError({
                 repo_url: url,
-                error_code: err.code || "repo_too_large",
-                error_message: err.error || "Backend timeout",
+                error_code: err.code || "scan_failed",
+                error_message: err.error || "Backend error",
                 duration_ms: Date.now() - startTime,
                 retry_count: attempt,
               });
               clearPendingScan();
               setPendingScan(null);
-              setError("too_large");
+              if (err.code === "repo_too_large" || !err.code) {
+                setError("too_large");
+              } else if (err.code === "scan_failed") {
+                setError(
+                  "Something flaked on our end while running this scan. Try again in a minute — if it persists, email hello@inkog.io with the repo URL."
+                );
+              } else {
+                setError("Scan failed. Please try again in a minute.");
+              }
               setIsScanning(false);
               return;
             }
@@ -243,11 +286,15 @@ export default function PublicScanPage() {
             if (attempt < MAX_RETRIES) {
               const backoff = (attempt + 1) * 3000;
               await new Promise((r) => setTimeout(r, backoff));
-              if (cancelledRef.current) return;
+              if (cancelledRef.current || myGen !== scanGenRef.current) return;
               continue;
             }
             break;
           }
+
+          // Cancel-during-res.json() race: abortRef was nulled before json
+          // resolved, so handleCancel couldn't abort us. Check refs here.
+          if (cancelledRef.current || myGen !== scanGenRef.current) return;
 
           const result = data as PublicScanResponse;
 
@@ -278,6 +325,8 @@ export default function PublicScanPage() {
           const isAbort = e instanceof DOMException && e.name === "AbortError";
           // User-initiated cancel exits the loop without firing the generic error path
           if (isAbort && cancelledRef.current) return;
+          // A newer scan has superseded us — bail without touching state
+          if (myGen !== scanGenRef.current) return;
 
           lastError = isAbort ? "Request timed out" : "Network error";
           lastErrorCode = isAbort ? "timeout" : "network_error";
@@ -285,11 +334,14 @@ export default function PublicScanPage() {
           if (attempt < MAX_RETRIES) {
             const backoff = (attempt + 1) * 3000;
             await new Promise((r) => setTimeout(r, backoff));
-            if (cancelledRef.current) return;
+            if (cancelledRef.current || myGen !== scanGenRef.current) return;
             continue;
           }
         }
       }
+
+      // Last guard before terminal error handling — same-purpose check.
+      if (myGen !== scanGenRef.current) return;
 
       trackAnonymousScanError({
         repo_url: url,
@@ -375,8 +427,10 @@ export default function PublicScanPage() {
               Powered by Inkog Core + Deep &middot; AI behavioral analysis included
             </p>
 
-            {/* Recover an in-progress scan from a previous tab/session */}
-            {pendingScan && !error && (
+            {/* Recover an in-progress scan from a previous tab/session.
+                Renders alongside any non-too_large error so the duplicate-scan
+                detection path still shows the recovery buttons. */}
+            {pendingScan && error !== "too_large" && (
               <div className="mt-4 p-4 rounded-xl bg-brand/5 border border-brand/30 text-left">
                 <p className="text-sm font-medium text-foreground mb-1">
                   Looks like you started a scan a moment ago
@@ -389,7 +443,7 @@ export default function PublicScanPage() {
                     onClick={() => handleScan(pendingScan.repo_url, { force: true })}
                     className="px-4 py-2 rounded-full bg-brand text-brand-foreground hover:opacity-90 text-xs font-medium transition-opacity"
                   >
-                    Resume
+                    Try again
                   </button>
                   <button
                     onClick={() => {
@@ -487,11 +541,13 @@ export default function PublicScanPage() {
                   : "Scanning repository..."}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {elapsedSec > 60
-                  ? `Still working (${elapsedSec}s) — large repos can take up to 3 minutes.`
-                  : elapsedSec > 0
-                    ? `Core analysis in progress · ${elapsedSec}s elapsed`
-                    : "Core analysis in progress. Deep behavioral analysis runs after."}
+                {showCached
+                  ? "Loading your previous report…"
+                  : elapsedSec > 60
+                    ? `Still working (${elapsedSec}s) — large repos can take up to 3 minutes.`
+                    : elapsedSec > 0
+                      ? `Core analysis in progress · ${elapsedSec}s elapsed`
+                      : "Core analysis in progress. Deep behavioral analysis runs after."}
               </p>
               {!scanDone && (
                 <button
