@@ -243,6 +243,8 @@ export default function PublicScanPage() {
                 setError(err.error || "That URL doesn't look like a GitHub repo. Use the form: https://github.com/owner/repo");
               } else if (err.code === "repo_too_large") {
                 setError("too_large");
+              } else if (err.code === "no_agent_code") {
+                setError("no_agent_code");
               } else if (err.code === "scan_failed") {
                 setError(
                   "We cloned the repo but couldn't find scannable agent code. If you're sure this is an agent project, please contact us or try the CLI for full coverage."
@@ -428,9 +430,9 @@ export default function PublicScanPage() {
             </p>
 
             {/* Recover an in-progress scan from a previous tab/session.
-                Renders alongside any non-too_large error so the duplicate-scan
+                Renders alongside any non-info-card error so the duplicate-scan
                 detection path still shows the recovery buttons. */}
-            {pendingScan && error !== "too_large" && (
+            {pendingScan && error !== "too_large" && error !== "no_agent_code" && (
               <div className="mt-4 p-4 rounded-xl bg-brand/5 border border-brand/30 text-left">
                 <p className="text-sm font-medium text-foreground mb-1">
                   Looks like you started a scan a moment ago
@@ -460,10 +462,41 @@ export default function PublicScanPage() {
             )}
 
             {/* Error with recovery */}
-            {error && error !== "too_large" && (
+            {error && error !== "too_large" && error !== "no_agent_code" && (
               <p className="mt-4 text-sm text-red-600 dark:text-red-400">
                 {error}
               </p>
+            )}
+
+            {/* Not an agent repo — informational, not an error.
+                Backend filtered out every uploaded file (docs-only, jsonnet,
+                binary, etc.), so we tell the user what we actually scan and
+                offer a working example. No red text — this isn't a failure. */}
+            {error === "no_agent_code" && (
+              <div className="mt-4 p-4 rounded-xl bg-brand/5 dark:bg-brand/10 border border-brand/30 text-left">
+                <p className="text-sm font-medium text-foreground mb-2">
+                  This doesn&apos;t look like an AI agent project
+                </p>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Inkog scans code that uses LLMs and agent frameworks
+                  (LangChain, CrewAI, AutoGen, ADK, Pydantic AI, custom). We
+                  couldn&apos;t find any of that in this repo.
+                </p>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Try a real agent example:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {EXAMPLE_REPOS.map((url) => (
+                    <button
+                      key={url}
+                      onClick={() => handleScan(url)}
+                      className="px-4 py-2 rounded-full bg-card hover:bg-brand/10 hover:text-brand text-xs font-mono border border-brand/30 transition-colors text-foreground"
+                    >
+                      {url.replace("https://github.com/", "")}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Special error for too-large repos */}

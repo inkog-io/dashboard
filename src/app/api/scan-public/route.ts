@@ -354,15 +354,43 @@ export async function executeScanPipeline(
   }
 
   if (!scanResponse.ok) {
-    const errorText = await scanResponse.text().catch(() => "Unknown error");
+    const errorText = await scanResponse.text().catch(() => "");
     console.error("Backend scan failed:", scanResponse.status, errorText);
-    const isTimeout = scanResponse.status === 504 || scanResponse.status === 408;
+
+    // Backend speaks JSON: { status, code, message, details }. Parse so we can
+    // distinguish "this repo has no agent code" (a benign user-side outcome —
+    // render with examples, not a red error) from a real backend failure.
+    let backendCode = "";
+    let backendMessage = "";
+    try {
+      const parsed = JSON.parse(errorText) as { code?: string; message?: string };
+      backendCode = parsed.code || "";
+      backendMessage = (parsed.message || "").toLowerCase();
+    } catch {
+      // Non-JSON body (proxy timeout, gateway HTML page) — fall through.
+    }
+
+    const isTimeout = scanResponse.status === 504 || scanResponse.status === 408 || backendCode === "WORKER_TIMEOUT";
+    const isTooLarge = scanResponse.status === 413 || backendCode === "PAYLOAD_TOO_LARGE";
+    // Backend returns BAD_REQUEST + "No valid files were uploaded" when all
+    // extracted files were filtered out by its safe-write guard — typically
+    // because the repo isn't an AI agent project (e.g. only docs/binary/jsonnet).
+    const isNoAgentCode = scanResponse.status === 400 && backendMessage.includes("no valid files");
+
+    if (isNoAgentCode) {
+      return {
+        ok: false,
+        error: "no_agent_code",
+        code: "no_agent_code",
+        status: 400,
+      };
+    }
     return {
       ok: false,
-      error: isTimeout
+      error: isTimeout || isTooLarge
         ? "This repository is too large to scan in the browser. Use the CLI for large repos."
         : "Scan failed. Please try again.",
-      code: isTimeout ? "repo_too_large" : "scan_failed",
+      code: isTimeout || isTooLarge ? "repo_too_large" : "scan_failed",
       status: 502,
     };
   }
