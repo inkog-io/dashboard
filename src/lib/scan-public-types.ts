@@ -20,6 +20,7 @@ export interface PublicScanError {
     | "clone_failed"
     | "scan_failed"
     | "repo_too_large"
+    | "no_agent_code"
     | "not_found";
   retry_after?: number;
 }
