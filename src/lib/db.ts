@@ -149,4 +149,60 @@ export async function getTotalScanCount(): Promise<number> {
   return row.count;
 }
 
+export interface PublicStats {
+  total_scans: number;
+  scans_with_findings: number;
+  scans_with_critical: number;
+  critical_pct: number;
+  median_duration_s: number | null;
+  total_findings: number;
+  findings_by_severity: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  generated_at: string;
+}
+
+export async function getPublicStats(): Promise<PublicStats> {
+  await ensureSchema();
+  const sql = getSql();
+  const [r] = await sql`
+    SELECT
+      count(*)::bigint AS total_scans,
+      count(*) FILTER (WHERE (scan_result->>'findings_count')::int > 0)::bigint AS scans_with_findings,
+      count(*) FILTER (WHERE (scan_result->>'critical_count')::int > 0)::bigint AS scans_with_critical,
+      sum((scan_result->>'critical_count')::int)::bigint AS sum_critical,
+      sum((scan_result->>'findings_count')::int)::bigint AS sum_findings,
+      sum((scan_result->>'high_count')::int)::bigint AS sum_high,
+      sum((scan_result->>'medium_count')::int)::bigint AS sum_medium,
+      sum((scan_result->>'low_count')::int)::bigint AS sum_low,
+      percentile_cont(0.5) WITHIN GROUP (
+        ORDER BY nullif(regexp_replace(scan_result->>'scan_duration', '[^0-9.]', '', 'g'), '')::float
+      ) AS median_duration
+    FROM anonymous_scans
+    WHERE created_at > now() - interval '90 days'
+  `;
+
+  const totalScans = Number(r.total_scans);
+  const scansWithCritical = Number(r.scans_with_critical);
+
+  return {
+    total_scans: totalScans,
+    scans_with_findings: Number(r.scans_with_findings),
+    scans_with_critical: scansWithCritical,
+    critical_pct: totalScans > 0 ? Math.round((scansWithCritical / totalScans) * 100) : 0,
+    median_duration_s: r.median_duration != null ? Number(r.median_duration) / 1000 : null,
+    total_findings: Number(r.sum_findings ?? 0),
+    findings_by_severity: {
+      critical: Number(r.sum_critical ?? 0),
+      high: Number(r.sum_high ?? 0),
+      medium: Number(r.sum_medium ?? 0),
+      low: Number(r.sum_low ?? 0),
+    },
+    generated_at: new Date().toISOString(),
+  };
+}
+
 export default getSql;
