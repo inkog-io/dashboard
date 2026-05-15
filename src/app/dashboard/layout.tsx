@@ -1,7 +1,6 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { ActivationGuard } from "@/components/ActivationGuard";
 import { GitHubAutoLinker } from "@/components/GitHubAutoLinker";
 
 export default async function DashboardLayout({
@@ -20,9 +19,7 @@ export default async function DashboardLayout({
   return (
     <DashboardShell userEmail={userEmail}>
       <GitHubAutoLinker />
-      <ActivationGuard>
-        {children}
-      </ActivationGuard>
+      {children}
     </DashboardShell>
   );
 }
