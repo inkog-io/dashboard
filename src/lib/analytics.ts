@@ -56,6 +56,13 @@ export interface OnboardingSkippedProperties {
   steps_completed: number;
 }
 
+export interface OnboardingStepCompletedProperties {
+  step: number;
+  step_id: OnboardingStep | undefined;
+  total_steps: number;
+  scan_method: ScanMethod | null;
+}
+
 export interface ApiKeyCreatedProperties {
   key_name: string;
   from_onboarding?: boolean;
@@ -73,6 +80,16 @@ export function trackOnboardingStarted(properties?: OnboardingStartedProperties)
     timestamp: new Date().toISOString(),
     ...properties,
   });
+}
+
+/**
+ * Track each step transition in the onboarding flow. PostHog event taxonomy
+ * verified 2026-05-15: onboarding_completed never fires for real users (Hugo
+ * started onboarding 6 times in 3 weeks without ever firing it). Per-step
+ * tracking gives funnel visibility even when users abandon before completion.
+ */
+export function trackOnboardingStepCompleted(properties: OnboardingStepCompletedProperties): void {
+  posthog.capture("onboarding_step_completed", properties);
 }
 
 /**

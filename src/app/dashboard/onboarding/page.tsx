@@ -39,6 +39,7 @@ import {
   trackCliCommandCopied,
   trackOnboardingCompleted,
   trackOnboardingSkipped,
+  trackOnboardingStepCompleted,
   trackApiKeyCreated,
   startOnboarding,
   saveOnboardingState,
@@ -365,7 +366,24 @@ export default function OnboardingPage() {
   // Navigate between steps
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
+      // Fire per-step progress event so the funnel is observable even when
+      // users restart onboarding without ever reaching the final step.
+      // PostHog event taxonomy verified 2026-05-15: onboarding_completed
+      // fires zero times across all users — instrumentation gap fix.
+      trackOnboardingStepCompleted({
+        step: currentStep + 1,
+        step_id: steps[currentStep]?.id,
+        total_steps: steps.length,
+        scan_method: selectedMethod,
+      });
       setCurrentStep(currentStep + 1);
+    } else {
+      // At the last step, "Next" is effectively "Done" — fire the completion event.
+      trackOnboardingCompleted({
+        duration_seconds: 0,
+        steps_completed: steps.length,
+        scan_method_chosen: selectedMethod || "cli",
+      });
     }
   };
 
