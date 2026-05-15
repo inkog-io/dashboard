@@ -58,7 +58,7 @@ export interface OnboardingSkippedProperties {
 
 export interface OnboardingStepCompletedProperties {
   step: number;
-  step_id: OnboardingStep | undefined;
+  step_id: string | undefined;  // accepts the dynamic step id literals from page.tsx
   total_steps: number;
   scan_method: ScanMethod | null;
 }
