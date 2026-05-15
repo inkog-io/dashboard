@@ -61,9 +61,18 @@ export function trackServerScanStarted(props: {
   repo_url: string;
   ip?: string | null;
 }) {
+  // Original server event (operational ground-truth)
   capture("server_scan_started", props.distinctId, {
     repo_url: props.repo_url,
     ip: props.ip || undefined,
+  });
+  // Parity event — mirrors the browser-side `anonymous_scan_started` so
+  // funnel queries (R10 activation alert, R3 daily digest) catch the
+  // server-initiated path (API/curl/automation) too. Without this, R10
+  // never fires for CLI users who hit the API directly.
+  capture("anonymous_scan_started", props.distinctId, {
+    repo_url: props.repo_url,
+    source: "server",
   });
 }
 
@@ -76,6 +85,7 @@ export function trackServerScanCompleted(props: {
   duration_ms: number;
   cached: boolean;
 }) {
+  // Original server event
   capture("server_scan_completed", props.distinctId, {
     repo_url: props.repo_url,
     report_id: props.report_id,
@@ -83,6 +93,19 @@ export function trackServerScanCompleted(props: {
     critical_count: props.critical_count,
     duration_ms: props.duration_ms,
     cached: props.cached,
+  });
+  // Parity event for funnel queries (see trackServerScanStarted for why).
+  // Also adds `high_count` field so R10's HOT-tier filter (critical_count > 0
+  // OR high_count > 0) reads the same shape from server-initiated scans.
+  capture("anonymous_scan_completed", props.distinctId, {
+    repo_url: props.repo_url,
+    report_id: props.report_id,
+    findings_count: props.findings_count,
+    critical_count: props.critical_count,
+    high_count: 0,  // server path doesn't break out by severity yet — TODO
+    duration_ms: props.duration_ms,
+    cached: props.cached,
+    source: "server",
   });
 }
 
