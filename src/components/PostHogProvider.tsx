@@ -29,10 +29,18 @@ function PostHogIdentify() {
       // Capture anonymous ID before identify for session stitching
       const anonId = posthog.get_distinct_id();
 
-      // Identify the user in PostHog
+      // Identify the user in PostHog.
+      // Set BOTH the canonical PostHog properties ($email, $name) AND the
+      // non-prefixed legacy ones — so PostHog person-UI / email targeting
+      // works AND historical queries that hit `properties.email`/`properties.name`
+      // continue to work.
+      const email = user.emailAddresses[0]?.emailAddress;
+      const name = user.fullName || `${user.firstName || ""} ${user.lastName || ""}`.trim();
       posthog.identify(user.id, {
-        email: user.emailAddresses[0]?.emailAddress,
-        name: user.fullName || `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+        email,
+        name,
+        $email: email,
+        $name: name,
       });
 
       // Stitch anonymous session to authenticated user
