@@ -318,7 +318,13 @@ export async function executeScanPipeline(
   files = prioritizeFiles(files);
 
   if (files.length === 0) {
-    return { ok: false, error: "No scannable files found in repository.", code: "scan_failed", status: 400 };
+    // No files passed hasAllowedExtension (.py/.ts/.js/etc) — this is a
+    // non-agent repo (e.g. grafana/agent-modules: Shell/YAML). Surface as
+    // `no_agent_code` so the frontend shows the friendly "this repo doesn't
+    // contain agent code" message instead of a retry-tempting generic
+    // scan_failed. Measured: 33 silent retries on grafana/agent-modules in
+    // one afternoon (2026-05-12) before this fix.
+    return { ok: false, error: "no_agent_code", code: "no_agent_code", status: 400 };
   }
 
   // Build FormData for backend scan
