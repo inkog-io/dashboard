@@ -124,7 +124,7 @@ export default function AgentCapabilityDetailPage() {
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             Scanned {compactTimeAgo(new Date(sc.created_at))} · {sc.scan_kind} ·{" "}
-            {sc.inkog_version || "—"}
+            {sc.inkog_version || "-"}
           </p>
         </div>
         <div className="text-right">
@@ -159,7 +159,7 @@ export default function AgentCapabilityDetailPage() {
 
       <Section title={`Gaps (${grouped.gaps.length})`} icon={<ShieldAlert className="h-5 w-5 text-rose-600" />}>
         {grouped.gaps.length === 0 ? (
-          <EmptyMsg msg="No gaps detected — every required control is wired." />
+          <EmptyMsg msg="No gaps detected. Every required control is wired." />
         ) : (
           <ul className="divide-y border rounded-md">
             {grouped.gaps.map((g) => (
@@ -251,7 +251,7 @@ export default function AgentCapabilityDetailPage() {
         Raw scan: <code className="bg-muted px-1.5 py-0.5 rounded">{sc.id}</code> ·{" "}
         Fingerprint:{" "}
         <code className="bg-muted px-1.5 py-0.5 rounded">
-          {sc.capability_fingerprint?.slice(0, 16) || "—"}
+          {sc.capability_fingerprint?.slice(0, 16) || "-"}
         </code>{" "}
         <a
           className="ml-3 underline inline-flex items-center gap-1"

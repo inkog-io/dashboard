@@ -186,8 +186,7 @@ export default function AgentsPage() {
             Agent Inventory
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Every agent the scanner has discovered across your scanned repos —
-            tools, controls, gaps, governance score.
+            Every agent the scanner has discovered across your scanned repos, with their tools, controls, gaps, and governance score.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -255,7 +254,7 @@ export default function AgentsPage() {
                         <Bot className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         <span className="truncate">{r.agentLabel}</span>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{r.framework || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{r.framework || "-"}</TableCell>
                       <TableCell className="text-right tabular-nums">{r.toolCount}</TableCell>
                       <TableCell className="text-right tabular-nums">{r.mcpCount}</TableCell>
                       <TableCell className="text-right">
@@ -363,8 +362,8 @@ function EmptyState({ hasAnyScans }: { hasAnyScans: boolean }) {
       </h3>
       <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
         Capability data is populated when you scan agent code with{" "}
-        <code className="text-xs px-1 py-0.5 rounded bg-muted">inkog -path ./your-code</code>{" "}
-        — the surface appears here within seconds.
+        <code className="text-xs px-1 py-0.5 rounded bg-muted">inkog -path ./your-code</code>.
+        {" "}The surface appears here within seconds.
       </p>
       <div className="mt-6 flex items-center justify-center gap-2">
         <Button asChild size="sm">
@@ -395,7 +394,7 @@ function flattenAgents(surface: CapabilitySurface): AgentRowVM[] {
         agentId: surface.scan.id,
         scanId: surface.scan.id,
         agentLabel: surface.scan.repo_url || "anonymous",
-        framework: "—",
+        framework: "-",
         toolCount: surface.scan.tool_count,
         mcpCount: surface.scan.mcp_server_count ?? 0,
         critical: surface.scan.gap_count_critical,
@@ -414,13 +413,13 @@ function flattenAgents(surface: CapabilitySurface): AgentRowVM[] {
       agentId: agent.id,
       scanId: surface.scan.id,
       agentLabel: agent.label,
-      framework: agent.framework ?? "—",
+      framework: agent.framework ?? "-",
       toolCount: tools,
       mcpCount: mcp,
       critical,
       high,
-      // Per-agent governance isn't computed yet — use the scan-level score
-      // as the proxy. Will refine when GovernanceScoreCalculator gains
+      // Per-agent governance isn't computed yet, so use the scan-level
+      // score as a proxy. Refined when GovernanceScoreCalculator gains
       // per-agent breakdown.
       governance: surface.scan.governance_score,
       lastScan: surface.scan.created_at,
