@@ -8,6 +8,7 @@ import {
   History,
   BookOpen,
   Settings,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -121,6 +122,7 @@ export function SidebarNav({ isCollapsed }: SidebarNavProps) {
       items: [
         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { href: "/dashboard/scan", label: "Scan", icon: Shield },
+        { href: "/dashboard/agents", label: "Agents", icon: Network, badge: "New" },
         { href: "/dashboard/history", label: "History", icon: History },
       ],
     },

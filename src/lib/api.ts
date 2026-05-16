@@ -903,6 +903,131 @@ export interface ScanDetailResponse {
   scan: ScanFull;
 }
 
+// =============================================================================
+// Capability Surface — Phase C
+// =============================================================================
+
+export interface CapabilityScanHeader {
+  id: string;
+  org_id: string;
+  repo_url: string;
+  branch: string;
+  commit_sha?: string;
+  inkog_version?: string;
+  policy_preset?: string;
+  scan_kind: string;
+  scan_started_at?: string;
+  agent_count: number;
+  capability_count: number;
+  tool_count: number;
+  mcp_server_count?: number;
+  declared_capability_count?: number;
+  enforced_control_count?: number;
+  gap_count_critical: number;
+  gap_count_high: number;
+  gap_count_medium: number;
+  gap_count_low: number;
+  governance_score: number;
+  eu_ai_act_readiness?: number;
+  capability_fingerprint?: string;
+  is_head: boolean;
+  created_at: string;
+}
+
+export interface CapabilityRow {
+  id: string;
+  scan_id: string;
+  org_id: string;
+  agent_id?: string | null;
+  capability_type: string;
+  label: string;
+  ir_node_type: string;
+  framework?: string;
+  file_path?: string;
+  line?: number;
+  effect_category: string;
+  operation_type?: string;
+  data_category?: string;
+  is_tainted?: boolean;
+  taint_source?: string;
+  is_dangerous?: boolean;
+  payload?: Record<string, unknown>;
+}
+
+export interface CapabilityGap {
+  id: string;
+  scan_id: string;
+  agent_id?: string | null;
+  gap_type: string;
+  severity: 'info' | 'low' | 'medium' | 'high' | 'critical';
+  capability_id?: string | null;
+  missing_control_type?: string | null;
+  cwe_ids?: string[];
+  owasp_ids?: string[];
+  eu_ai_act_articles?: string[];
+  nist_categories?: string[];
+  iso_42001_controls?: string[];
+  aiuc1_principles?: string[];
+  message: string;
+  remediation_hint?: string | null;
+}
+
+export interface CapabilityControl {
+  id: string;
+  scan_id: string;
+  agent_id?: string | null;
+  protects_capability_id?: string | null;
+  control_type: string;
+  ir_node_type: string;
+  control_subtype?: string | null;
+  required_for?: string[];
+  framework?: string;
+  blocks_execution?: boolean;
+}
+
+export interface CapabilityEdge {
+  id: string;
+  scan_id: string;
+  from_capability_id: string;
+  to_capability_id: string;
+  edge_type: string;
+  controls_present?: string[];
+  controls_required?: string[];
+  control_gaps?: string[];
+  taint_carries?: string[];
+}
+
+export interface CapabilitySurface {
+  scan: CapabilityScanHeader;
+  capabilities: CapabilityRow[];
+  edges: CapabilityEdge[];
+  declarations: unknown[];
+  controls: CapabilityControl[];
+  gaps: CapabilityGap[];
+  summary?: {
+    agent_count: number;
+    tool_count: number;
+    delegation_count?: number;
+    financial_action_count?: number;
+    destructive_action_count?: number;
+    dangerous_action_count?: number;
+    tainted_capability_count?: number;
+    control_count?: number;
+    declared_count?: number;
+    gap_count_critical: number;
+    gap_count_high: number;
+    gap_count_medium: number;
+    gap_count_low: number;
+    governance_score: number;
+    eu_ai_act_readiness?: number;
+  };
+}
+
+export interface CapabilityScanListResponse {
+  scans: CapabilityScanHeader[];
+  pagination: { page: number; per_page: number; total: number };
+}
+
 /**
  * API Error response from backend (RFC 7807 Problem Details)
  */
@@ -1127,6 +1252,19 @@ export function createAPIClient(getToken: () => Promise<string | null>) {
        * Get dashboard stats for the current user
        */
       get: () => request<StatsResponse>('/v1/stats'),
+    },
+
+    /**
+     * Capability Surface API — agent-fleet inventory + per-scan surface.
+     * Backed by /v1/capabilities/* on the server (Phase C+ feature flag).
+     */
+    capabilities: {
+      /** List most recent capability scans for the org (newest first). */
+      list: () => request<CapabilityScanListResponse>('/v1/capabilities'),
+      /** Fetch the full Surface (capabilities + gaps + controls + edges) for one scan_id. */
+      get: (scanId: string) => request<CapabilitySurface>(`/v1/capabilities/${scanId}`),
+      /** Hardcoded sample surface for marketing / first-load skeleton screens. */
+      demo: () => request<CapabilitySurface>('/v1/capabilities/demo'),
     },
 
     /**
