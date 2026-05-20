@@ -3,6 +3,7 @@ import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PostHogProvider } from "@/components/PostHogProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Toaster } from "sonner";
 
 import "./globals.css";
@@ -60,6 +61,7 @@ export default function RootLayout({
                 richColors
                 closeButton
               />
+              <SpeedInsights />
             </PostHogProvider>
           </ThemeProvider>
         </body>
