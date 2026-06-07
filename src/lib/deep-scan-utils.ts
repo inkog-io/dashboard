@@ -82,14 +82,24 @@ export interface GovernanceData {
 const FRAMEWORK_PREFIXES = ["EU AI Act", "OWASP", "NIST", "ISO"];
 
 export function deriveGovernanceData(report: DeepScanReport): GovernanceData {
-  // --- Score ---
+  // --- Score (severity-weighted, diminishing returns) ---
+  // A linear penalty floored at 0 made any agent with ~7+ HIGH findings collapse
+  // to a flat, uninformative 0. Instead, weight findings by severity and apply
+  // diminishing returns (the same philosophy as the risk score) so the score
+  // degrades smoothly and lands on a meaningful low value rather than bottoming
+  // out.
   const sev = report.severity_summary;
-  let score = 100;
-  score -= (sev.critical ?? 0) * 25;
-  score -= (sev.high ?? 0) * 15;
-  score -= (sev.medium ?? 0) * 5;
+  const penalty =
+    (sev.critical ?? 0) * 25 +
+    (sev.high ?? 0) * 12 +
+    (sev.medium ?? 0) * 4 +
+    (sev.low ?? 0) * 1;
 
-  // Bonus from clean governance controls
+  // 0 penalty → 100; each additional finding has a smaller marginal impact and
+  // the curve approaches (but never reaches) 0.
+  let score = 100 * (1 - penalty / (penalty + 55));
+
+  // Credit governance controls that are actually present.
   const cleanTypes = new Set<ControlType>();
   for (const cd of report.clean_detections) {
     for (const rule of STRENGTH_RULES) {
@@ -100,12 +110,12 @@ export function deriveGovernanceData(report: DeepScanReport): GovernanceData {
     }
   }
 
-  if (cleanTypes.has("oversight")) score += 15;
-  if (cleanTypes.has("authorization")) score += 10;
-  if (cleanTypes.has("audit")) score += 5;
-  if (cleanTypes.has("rate_limit")) score += 5;
+  if (cleanTypes.has("oversight")) score += 8;
+  if (cleanTypes.has("authorization")) score += 6;
+  if (cleanTypes.has("audit")) score += 4;
+  if (cleanTypes.has("rate_limit")) score += 4;
 
-  score = Math.max(0, Math.min(100, score));
+  score = Math.round(Math.max(5, Math.min(100, score)));
 
   // --- Readiness ---
   const readiness: ReadinessStatus =

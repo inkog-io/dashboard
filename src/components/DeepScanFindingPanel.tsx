@@ -171,9 +171,7 @@ export function DeepScanFindingPanel({ finding, onClose }: DeepScanFindingPanelP
             {/* Explanation */}
             <div>
               <SectionLabel>Explanation</SectionLabel>
-              <p className="text-sm text-foreground leading-relaxed">
-                {finding.explanation}
-              </p>
+              <RichText text={finding.explanation} className="text-sm text-foreground" />
             </div>
 
             {/* Location */}
@@ -243,9 +241,10 @@ export function DeepScanFindingPanel({ finding, onClose }: DeepScanFindingPanelP
                   <SectionLabel className="text-green-700 dark:text-green-400">
                     Recommended Action
                   </SectionLabel>
-                  <p className="text-sm text-green-800 dark:text-green-300 leading-relaxed">
-                    {finding.recommended_action}
-                  </p>
+                  <RichText
+                    text={finding.recommended_action}
+                    className="text-sm text-green-800 dark:text-green-300"
+                  />
                 </div>
               </div>
             </div>
@@ -302,4 +301,59 @@ function SectionLabel({
       {children}
     </p>
   );
+}
+
+// Renders prose that may embed a numbered step list ("1) … 2) … 3) …") or
+// newline-separated lines as a proper list, instead of one run-on paragraph.
+// Step markers are anchored to whitespace/start so inline enumerations like
+// "(1) … (2) …" inside a sentence are left untouched.
+function RichText({ text, className = "" }: { text: string; className?: string }) {
+  if (!text) return null;
+
+  const re = /(?:^|\s)(\d+)\)\s+/g;
+  const marks: { num: string; start: number; contentStart: number }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    marks.push({
+      num: m[1],
+      start: m.index,
+      contentStart: m.index + m[0].length,
+    });
+  }
+
+  if (marks.length >= 2) {
+    const preamble = text.slice(0, marks[0].start).trim();
+    const items = marks.map((mk, i) => {
+      const end = i + 1 < marks.length ? marks[i + 1].start : text.length;
+      return { num: mk.num, body: text.slice(mk.contentStart, end).trim() };
+    });
+    return (
+      <div className={className}>
+        {preamble && <p className="leading-relaxed mb-2">{preamble}</p>}
+        <ol className="space-y-2">
+          {items.map((it, i) => (
+            <li key={i} className="flex gap-2 leading-relaxed">
+              <span className="font-semibold flex-shrink-0 tabular-nums">{it.num}.</span>
+              <span>{it.body}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    );
+  }
+
+  const lines = text.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length > 1) {
+    return (
+      <div className={className}>
+        {lines.map((l, i) => (
+          <p key={i} className="leading-relaxed mb-1.5 last:mb-0">
+            {l}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  return <p className={`leading-relaxed ${className}`}>{text}</p>;
 }
