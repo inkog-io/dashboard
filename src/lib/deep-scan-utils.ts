@@ -96,25 +96,9 @@ export function deriveGovernanceData(report: DeepScanReport): GovernanceData {
     (sev.low ?? 0) * 1;
 
   // 0 penalty → 100; each additional finding has a smaller marginal impact and
-  // the curve approaches (but never reaches) 0.
+  // the curve approaches (but never reaches) 0. This MUST match the backend's
+  // deepGovernanceScore() so the dashboard and the CLI/API report the same value.
   let score = 100 * (1 - penalty / (penalty + 55));
-
-  // Credit governance controls that are actually present.
-  const cleanTypes = new Set<ControlType>();
-  for (const cd of report.clean_detections) {
-    for (const rule of STRENGTH_RULES) {
-      if (rule.test(cd.rule_name)) {
-        cleanTypes.add(rule.control_type);
-        break;
-      }
-    }
-  }
-
-  if (cleanTypes.has("oversight")) score += 8;
-  if (cleanTypes.has("authorization")) score += 6;
-  if (cleanTypes.has("audit")) score += 4;
-  if (cleanTypes.has("rate_limit")) score += 4;
-
   score = Math.round(Math.max(5, Math.min(100, score)));
 
   // --- Readiness ---
