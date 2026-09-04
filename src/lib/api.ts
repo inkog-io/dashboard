@@ -443,7 +443,7 @@ export interface ComplianceMapping {
   owasp_items?: string[];
   gdpr_articles?: string[];
   cwe_ids?: string[];
-  owasp_agentic?: string[];  // OWASP Agentic Security Initiative (T1-T7)
+  owasp_agentic?: string[];  // OWASP Top 10 for Agentic Applications 2026 (ASI01-ASI10)
 }
 
 /**
@@ -597,7 +597,7 @@ export interface Finding {
   compliance_mapping?: ComplianceMapping;
   // CVE and External References (Phase 3 Enhancement)
   cve_references?: string[];
-  owasp_agentic_threat?: string;  // e.g., "T1", "T3"
+  owasp_agentic_threat?: string;  // e.g., "ASI01", "ASI03"
   palo_alto_threat?: string;       // e.g., "1" through "7"
   mitre_attack?: string[];         // e.g., ["T1059", "T1552.001"]
   // Calibration fields (self-learning confidence)
